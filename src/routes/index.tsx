@@ -1,24 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
-export const Route = createFileRoute("/")({
-  component: Index,
-});
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { ArrowRight, ArrowUpRight, Flower2, Gem, Heart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Pieces } from '@/components/bamas/pieces';
+import { collection } from '@/lib/collection';
+import { pageHead } from '@/lib/page-head';
+import hero from '@/assets/saree-hero.jpg';
+import rose from '@/assets/rose-saree.jpg';
+export const Route = createFileRoute('/')({head:()=>pageHead('Timeless Sarees. Modern You.','Discover Bamas Collection: saree-inspired elegance, heritage details and a modern point of view.'),component:Home});
+function Home(){return <main><section className="hero"><img src={hero} width="1536" height="1024" alt="Emerald saree with a golden border in a heritage courtyard" className="hero-photo" fetchPriority="high"/><div className="hero-inner reveal"><span className="eyebrow">Tradition, beautifully reimagined</span><h1>Bamas Collection<br/><em>Timeless sarees.</em><br/>Modern you.</h1><p>For the moments that become memories.<br/>Discover sarees as beautifully individual as you.</p><Button asChild className="hero-button"><Link to="/products">Explore the collection <ArrowRight/></Link></Button></div><div className="hero-bottom"><span><i/> A story in every drape</span><div className="hero-pager" aria-hidden="true"><i/><i/><i/></div></div></section><div className="promise-strip"><div><Flower2/><span>Inspired by heritage</span></div><div><Gem/><span>Thoughtful details</span></div><div><Heart/><span>Elegance for every moment</span></div></div><section className="section-wrap"><div className="section-heading"><div><span className="eyebrow">The Bamas edit</span><h2>Find your kind of timeless.</h2></div><Link to="/products" className="text-link">View collection <ArrowUpRight size={16}/></Link></div><Pieces items={collection}/></section><section className="story-band"><img src={rose} alt="Rose-coloured saree with intricate golden weaving" loading="lazy" width="768" height="1024" className="story-photo"/><div className="story-copy"><span className="eyebrow">More than a saree</span><h2>A little heritage.<br/>A lot of you.</h2><p>There’s something special about a saree. The way it moves, the memories it holds, the confidence it brings. At Bamas, we celebrate that connection — between tradition and the woman you are today.</p><Link to="/about" className="text-link">Discover our story <ArrowUpRight size={16}/></Link></div></section><section className="quote-section"><span className="eyebrow">The Bamas philosophy</span><h2>“Trends come and go. Elegance stays.”</h2><p>Timeless Sarees. Modern You.</p></section></main>}
