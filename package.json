@@ -14,7 +14,7 @@
     "seed:destroy": "npm --prefix backend run seed:destroy",
     "postinstall": "npm --prefix backend install && npm --prefix frontend install",
     "build:frontend": "npm --prefix frontend install && npm --prefix frontend run build",
-    "build": "npm --prefix backend install && npm --prefix frontend install && npm --prefix frontend run build",
+    "build": "npm --prefix backend install && npm --prefix frontend install && npm --prefix frontend run build && node -e \"const fs=require('fs'); if(fs.existsSync('frontend/.vercel/output')){fs.cpSync('frontend/.vercel/output','.vercel/output',{recursive:true});}\"",
     "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend"
   },
   "devDependencies": {
