@@ -1,3 +1,4 @@
+import "./lib/jsx-dev-shim";
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";

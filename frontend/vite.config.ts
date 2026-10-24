@@ -15,5 +15,14 @@ export default defineConfig({
   nitro: {
     preset: process.env.VERCEL ? "vercel" : (process.env.NITRO_PRESET || "vercel"),
   },
+  vite: {
+    esbuild: {
+      jsx: "automatic",
+      jsxDev: false,
+    },
+    define: {
+      "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "production"),
+    },
+  },
 });
 
