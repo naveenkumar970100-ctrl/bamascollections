@@ -1,21 +1,28 @@
 // Ensure react/jsx-dev-runtime has jsxDEV defined even when NODE_ENV=production
 // to prevent SSR crashes if any transformed chunk or dependency references jsxDEV.
+import * as jsxRuntime from "react/jsx-runtime";
+
 try {
-  let req: ((id: string) => any) | undefined;
-  if (typeof require !== 'undefined') {
-    req = require;
-  } else {
-    const nodeModule = await import('node:module');
-    req = nodeModule.createRequire(import.meta.url);
-  }
-  if (req) {
-    const dev = req('react/jsx-dev-runtime');
-    const prod = req('react/jsx-runtime');
-    if (dev && !dev.jsxDEV && prod?.jsx) {
-      dev.jsxDEV = prod.jsx;
-      if (dev.default && !dev.default.jsxDEV) {
-        dev.default.jsxDEV = prod.jsx;
-      }
+  const jsxFn = (jsxRuntime as any).jsx || (jsxRuntime as any).default?.jsx;
+  if (jsxFn) {
+    if (typeof (globalThis as any).jsxDEV === "undefined") {
+      (globalThis as any).jsxDEV = jsxFn;
+    }
+    if (typeof process !== "undefined" && process.versions?.node) {
+      import("node:module")
+        .then(({ createRequire }) => {
+          try {
+            const req = createRequire(import.meta.url);
+            const dev = req("react/jsx-dev-runtime");
+            if (dev && !dev.jsxDEV) {
+              dev.jsxDEV = jsxFn;
+              if (dev.default && !dev.default.jsxDEV) {
+                dev.default.jsxDEV = jsxFn;
+              }
+            }
+          } catch {}
+        })
+        .catch(() => {});
     }
   }
 } catch {

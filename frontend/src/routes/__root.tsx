@@ -9,7 +9,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import React, { useEffect, useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerContext } from "@/components/bamas/auth-context";
@@ -109,16 +109,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
+  return React.createElement(
+    "html",
+    { lang: "en" },
+    React.createElement("head", null, React.createElement(HeadContent, null)),
+    React.createElement("body", null, children, React.createElement(Scripts, null))
   );
 }
 
