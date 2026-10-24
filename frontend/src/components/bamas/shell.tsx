@@ -33,6 +33,7 @@ const nav = [
   { to: '/products', label: 'Collection' },
   { to: '/about', label: 'Our story' },
   { to: '/faq', label: 'FAQs' },
+  { to: '/contact', label: 'Contact Us' },
 ] as const;
 
 export function SiteHeader() {
@@ -287,6 +288,9 @@ export function SiteFooter() {
             </li>
             <li>
               <Link to="/faq">FAQs</Link>
+            </li>
+            <li>
+              <Link to="/contact">Contact Us</Link>
             </li>
             <li>
               <Link to="/login">My Account</Link>

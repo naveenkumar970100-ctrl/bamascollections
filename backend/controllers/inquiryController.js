@@ -81,3 +81,25 @@ export const updateInquiryStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc    Delete an inquiry
+ * @route   DELETE /api/inquiries/:id
+ * @access  Private/Admin
+ */
+export const deleteInquiry = async (req, res, next) => {
+  try {
+    const inquiry = await Inquiry.findById(req.params.id);
+
+    if (!inquiry) {
+      return renderError(res, 404, 'Inquiry not found');
+    }
+
+    await inquiry.deleteOne();
+
+    return renderSuccess(res, 200, 'Inquiry deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+

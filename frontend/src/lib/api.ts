@@ -157,6 +157,17 @@ export const api = {
     async getInquiries() {
       return apiRequest('/admin/inquiries', { method: 'GET' });
     },
+
+    async updateInquiryStatus(id: string, status: string) {
+      return apiRequest(`/admin/inquiries/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      });
+    },
+
+    async deleteInquiry(id: string) {
+      return apiRequest(`/admin/inquiries/${id}`, { method: 'DELETE' });
+    },
   },
 
   // Product endpoints

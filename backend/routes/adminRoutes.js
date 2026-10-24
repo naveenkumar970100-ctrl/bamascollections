@@ -36,7 +36,14 @@ router.post('/products', createProduct);
 router.put('/products/:id', updateProduct);
 router.delete('/products/:id', deleteProduct);
 
+import {
+  updateInquiryStatus,
+  deleteInquiry,
+} from '../controllers/inquiryController.js';
+
 // Inquiries
 router.get('/inquiries', getAdminInquiries);
+router.put('/inquiries/:id/status', updateInquiryStatus);
+router.delete('/inquiries/:id', deleteInquiry);
 
 export default router;

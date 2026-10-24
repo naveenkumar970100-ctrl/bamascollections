@@ -3,6 +3,7 @@ import {
   createInquiry,
   getInquiries,
   updateInquiryStatus,
+  deleteInquiry,
 } from '../controllers/inquiryController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -13,6 +14,9 @@ router
   .post(createInquiry)
   .get(protect, admin, getInquiries);
 
-router.put('/:id', protect, admin, updateInquiryStatus);
+router
+  .route('/:id')
+  .put(protect, admin, updateInquiryStatus)
+  .delete(protect, admin, deleteInquiry);
 
 export default router;
