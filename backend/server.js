@@ -21,8 +21,10 @@ dotenv.config();
 
 // Initialize MongoDB Connection
 import { ensureAdminUser } from './controllers/authController.js';
-connectDB().then(() => {
-  ensureAdminUser();
+connectDB().then((conn) => {
+  if (conn) {
+    ensureAdminUser();
+  }
 });
 
 const app = express();
@@ -73,6 +75,14 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDist = path.join(__dirname, '../frontend/dist');
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -82,6 +92,17 @@ app.use('/api/site-config', siteConfigRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+// Serve production frontend bundle if built
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.url.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 // Error Handling Middlewares
 app.use(notFound);

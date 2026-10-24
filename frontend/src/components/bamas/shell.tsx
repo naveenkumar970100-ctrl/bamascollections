@@ -1,13 +1,32 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Menu, X, UserRound, ArrowUpRight, LogOut, ShieldCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import {
+  Menu,
+  X,
+  UserRound,
+  ArrowUpRight,
+  LogOut,
+  ShieldCheck,
+  Sparkles,
+  Award,
+  Heart,
+  MapPin,
+  Phone,
+  Mail,
+  Send,
+  CheckCircle2,
+  Clock,
+  ShoppingBag,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomer } from './auth-context';
 import { supabase } from '@/integrations/supabase/client';
 import bamasLogo from '@/assets/bamas-logo.jpg';
 import { api } from '@/lib/api';
 import { NotificationBell } from './notification-bell';
+import { cart } from '@/lib/cart';
+import { CartDrawer } from './cart-drawer';
 
 const nav = [
   { to: '/', label: 'Home' },
@@ -18,9 +37,21 @@ const nav = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(() => cart.getCount());
   const { user } = useCustomer();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      setCartCount(cart.getCount());
+    };
+    window.addEventListener('bamas_cart_updated', handleCartUpdate);
+    return () => {
+      window.removeEventListener('bamas_cart_updated', handleCartUpdate);
+    };
+  }, []);
 
   const { data: configResp } = useQuery({
     queryKey: ['siteConfig'],
@@ -87,6 +118,42 @@ export function SiteHeader() {
               </Link>
             </Button>
           )}
+          {/* Silk Bag (Cart) Toggle Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="header-bag-btn"
+            title="Silk Bag"
+            aria-label={`Silk Bag with ${cartCount} items`}
+            onClick={() => setCartDrawerOpen(true)}
+            style={{ position: 'relative' }}
+          >
+            <ShoppingBag size={20} />
+            {cartCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  right: '2px',
+                  background: 'var(--gold, #d4af37)',
+                  color: '#092330',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  minWidth: '18px',
+                  height: '18px',
+                  borderRadius: '9999px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 4px',
+                  border: '1.5px solid #ffffff',
+                }}
+              >
+                {cartCount}
+              </span>
+            )}
+          </Button>
+
           <Button asChild variant="ghost" size="icon" title={user ? 'My account' : 'Log in'}>
             <Link to="/login" aria-label={user ? 'My account' : 'Log in'}>
               <UserRound />
@@ -132,6 +199,16 @@ export function SiteHeader() {
           </Link>
         </nav>
       )}
+
+      {/* Cart Drawer */}
+      <CartDrawer
+        open={cartDrawerOpen}
+        onClose={() => setCartDrawerOpen(false)}
+        onProceedToCheckout={() => {
+          setCartDrawerOpen(false);
+          navigate({ to: '/products' });
+        }}
+      />
     </header>
   );
 }
@@ -144,55 +221,162 @@ export function SiteFooter() {
     retry: 1,
   });
 
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+
   const logoSrc = configResp?.data?.logoUrl || bamasLogo;
-  const tagline = configResp?.data?.tagline || 'Timeless Sarees. Modern You.';
+  const brandName = configResp?.data?.brandName || 'Bamas Collection';
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) return;
+    setSubscribing(true);
+    setTimeout(() => {
+      setSubscribing(false);
+      setSubscribed(true);
+      setNewsletterEmail('');
+    }, 500);
+  };
 
   return (
     <footer className="site-footer">
-      <div className="footer-inner">
-        <div>
-          <Link
-            to="/"
-            className="footer-wordmark"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '12px' }}
-          >
+      <div className="footer-main-grid">
+        {/* Column 1: Brand Essence & Contact */}
+        <div className="footer-brand-col">
+          <Link to="/" className="footer-brand-heading" aria-label="Bamas Collection home">
             <img
               src={logoSrc}
-              alt="Bamas Collection"
+              alt={brandName}
               width="44"
               height="44"
               onError={(e) => {
                 e.currentTarget.src = bamasLogo;
               }}
-              style={{
-                borderRadius: '8px',
-                objectFit: 'cover',
-                border: '1px solid rgba(212, 175, 55, 0.4)',
-              }}
+              className="footer-brand-logo"
             />
             <div>
-              BAMAS <span>COLLECTION</span>
+              <span className="footer-brand-title">BAMAS</span>
+              <span className="footer-brand-sub">COLLECTION</span>
             </div>
           </Link>
-          <p>{tagline}</p>
+          <p className="footer-brand-desc">
+            Handcrafted pure silk sarees rooted in heritage and woven for your timeless moments.
+          </p>
+          <div className="footer-contact-info">
+            <div className="footer-contact-row">
+              <Mail size={15} className="footer-contact-icon" />
+              <span>concierge@bamascollections.com</span>
+            </div>
+            <div className="footer-contact-row">
+              <Phone size={15} className="footer-contact-icon" />
+              <span>+91 98765 43210</span>
+            </div>
+          </div>
         </div>
-        <nav aria-label="Footer navigation">
-          {nav.slice(1).map((n) => (
-            <Link key={n.to} to={n.to}>
-              {n.label}
-            </Link>
-          ))}
-          <Link to="/login">My account</Link>
-        </nav>
-        <div className="footer-note">
-          Rooted in tradition.
-          <br />
-          Made for your story.
+
+        {/* Column 2: Quick Links */}
+        <div className="footer-col">
+          <h3 className="footer-col-title">Navigation</h3>
+          <ul className="footer-links-list">
+            <li>
+              <Link to="/products">Collection</Link>
+            </li>
+            <li>
+              <Link to="/about">Our Story</Link>
+            </li>
+            <li>
+              <Link to="/faq">FAQs</Link>
+            </li>
+            <li>
+              <Link to="/login">My Account</Link>
+            </li>
+          </ul>
+        </div>
+
+        {/* Column 3: Curated Silks */}
+        <div className="footer-col">
+          <h3 className="footer-col-title">Curated Silks</h3>
+          <ul className="footer-links-list">
+            <li>
+              <Link to="/products">Kanchipuram Pattu</Link>
+            </li>
+            <li>
+              <Link to="/products">Banarasi Katan</Link>
+            </li>
+            <li>
+              <Link to="/products">Pastel & Tissue</Link>
+            </li>
+            <li>
+              <Link to="/products">Bridal Trousseau</Link>
+            </li>
+          </ul>
+        </div>
+
+        {/* Column 4: Private Circle / Newsletter */}
+        <div className="footer-newsletter-col">
+          <h3 className="footer-col-title">Private Circle</h3>
+          <p className="footer-newsletter-desc">
+            Subscribe for discreet previews of new weave arrivals and private showcases.
+          </p>
+
+          {subscribed ? (
+            <div className="footer-newsletter-success">
+              <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
+              <span>Thank you for joining our Private Circle.</span>
+            </div>
+          ) : (
+            <form onSubmit={handleSubscribe} className="footer-newsletter-form">
+              <div className="footer-newsletter-input-wrap">
+                <input
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  className="footer-newsletter-input"
+                />
+                <button
+                  type="submit"
+                  disabled={subscribing}
+                  className="footer-newsletter-btn"
+                  aria-label="Subscribe"
+                >
+                  <Send size={14} />
+                </button>
+              </div>
+            </form>
+          )}
+
+          <a
+            href="https://wa.me/919876543210?text=Hello%20Bamas%20Collection,%20I%20would%20like%20to%20inquire%20about%20your%20handloom%20sarees."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-whatsapp-btn"
+          >
+            <span>WhatsApp Concierge</span>
+            <ArrowUpRight size={14} />
+          </a>
         </div>
       </div>
-      <div className="footer-bottom">
-        <span>© {new Date().getFullYear()} Bamas Collection</span>
-        <span>Elegance, in every thread.</span>
+
+      {/* Bottom Legal & Heritage Philosophy Strip */}
+      <div className="footer-bottom-strip">
+        <div className="footer-bottom-inner">
+          <span className="footer-copyright">
+            © {new Date().getFullYear()} Bamas Collection. All rights reserved.
+          </span>
+          <span className="footer-tagline-quote">
+            “Trends come and go. Elegance stays.”
+          </span>
+          <div className="footer-legal-links">
+            <Link to="/about">Privacy</Link>
+            <span>•</span>
+            <Link to="/about">Terms</Link>
+            <span>•</span>
+            <Link to="/faq">Silk Mark</Link>
+          </div>
+        </div>
       </div>
     </footer>
   );

@@ -1,10 +1,21 @@
 import { useState } from 'react';
-import { ArrowUpRight, CheckCircle2, LoaderCircle, Send } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, LoaderCircle, Send, ShoppingBag, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { api } from '@/lib/api';
+import { cart } from '@/lib/cart';
+import { CartDrawer } from './cart-drawer';
+import { BookingCheckout } from './booking-checkout';
 
-export function Pieces({ items }: { items: any[] }) {
+export function Pieces({
+  items,
+  onSelectPiece,
+  onBuyNow,
+}: {
+  items: any[];
+  onSelectPiece?: (piece: any) => void;
+  onBuyNow?: (piece: any) => void;
+}) {
   const [piece, setPiece] = useState<any | null>(null);
   const [inquireOpen, setInquireOpen] = useState(false);
   const [name, setName] = useState('');
@@ -13,6 +24,52 @@ export function Pieces({ items }: { items: any[] }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
+  const [addedId, setAddedId] = useState<string | null>(null);
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+  const [directBuySaree, setDirectBuySaree] = useState<any | null>(null);
+
+  function handleCardClick(p: any) {
+    if (onSelectPiece) {
+      onSelectPiece(p);
+    } else {
+      try {
+        sessionStorage.setItem('bamas_selected_saree', JSON.stringify(p));
+        window.location.href = '/products';
+      } catch {
+        setPiece(p);
+        setInquireOpen(false);
+      }
+    }
+  }
+
+  function handleAddToCart(p: any) {
+    cart.addItem(
+      {
+        id: p.id || p._id || p.slug,
+        name: p.name,
+        category: p.category,
+        price: p.price || 0,
+        formattedPrice: p.formattedPrice,
+        image: p.image,
+        fabric: p.fabric,
+        color: p.color,
+      },
+      1
+    );
+    const pid = p.id || p._id || p.slug;
+    setAddedId(pid);
+    setCartDrawerOpen(true);
+    setTimeout(() => setAddedId(null), 2000);
+  }
+
+  function handleBuyNow(p: any) {
+    if (onBuyNow) {
+      onBuyNow(p);
+    } else {
+      setDirectBuySaree(p);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
 
   async function handleInquireSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +99,16 @@ export function Pieces({ items }: { items: any[] }) {
     }
   }
 
+  if (directBuySaree) {
+    return (
+      <BookingCheckout
+        saree={directBuySaree}
+        quantity={1}
+        onBack={() => setDirectBuySaree(null)}
+      />
+    );
+  }
+
   return (
     <>
       <div className="pieces-grid">
@@ -49,11 +116,8 @@ export function Pieces({ items }: { items: any[] }) {
           <article className={`piece reveal delay-${i}`} key={p.id || i}>
             <button
               className="piece-photo"
-              aria-label={`View ${p.name}`}
-              onClick={() => {
-                setPiece(p);
-                setInquireOpen(false);
-              }}
+              aria-label={`View full details of ${p.name}`}
+              onClick={() => handleCardClick(p)}
             >
               <img
                 className={p.position}
@@ -64,11 +128,14 @@ export function Pieces({ items }: { items: any[] }) {
                 alt={p.name}
               />
               <span className="piece-view">
-                Discover <ArrowUpRight size={18} />
+                View Full Details <ArrowUpRight size={18} />
               </span>
             </button>
             <div className="piece-meta">
-              <div>
+              <div
+                style={{ cursor: 'pointer', flex: 1 }}
+                onClick={() => handleCardClick(p)}
+              >
                 <span className="eyebrow">{p.category} edit</span>
                 <h3>{p.name}</h3>
                 {p.formattedPrice && (
@@ -88,13 +155,39 @@ export function Pieces({ items }: { items: any[] }) {
                 variant="ghost"
                 size="icon"
                 aria-label={`Details for ${p.name}`}
-                onClick={() => {
-                  setPiece(p);
-                  setInquireOpen(false);
-                }}
+                onClick={() => handleCardClick(p)}
               >
                 <ArrowUpRight />
               </Button>
+            </div>
+
+            {/* Quick Card Action Buttons: Add to Cart & Buy Now */}
+            <div className="piece-card-cta-row">
+              <button
+                type="button"
+                className="card-btn-cart"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddToCart(p);
+                }}
+                title={`Add ${p.name} to cart`}
+              >
+                <ShoppingBag size={14} />
+                <span>{addedId === (p.id || p._id || p.slug) ? 'Added ✓' : 'Add to Cart'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="card-btn-buy"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleBuyNow(p);
+                }}
+                title={`Buy ${p.name} now`}
+              >
+                <Zap size={14} />
+                <span>Buy Now</span>
+              </button>
             </div>
           </article>
         ))}
@@ -262,6 +355,21 @@ export function Pieces({ items }: { items: any[] }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Cart Drawer */}
+      <CartDrawer
+        open={cartDrawerOpen}
+        onClose={() => setCartDrawerOpen(false)}
+        onProceedToCheckout={() => {
+          setCartDrawerOpen(false);
+          const cartItems = cart.getItems();
+          if (cartItems.length > 0) {
+            handleBuyNow(cartItems[0]);
+          } else if (items.length > 0) {
+            handleBuyNow(items[0]);
+          }
+        }}
+      />
     </>
   );
 }

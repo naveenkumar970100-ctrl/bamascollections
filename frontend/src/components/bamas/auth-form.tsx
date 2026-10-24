@@ -9,11 +9,14 @@ import {
   LogOut,
   LayoutDashboard,
   Mail,
+  Lock,
+  User,
   Phone,
   ShieldCheck,
   ShoppingBag,
   Sparkles,
   ArrowUpRight,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,13 +64,13 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
   const { user, ready } = useCustomer();
   const navigate = useNavigate();
 
-  // Mode and form fields
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
-  const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  // Mode and form fields: unified single input for email or mobile
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [show, setShow] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -81,10 +84,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
   }, [mode]);
 
   useEffect(() => {
+    let active = true;
     if (!user || mode === 'reset') return;
-    if (user.name) setName(user.name);
-    else if (user.id) {
-      let active = true;
+    if (user.name) {
+      setName(user.name);
+    } else if (user.id) {
       supabase
         .from('profiles')
         .select('display_name')
@@ -94,10 +98,10 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
           if (!active) return;
           if (!error && data?.display_name) setName(data.display_name);
         });
-      return () => {
-        active = false;
-      };
     }
+    return () => {
+      active = false;
+    };
   }, [user, mode]);
 
   async function submit(e: FormEvent) {
@@ -128,19 +132,43 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
           setMessage('Your profile has been saved.');
         }
       } else if (forgot) {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const cleanEmail = identifier.trim();
+        if (!cleanEmail || !cleanEmail.includes('@')) {
+          throw new Error('Please enter a valid registered email address to receive password reset instructions.');
+        }
+        const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
         if (error) throw error;
         setMessage('Check your email for a password reset link.');
       } else if (mode === 'register') {
         // Register in MERN Express + MongoDB Atlas backend
-        const regPayload = {
+        const cleanIdentifier = identifier.trim();
+        if (!name.trim()) {
+          throw new Error('Please provide your full name.');
+        }
+        if (!cleanIdentifier) {
+          throw new Error('Please enter your email address or mobile number.');
+        }
+        if (!password || password.length < 6) {
+          throw new Error('Password must be at least 6 characters.');
+        }
+        if (password !== confirmPassword) {
+          throw new Error('Passwords do not match. Please verify your confirm password.');
+        }
+
+        const isEmail = cleanIdentifier.includes('@');
+        const regPayload: { name: string; email?: string; phone?: string; password: string; confirmPassword?: string } = {
           name: name.trim(),
-          email: authMethod === 'email' ? email.trim() : undefined,
-          phone: authMethod === 'phone' ? phoneNumber.trim() : phoneNumber.trim() || undefined,
           password,
+          confirmPassword,
         };
+
+        if (isEmail) {
+          regPayload.email = cleanIdentifier;
+        } else {
+          regPayload.phone = cleanIdentifier;
+        }
 
         try {
           const res = await api.auth.register(regPayload);
@@ -152,11 +180,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
             setTimeout(() => navigate({ to: '/products' }), 700);
           }
         } catch (apiErr: any) {
-          // Try Supabase as backup if backend failed
-          if (authMethod === 'email' && email) {
+          // Try Supabase as backup if identifier is email
+          if (isEmail) {
             try {
               const { data, error } = await supabase.auth.signUp({
-                email,
+                email: cleanIdentifier,
                 password,
                 options: {
                   data: { display_name: name.trim() },
@@ -175,11 +203,17 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
         }
       } else {
         // Login with MERN Express + MongoDB Atlas backend (Role-based)
-        const loginIdentifier = authMethod === 'email' ? email.trim() : phoneNumber.trim();
+        const cleanIdentifier = identifier.trim();
+        if (!cleanIdentifier) {
+          throw new Error('Please enter your email or mobile number.');
+        }
+        if (!password) {
+          throw new Error('Please enter your password.');
+        }
 
         try {
           const res = await api.auth.login({
-            identifier: loginIdentifier,
+            identifier: cleanIdentifier,
             password,
           });
 
@@ -194,10 +228,10 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
           }
         } catch (apiErr: any) {
           // Fallback to Supabase if identifier is email
-          if (loginIdentifier.includes('@')) {
+          if (cleanIdentifier.includes('@')) {
             try {
               const { error } = await supabase.auth.signInWithPassword({
-                email: loginIdentifier,
+                email: cleanIdentifier,
                 password,
               });
               if (error) throw error;
@@ -228,40 +262,6 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
     navigate({ to: '/login' });
   }
 
-  async function google() {
-    setBusy(true);
-    setError('');
-    try {
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) throw result.error;
-      if (!('redirected' in result && result.redirected)) {
-        await navigate({ to: '/login' });
-      }
-    } catch {
-      // Fallback Google simulation for local development testing
-      try {
-        const demoGoogleEmail = 'customer.google@example.com';
-        const res = await api.auth.google({
-          email: demoGoogleEmail,
-          name: 'Google Customer',
-          avatar: '',
-        });
-        window.dispatchEvent(new Event('bamas_auth_changed'));
-        if (res.data?.role === 'admin') {
-          await navigate({ to: '/admin' });
-        } else {
-          await navigate({ to: '/products' });
-        }
-      } catch (err: any) {
-        setError(err.message || 'Google sign-in is currently unavailable.');
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const account = Boolean(user) && mode !== 'reset';
   const isAdmin = user?.role === 'admin';
 
@@ -269,17 +269,14 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
   const [loadingProducts, setLoadingProducts] = useState(false);
 
   useEffect(() => {
-    if (account) {
-      setLoadingProducts(true);
-      api.products
-        .getAll()
-        .then((res) => {
-          if (res.data) setLiveProducts(res.data);
-        })
-        .catch(() => {})
-        .finally(() => setLoadingProducts(false));
+    if (isAdmin) {
+      navigate({ to: '/admin', replace: true });
     }
-  }, [account]);
+  }, [isAdmin, navigate]);
+
+  if (isAdmin) {
+    return null;
+  }
 
   if (account) {
     return (
@@ -317,7 +314,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
                 boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)',
               }}
             >
-              {(user?.name || user?.email || 'B')[0].toUpperCase()}
+              {((user?.name || user?.email || 'B').charAt(0) || 'B').toUpperCase()}
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
@@ -600,7 +597,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
                           <h3 style={{ margin: '0 0 0.25rem', fontSize: '1rem', fontWeight: 600, color: '#092330' }}>
                             {product.name}
                           </h3>
-                          <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#688897', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebKitLineClamp: 2, WebKitBoxOrient: 'vertical' }}>
+                          <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: '#688897', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                             {product.detail || product.description || product.fabric || 'Heritage weave with intricate golden borders.'}
                           </p>
                         </div>
@@ -626,340 +623,237 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
     );
   }
 
-  const title = mode === 'reset'
-    ? 'A Fresh Start'
-    : forgot
-    ? 'Forgot Your Password?'
-    : mode === 'register'
-    ? 'Join the Bamas Story'
-    : 'Welcome Back';
-
   return (
-    <main className="auth-page">
-      <div className="auth-art">
-        <img src={image} alt="Ivory saree with golden detailing" />
-        <div>
-          <span className="eyebrow">Bamas Collection</span>
-          <h2>
-            Elegance is
-            <br />
-            always personal.
-          </h2>
-          <p>Timeless sarees. Modern you.</p>
-        </div>
-      </div>
-      <section className="auth-content reveal">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-          <span className="eyebrow">{account ? 'Your Profile' : 'A little tradition. A little you.'}</span>
-          {isAdmin && (
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                color: '#d4af37',
-                background: 'rgba(212, 175, 55, 0.15)',
-                padding: '0.2rem 0.6rem',
-                borderRadius: '999px',
-                border: '1px solid rgba(212, 175, 55, 0.3)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.25rem',
-              }}
-            >
-              <ShieldCheck size={13} /> Admin
-            </span>
-          )}
+    <main className="auth-ref-page">
+      <div className="auth-ref-grid">
+        {/* Left Column: Visual Artwork matching reference */}
+        <div className="auth-ref-visual">
+          <div className="auth-ref-image-frame">
+            <img
+              src={image}
+              alt="Bamas Collection Heritage Saree"
+            />
+          </div>
         </div>
 
-        <h1>{title}</h1>
-        <p>
-          {account
-            ? isAdmin
-              ? 'Manage Bamas Collection store inventory, orders, and customer accounts.'
-              : 'A space that’s yours.'
-            : forgot
-            ? 'We’ll email you a link to reset your password.'
-            : mode === 'register'
-            ? 'Create your account using email, phone number, or Google.'
-            : mode === 'reset'
-            ? 'Choose a new password for your account.'
-            : 'Sign in to access your orders, bookings, and profile.'}
-        </p>
-
-        {account && isAdmin && (
-          <div
-            style={{
-              padding: '1rem',
-              borderRadius: '0.75rem',
-              background: 'linear-gradient(135deg, rgba(9, 35, 48, 0.08) 0%, rgba(212, 175, 55, 0.12) 100%)',
-              border: '1px solid rgba(212, 175, 55, 0.35)',
-              marginBottom: '1.25rem',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <div>
-                <p style={{ margin: 0, fontWeight: 600, fontSize: '0.95rem', color: '#092330' }}>
-                  Administrator Portal
-                </p>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#527482' }}>
-                  Logged in as {user?.email}
-                </p>
-              </div>
-              <Button asChild size="sm" style={{ background: '#092330', color: '#d4af37', border: '1px solid #d4af37' }}>
-                <Link to="/admin">
-                  <LayoutDashboard size={15} style={{ marginRight: '0.35rem' }} /> Dashboard
-                </Link>
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {!ready && <p>Loading your account…</p>}
-
-        {/* Auth Method Tabs (Email vs Phone Number) */}
-        {!account && mode !== 'reset' && !forgot && (
-          <div
-            style={{
-              display: 'flex',
-              background: 'rgba(9, 35, 48, 0.05)',
-              borderRadius: '0.5rem',
-              padding: '0.25rem',
-              marginBottom: '1.25rem',
-              border: '1px solid rgba(9, 35, 48, 0.08)',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setAuthMethod('email')}
-              style={{
-                flex: 1,
-                padding: '0.5rem 0.75rem',
-                fontSize: '0.85rem',
-                fontWeight: authMethod === 'email' ? 600 : 500,
-                color: authMethod === 'email' ? '#092330' : '#527482',
-                background: authMethod === 'email' ? '#ffffff' : 'transparent',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                boxShadow: authMethod === 'email' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <Mail size={15} /> With Email
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthMethod('phone')}
-              style={{
-                flex: 1,
-                padding: '0.5rem 0.75rem',
-                fontSize: '0.85rem',
-                fontWeight: authMethod === 'phone' ? 600 : 500,
-                color: authMethod === 'phone' ? '#092330' : '#527482',
-                background: authMethod === 'phone' ? '#ffffff' : 'transparent',
-                border: 'none',
-                borderRadius: '0.375rem',
-                cursor: 'pointer',
-                boxShadow: authMethod === 'phone' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.4rem',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <Phone size={15} /> With Phone Number
-            </button>
-          </div>
-        )}
-
-        <form onSubmit={submit}>
-          {((mode === 'register' && !forgot) || account) && (
-            <label>
-              Full name
-              <input
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoComplete="name"
-                placeholder="Your full name"
-                maxLength={100}
-              />
-            </label>
-          )}
-
-          {/* Email input field */}
-          {mode !== 'reset' && (authMethod === 'email' || account) && (
-            <label>
-              Email address
-              <input
-                required={authMethod === 'email'}
-                type="email"
-                value={account ? user?.email ?? '' : email}
-                disabled={account}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                placeholder="you@example.com"
-              />
-            </label>
-          )}
-
-          {/* Phone number input field */}
-          {mode !== 'reset' && (authMethod === 'phone' || mode === 'register') && (
-            <label>
-              Phone number {mode === 'register' && authMethod === 'email' && <span style={{ color: '#888', fontWeight: 'normal', fontSize: '0.8rem' }}>(optional)</span>}
-              <input
-                required={authMethod === 'phone'}
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                autoComplete="tel"
-                placeholder="+91 98765 43210"
-              />
-            </label>
-          )}
-
-          {!forgot && !account && (
-            <label>
-              Password
-              <div className="password-input">
-                <input
-                  required
-                  type={show ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={6}
-                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  placeholder={mode === 'login' ? 'Your password' : 'At least 6 characters'}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={show ? 'Hide password' : 'Show password'}
-                  onClick={() => setShow(!show)}
-                >
-                  {show ? <EyeOff /> : <Eye />}
-                </Button>
-              </div>
-            </label>
-          )}
-
-          {mode === 'login' && !account && !forgot && (
-            <Button
-              className="forgot-button"
-              type="button"
-              variant="link"
-              onClick={() => {
-                setForgot(true);
-                setMessage('');
-                setError('');
-              }}
-            >
-              Forgot password?
-            </Button>
-          )}
+        {/* Right Column: Clean Form matching reference */}
+        <div className="auth-ref-form-wrap">
+          <h1 className="auth-ref-title">
+            {mode === 'reset'
+              ? 'Set new password'
+              : forgot
+              ? 'Reset password'
+              : mode === 'register'
+              ? 'Create account'
+              : 'Welcome back'}
+          </h1>
+          <p className="auth-ref-subtitle">
+            {forgot
+              ? 'Enter your email address to receive password reset instructions.'
+              : mode === 'reset'
+              ? 'Choose a secure new password for your customer account.'
+              : mode === 'register'
+              ? 'Join to access your orders, bookings, and customer profile.'
+              : 'Sign in to access your orders, bookings, and customer profile.'}
+          </p>
 
           {error && (
-            <p role="alert" className="form-error">
-              {error}
-            </p>
+            <div role="alert" className="auth-ref-feedback error">
+              <span>{error}</span>
+            </div>
           )}
 
           {message && (
-            <p role="status" className="form-success">
-              <CheckCircle2 size={18} />
-              {message}
-            </p>
-          )}
-
-          <Button
-            size="lg"
-            className="auth-submit"
-            disabled={busy || !ready || (mode === 'reset' && !recovery)}
-            type="submit"
-          >
-            {busy ? (
-              <LoaderCircle className="spin" />
-            ) : account ? (
-              'Save profile'
-            ) : forgot ? (
-              'Send reset link'
-            ) : mode === 'register' ? (
-              'Create account'
-            ) : mode === 'reset' ? (
-              'Update password'
-            ) : (
-              'Sign in'
-            )}
-            {!busy && <ArrowRight />}
-          </Button>
-
-          {account && (
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="auth-submit mt-3"
-              onClick={handleSignOut}
-              style={{ marginTop: '0.75rem' }}
-            >
-              <LogOut size={16} /> Sign out
-            </Button>
-          )}
-        </form>
-
-        {!account && mode !== 'reset' && !forgot && (
-          <>
-            <div className="auth-divider">
-              <span>or</span>
+            <div role="status" className="auth-ref-feedback success">
+              <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+              <span>{message}</span>
             </div>
-            <Button
-              variant="outline"
-              size="lg"
-              className="auth-submit"
-              disabled={busy}
-              onClick={google}
-            >
-              <span className="google-mark">G</span> Continue with Google
-            </Button>
-            <p className="auth-switch">
-              {mode === 'login' ? (
-                <>
-                  New to Bamas? <Link to="/register">Create an account</Link>
-                </>
-              ) : (
-                <>
-                  Already part of the story? <Link to="/login">Sign in</Link>
-                </>
+          )}
+
+          <form onSubmit={submit}>
+            <div className="auth-ref-fields">
+              {/* Full Name for Register Mode */}
+              {mode === 'register' && !forgot && (
+                <div className="auth-ref-field">
+                  <label className="auth-ref-label">Full name</label>
+                  <input
+                    required
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoComplete="name"
+                    placeholder="Enter your full name"
+                    maxLength={100}
+                    className="auth-ref-input"
+                  />
+                </div>
               )}
-            </p>
-          </>
-        )}
 
-        {forgot && (
-          <Button
-            variant="link"
-            onClick={() => {
-              setForgot(false);
-              setError('');
-              setMessage('');
-            }}
-          >
-            Back to sign in
-          </Button>
-        )}
+              {/* Single Unified Input for Email or Mobile Number */}
+              {mode !== 'reset' && (
+                <div className="auth-ref-field">
+                  <label className="auth-ref-label">
+                    {forgot ? 'Email address' : 'Email or mobile number'}
+                  </label>
+                  <input
+                    required
+                    type={forgot ? 'email' : 'text'}
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    autoComplete={mode === 'login' ? 'username' : 'email'}
+                    placeholder={
+                      forgot
+                        ? 'Enter email address'
+                        : 'Enter email or 10-digit mobile'
+                    }
+                    className="auth-ref-input"
+                  />
+                </div>
+              )}
 
-        {mode === 'reset' && (
-          <Link to="/login" className="text-link">
-            Back to my account <ArrowRight size={16} />
-          </Link>
-        )}
-      </section>
+              {/* Password field */}
+              {!forgot && (
+                <div className="auth-ref-field">
+                  <label className="auth-ref-label">
+                    {mode === 'reset' ? 'New password' : 'Password'}
+                  </label>
+                  <div className="auth-ref-input-wrap">
+                    <input
+                      required
+                      type={show ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      minLength={6}
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                      placeholder="Password"
+                      className="auth-ref-input"
+                      style={{ paddingRight: '45px' }}
+                    />
+                    <button
+                      type="button"
+                      className="auth-ref-password-toggle"
+                      aria-label={show ? 'Hide password' : 'Show password'}
+                      onClick={() => setShow(!show)}
+                    >
+                      {show ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirm Password field for Register mode */}
+              {mode === 'register' && !forgot && (
+                <div className="auth-ref-field">
+                  <label className="auth-ref-label" htmlFor="confirm-password">
+                    Confirm Password
+                  </label>
+                  <div className="auth-ref-input-wrap">
+                    <input
+                      id="confirm-password"
+                      required
+                      type={showConfirm ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      minLength={6}
+                      autoComplete="new-password"
+                      placeholder="Confirm password"
+                      className="auth-ref-input"
+                      style={{ paddingRight: '45px' }}
+                    />
+                    <button
+                      type="button"
+                      className="auth-ref-password-toggle"
+                      aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
+                      onClick={() => setShowConfirm(!showConfirm)}
+                    >
+                      {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={busy || !ready || (mode === 'reset' && !recovery)}
+              className="auth-ref-submit-btn"
+            >
+              {busy ? (
+                <LoaderCircle className="spin" size={18} />
+              ) : forgot ? (
+                'Send reset link'
+              ) : mode === 'register' ? (
+                'Create account'
+              ) : mode === 'reset' ? (
+                'Update password'
+              ) : (
+                'Sign in'
+              )}
+            </button>
+          </form>
+
+
+
+          {/* Links matching reference */}
+          <div className="auth-ref-links">
+            {mode === 'login' && !forgot && (
+              <button
+                type="button"
+                className="auth-ref-forgot-btn"
+                onClick={() => {
+                  setForgot(true);
+                  setError('');
+                  setMessage('');
+                }}
+              >
+                Forgot password?
+              </button>
+            )}
+
+            {mode !== 'reset' && !forgot && (
+              <p className="auth-ref-switch-text">
+                {mode === 'login' ? (
+                  <>
+                    New customer?{' '}
+                    <Link to="/register" className="auth-ref-switch-link">
+                      Register here
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{' '}
+                    <Link to="/login" className="auth-ref-switch-link">
+                      Sign in here
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
+
+            {forgot && (
+              <button
+                type="button"
+                className="auth-ref-forgot-btn"
+                onClick={() => {
+                  setForgot(false);
+                  setError('');
+                  setMessage('');
+                }}
+              >
+                Back to sign in
+              </button>
+            )}
+
+            {mode === 'reset' && (
+              <Link to="/login" className="auth-ref-switch-link">
+                Back to sign in
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+
     </main>
   );
 }

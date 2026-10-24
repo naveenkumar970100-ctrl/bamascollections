@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api';
 
 /**
  * Universal API Client for Bamas Collections MERN Backend
@@ -42,7 +42,7 @@ export async function apiRequest<T = any>(
 export const api = {
   // Auth endpoints
   auth: {
-    async register(payload: { name: string; email?: string; phone?: string; password: string }) {
+    async register(payload: { name: string; email?: string; phone?: string; password: string; confirmPassword?: string }) {
       const res = await apiRequest('/auth/register', {
         method: 'POST',
         body: JSON.stringify(payload),

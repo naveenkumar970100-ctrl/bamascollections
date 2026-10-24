@@ -2,12 +2,11 @@ import mongoose from 'mongoose';
 
 const orderItemSchema = new mongoose.Schema({
   product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true,
+    type: mongoose.Schema.Types.Mixed,
+    required: false,
   },
   name: { type: String, required: true },
-  image: { type: String, required: true },
+  image: { type: String, default: '' },
   price: { type: Number, required: true },
   quantity: { type: Number, required: true, default: 1, min: 1 },
 });
@@ -17,28 +16,32 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false,
     },
+    customerName: { type: String, default: 'Valued Patron' },
+    customerEmail: { type: String, default: '' },
+    customerPhone: { type: String, default: '' },
     orderItems: [orderItemSchema],
     shippingAddress: {
-      fullName: { type: String, required: true },
-      phone: { type: String, required: true },
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      state: { type: String, required: true },
-      postalCode: { type: String, required: true },
+      fullName: { type: String, default: 'Valued Patron' },
+      phone: { type: String, default: '' },
+      street: { type: String, default: '' },
+      city: { type: String, default: '' },
+      state: { type: String, default: 'Telangana' },
+      postalCode: { type: String, default: '' },
       country: { type: String, default: 'India' },
     },
     paymentMethod: {
       type: String,
       required: true,
-      default: 'UPI / Cash on Delivery',
+      default: 'Demo Online Payment',
     },
     paymentResult: {
       id: { type: String },
       status: { type: String },
       update_time: { type: String },
       email_address: { type: String },
+      method: { type: String },
     },
     itemsPrice: { type: Number, required: true, default: 0.0 },
     shippingPrice: { type: Number, required: true, default: 0.0 },
@@ -51,7 +54,7 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['Placed', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-      default: 'Placed',
+      default: 'Confirmed',
     },
   },
   {

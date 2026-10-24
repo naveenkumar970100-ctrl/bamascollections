@@ -1,57 +1,124 @@
 import Order from '../models/Order.js';
+import User from '../models/User.js';
 import { renderSuccess, renderError } from '../views/responseView.js';
 import { dispatchNotification } from './notificationController.js';
 
 /**
  * @desc    Create new order
  * @route   POST /api/orders
- * @access  Private
+ * @access  Public / Authenticated
  */
 export const createOrder = async (req, res, next) => {
   try {
-    const { orderItems, shippingAddress, paymentMethod } = req.body;
+    const {
+      orderItems,
+      shippingAddress,
+      paymentMethod,
+      isPaid,
+      paymentResult,
+      totalPrice: clientTotalPrice,
+      email: clientEmail,
+      phone: clientPhone,
+      name: clientName,
+    } = req.body;
 
     if (!orderItems || orderItems.length === 0) {
       return renderError(res, 400, 'No order items supplied');
     }
 
-    if (!shippingAddress || !shippingAddress.street || !shippingAddress.city) {
-      return renderError(res, 400, 'Please provide complete delivery address');
+    const normShipping = {
+      fullName:
+        (shippingAddress && (shippingAddress.fullName || shippingAddress.name)) ||
+        clientName ||
+        (req.user && req.user.name) ||
+        'Valued Patron',
+      phone:
+        (shippingAddress && (shippingAddress.phone || shippingAddress.mobile)) ||
+        clientPhone ||
+        (req.user && req.user.phone) ||
+        '9876543210',
+      street: (shippingAddress && shippingAddress.street) || 'Main Street, Jubilee Hills',
+      city: (shippingAddress && shippingAddress.city) || 'Hyderabad',
+      state: (shippingAddress && shippingAddress.state) || 'Telangana',
+      postalCode:
+        (shippingAddress && (shippingAddress.postalCode || shippingAddress.pincode)) || '500033',
+      country: (shippingAddress && shippingAddress.country) || 'India',
+    };
+
+    const customerEmail =
+      clientEmail ||
+      (shippingAddress && shippingAddress.email) ||
+      (req.user && req.user.email) ||
+      `${normShipping.phone.replace(/[^0-9]/g, '') || 'patron'}@bamascollections.com`;
+
+    // Associate with existing user or req.user
+    let userId = req.user ? req.user._id : null;
+    if (!userId && customerEmail) {
+      const existing = await User.findOne({ email: customerEmail.toLowerCase() });
+      if (existing) {
+        userId = existing._id;
+      }
     }
 
-    // Calculate totals
-    const itemsPrice = orderItems.reduce(
-      (acc, item) => acc + (item.price || 0) * (item.quantity || 1),
+    // Normalize order items
+    const normItems = orderItems.map((item) => ({
+      product: item.product || item.id || item._id || item.slug || 'saree',
+      name: item.name || 'Bamas Heritage Saree',
+      image: item.image || '',
+      price: Number(item.price) || 0,
+      quantity: Number(item.quantity || item.qty) || 1,
+    }));
+
+    const itemsPrice = normItems.reduce(
+      (acc, item) => acc + item.price * item.quantity,
       0
     );
-    const shippingPrice = itemsPrice > 5000 ? 0 : 250; // Free shipping over ₹5000
-    const taxPrice = Math.round(itemsPrice * 0.05); // 5% GST
-    const totalPrice = itemsPrice + shippingPrice + taxPrice;
+    const shippingPrice = itemsPrice > 5000 ? 0 : 250;
+    const taxPrice = Math.round(itemsPrice * 0.05);
+    const totalPrice = clientTotalPrice || itemsPrice + shippingPrice + taxPrice;
+
+    const orderPaid = isPaid !== undefined ? Boolean(isPaid) : true;
+    const orderStatus = orderPaid ? 'Confirmed' : 'Placed';
 
     const order = new Order({
-      user: req.user._id,
-      orderItems,
-      shippingAddress,
-      paymentMethod: paymentMethod || 'UPI / Cash on Delivery',
+      user: userId,
+      customerName: normShipping.fullName,
+      customerEmail,
+      customerPhone: normShipping.phone,
+      orderItems: normItems,
+      shippingAddress: normShipping,
+      paymentMethod: paymentMethod || 'Demo Online Payment',
+      paymentResult: paymentResult || {
+        id: 'DEMO_PAY_' + Date.now(),
+        status: orderPaid ? 'COMPLETED' : 'PENDING',
+        method: paymentMethod || 'Demo Payment Gateway',
+      },
       itemsPrice,
       shippingPrice,
       taxPrice,
       totalPrice,
-      status: 'Placed',
+      isPaid: orderPaid,
+      paidAt: orderPaid ? new Date() : null,
+      status: orderStatus,
     });
 
     const savedOrder = await order.save();
 
-    // Real-time notification from Customer to Admin
-    await dispatchNotification({
-      recipientRole: 'admin',
-      sender: req.user._id,
-      senderName: req.user.name || 'Valued Customer',
-      title: `New Order Placed: ₹${totalPrice.toLocaleString('en-IN')}`,
-      message: `${req.user.name || 'Customer'} placed order #${savedOrder._id.toString().slice(-6).toUpperCase()} for ${orderItems.length} saree(s) to ${shippingAddress.city}, ${shippingAddress.state}.`,
-      type: 'order',
-      targetUrl: '/admin',
-    });
+    // Real-time notification to Admin
+    try {
+      await dispatchNotification({
+        recipientRole: 'admin',
+        sender: userId || null,
+        senderName: normShipping.fullName,
+        title: `New Saree Order Placed: ₹${totalPrice.toLocaleString('en-IN')}`,
+        message: `${normShipping.fullName} placed order #${savedOrder._id.toString().slice(-6).toUpperCase()} (${orderPaid ? 'Paid via Demo Gateway' : 'Pending'}). Shipping to ${normShipping.city}, ${normShipping.state}.`,
+        type: 'order',
+        targetUrl: '/admin',
+      });
+    } catch (notifErr) {
+      console.warn('Admin notification notice:', notifErr.message);
+    }
+
     return renderSuccess(res, 201, 'Order placed successfully', savedOrder);
   } catch (error) {
     next(error);
@@ -104,7 +171,7 @@ export const getOrderById = async (req, res, next) => {
 export const getAllOrders = async (req, res, next) => {
   try {
     const orders = await Order.find({})
-      .populate('user', 'name email')
+      .populate('user', 'name email phone')
       .sort({ createdAt: -1 });
     return renderSuccess(res, 200, 'All customer orders', orders);
   } catch (error) {

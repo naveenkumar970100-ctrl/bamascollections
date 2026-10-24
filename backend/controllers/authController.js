@@ -44,10 +44,18 @@ export const ensureAdminUser = async () => {
  */
 export const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, phone } = req.body;
+    const { name, email, password, confirmPassword, phone } = req.body;
 
     if (!name || (!email && !phone) || !password) {
       return renderError(res, 400, 'Please provide your name, password, and email or phone number');
+    }
+
+    if (!confirmPassword) {
+      return renderError(res, 400, 'Please confirm your password');
+    }
+
+    if (password !== confirmPassword) {
+      return renderError(res, 400, 'Passwords do not match. Please verify and confirm your password');
     }
 
     const cleanEmail = email ? email.toLowerCase().trim() : null;

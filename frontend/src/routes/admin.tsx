@@ -201,6 +201,18 @@ function AdminDashboardPage() {
 
   useEffect(() => {
     fetchAllData();
+
+    const handleRealtimeUpdate = () => {
+      fetchAllData();
+    };
+
+    window.addEventListener('bamas_order_created', handleRealtimeUpdate);
+    window.addEventListener('bamas_notification_received', handleRealtimeUpdate);
+
+    return () => {
+      window.removeEventListener('bamas_order_created', handleRealtimeUpdate);
+      window.removeEventListener('bamas_notification_received', handleRealtimeUpdate);
+    };
   }, []);
 
   // Update order status live
@@ -747,46 +759,27 @@ function AdminDashboardPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <a
-              href="/"
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                flex: 1,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.35rem',
-                padding: '0.45rem',
-                borderRadius: '6px',
-                background: 'rgba(212, 175, 55, 0.12)',
-                color: '#d4af37',
-                border: '1px solid rgba(212, 175, 55, 0.3)',
-                fontSize: '0.75rem',
-                textDecoration: 'none',
-                fontWeight: 600,
-              }}
-            >
-              <ExternalLink size={13} /> View Store
-            </a>
+          <div>
             <button
               onClick={handleSignOut}
               style={{
-                padding: '0.45rem 0.75rem',
+                width: '100%',
+                padding: '0.6rem 0.85rem',
                 borderRadius: '6px',
                 background: 'rgba(239, 68, 68, 0.15)',
                 color: '#fca5a5',
                 border: '1px solid rgba(239, 68, 68, 0.25)',
                 cursor: 'pointer',
-                fontSize: '0.75rem',
+                fontSize: '0.8rem',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.35rem',
+                justifyContent: 'center',
+                gap: '0.5rem',
                 fontWeight: 600,
+                transition: 'all 0.15s ease',
               }}
             >
-              <LogOut size={13} /> Sign Out
+              <LogOut size={14} /> Sign Out
             </button>
           </div>
         </div>

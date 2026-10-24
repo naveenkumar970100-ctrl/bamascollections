@@ -30,6 +30,22 @@ export const protect = async (req, res, next) => {
   }
 };
 
+export const optionalAuth = async (req, res, next) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'bamas_fallback_secret');
+      req.user = await User.findById(decoded.id).select('-password');
+    } catch (error) {
+      console.warn('[Optional Auth]: Token not verified:', error.message);
+    }
+  }
+  next();
+};
+
 export const admin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();

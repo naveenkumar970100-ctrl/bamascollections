@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Pieces } from '@/components/bamas/pieces';
+import { SareeDetailFullPage } from '@/components/bamas/saree-detail-full-page';
+import { BookingCheckout } from '@/components/bamas/booking-checkout';
 import { collection } from '@/lib/collection';
 import { pageHead } from '@/lib/page-head';
 import { api } from '@/lib/api';
@@ -43,10 +45,24 @@ export const Route = createFileRoute('/products')({
 });
 
 function Products() {
+  const [selectedSaree, setSelectedSaree] = useState<any | null>(null);
+  const [checkoutSaree, setCheckoutSaree] = useState<any | null>(null);
   const [category, setCategory] = useState('All');
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>(collection);
   const [isLive, setIsLive] = useState(false);
+
+  // Check if a saree was selected from home or another page
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('bamas_selected_saree');
+      if (saved) {
+        setSelectedSaree(JSON.parse(saved));
+        sessionStorage.removeItem('bamas_selected_saree');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch {}
+  }, []);
 
   // Fetch all live products on mount and when category changes
   useEffect(() => {
@@ -116,6 +132,35 @@ function Products() {
     ? products
     : collection.filter((p) => category === 'All' || p.category === category);
 
+  if (checkoutSaree) {
+    return (
+      <main>
+        <BookingCheckout
+          saree={checkoutSaree}
+          quantity={1}
+          onBack={() => {
+            setCheckoutSaree(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      </main>
+    );
+  }
+
+  if (selectedSaree) {
+    return (
+      <main>
+        <SareeDetailFullPage
+          saree={selectedSaree}
+          onBack={() => {
+            setSelectedSaree(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      </main>
+    );
+  }
+
   return (
     <main>
       <div className="page-title reveal">
@@ -162,7 +207,17 @@ function Products() {
             </span>
           </div>
         </div>
-        <Pieces items={items} />
+        <Pieces
+          items={items}
+          onSelectPiece={(piece) => {
+            setSelectedSaree(piece);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onBuyNow={(piece) => {
+            setCheckoutSaree(piece);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
         <p className="catalog-note">
           Bamas Signature Collection · Pure handloom silk, authentic gold zari and bespoke drape consultation.
         </p>

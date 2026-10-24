@@ -163,21 +163,76 @@ function RootComponent() {
         });
     } else {
       // Fallback check to Supabase
-      supabase.auth
-        .getUser()
-        .then(({ data }) => {
-          if (active && data?.user) {
-            setUser({
-              id: data.user.id,
-              email: data.user.email || "",
-              name: data.user.user_metadata?.display_name || "",
-            });
+      try {
+        supabase.auth
+          .getUser()
+          .then(({ data }) => {
+            if (active && data?.user) {
+              setUser({
+                id: data.user.id,
+                email: data.user.email || "",
+                name: (data.user.user_metadata as any)?.display_name || "",
+              });
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            if (active) setReady(true);
+          });
+      } catch (err) {
+        console.warn("[Auth Notice]: Supabase client init skipped:", err);
+        if (active) setReady(true);
+      }
+    }
+
+    // Real-time Google OAuth listener
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    try {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (!active) return;
+        if (session?.user && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
+          const email = session.user.email;
+          if (email) {
+            try {
+              const googleName =
+                (session.user.user_metadata as any)?.full_name ||
+                (session.user.user_metadata as any)?.display_name ||
+                (session.user.user_metadata as any)?.name ||
+                email.split('@')[0];
+              const googleAvatar = (session.user.user_metadata as any)?.avatar_url || '';
+
+              const res = await api.auth.google({
+                email,
+                name: googleName,
+                avatar: googleAvatar,
+                googleId: session.user.id,
+              });
+
+              if (res.data) {
+                setUser(res.data);
+                localStorage.setItem('bamas_user', JSON.stringify(res.data));
+              }
+            } catch {
+              const fallbackUser = {
+                id: session.user.id,
+                email: session.user.email || '',
+                name: (session.user.user_metadata as any)?.display_name || (session.user.user_metadata as any)?.full_name || '',
+              };
+              setUser(fallbackUser);
+              localStorage.setItem('bamas_user', JSON.stringify(fallbackUser));
+            }
+            router.invalidate();
           }
-        })
-        .catch(() => {})
-        .finally(() => {
-          if (active) setReady(true);
-        });
+        } else if (event === 'SIGNED_OUT') {
+          localStorage.removeItem('bamas_token');
+          localStorage.removeItem('bamas_user');
+          setUser(null);
+          router.invalidate();
+        }
+      });
+      authSubscription = data.subscription;
+    } catch (err) {
+      console.warn('[Auth Subscription Notice]:', err);
     }
 
     const handleAuthChange = () => {
@@ -191,19 +246,70 @@ function RootComponent() {
 
     return () => {
       active = false;
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
       window.removeEventListener("bamas_auth_changed", handleAuthChange);
     };
   }, [router]);
 
   const routerState = useRouterState();
   const isAdminRoute = routerState.location.pathname.startsWith('/admin');
+  const isAdminUser = user?.role === 'admin';
+  const isAuthRoute = !user && (
+    routerState.location.pathname === '/login' ||
+    routerState.location.pathname === '/register' ||
+    routerState.location.pathname === '/reset-password'
+  );
+
+  useEffect(() => {
+    // When logged in as Admin, never show public pages: redirect immediately to the Admin Dashboard
+    if (isAdminUser && !isAdminRoute) {
+      router.navigate({ to: '/admin', replace: true });
+    }
+  }, [isAdminUser, isAdminRoute, router]);
+
+  // If admin is logged in and tries to access any public page, render only the admin loading state while redirecting
+  if (isAdminUser && !isAdminRoute) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(180deg, #061821 0%, #0a2432 100%)',
+          color: '#d4af37',
+          fontFamily: 'Manrope, sans-serif',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              width: '42px',
+              height: '42px',
+              border: '3px solid rgba(212, 175, 55, 0.2)',
+              borderTopColor: '#d4af37',
+              borderRadius: '50%',
+              margin: '0 auto 16px',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          <p style={{ margin: 0, fontSize: '0.95rem', letterSpacing: '0.5px', fontWeight: 600 }}>
+            Entering Admin Dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       <CustomerContext.Provider value={{ user, ready }}>
-        {!isAdminRoute && <SiteHeader />}
+        {!isAdminRoute && !isAdminUser && <SiteHeader />}
         <Outlet />
-        {!isAdminRoute && <SiteFooter />}
+        {!isAdminRoute && !isAdminUser && !isAuthRoute && <SiteFooter />}
       </CustomerContext.Provider>
     </QueryClientProvider>
   );

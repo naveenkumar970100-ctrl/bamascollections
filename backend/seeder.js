@@ -26,7 +26,10 @@ function getBase64DataUri(fileName) {
 
 // Fix for Node.js on Windows resolving SRV records for MongoDB Atlas
 try {
-  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1']);
+  if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+  }
 } catch (e) {
   // Ignore if not permitted
 }
@@ -34,9 +37,15 @@ try {
 dotenv.config();
 
 const connectDB = async () => {
+  const uri = process.env.MONGO_URI;
+  if (!uri || uri.includes('<username>') || uri.includes('<password>')) {
+    console.error('❌ [Seeder Error]: MONGO_URI is missing or unconfigured in backend/.env.');
+    process.exit(1);
+  }
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
+    const conn = await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 8000,
+      family: 4,
     });
     console.log(`[MongoDB Connected for Seeding]: ${conn.connection.host}`);
   } catch (error) {
