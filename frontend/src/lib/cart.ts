@@ -79,4 +79,8 @@ export const cart = {
   getSubtotal(): number {
     return this.getItems().reduce((acc, item) => acc + (item.price || 0) * item.quantity, 0);
   },
+
+  getTotal(): number {
+    return this.getSubtotal();
+  },
 };

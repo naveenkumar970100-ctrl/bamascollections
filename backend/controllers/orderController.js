@@ -1,7 +1,10 @@
+import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
-import { renderSuccess, renderError } from '../views/responseView.js';
+import Product from '../models/Product.js';
+import { renderSuccess, renderError, renderProductView } from '../views/responseView.js';
 import { dispatchNotification } from './notificationController.js';
+import { emitToAdmins, emitToUser, emitBroadcast } from '../config/socket.js';
 
 /**
  * @desc    Create new order
@@ -119,6 +122,39 @@ export const createOrder = async (req, res, next) => {
       console.warn('Admin notification notice:', notifErr.message);
     }
 
+    // Real-Time Inventory Sync: decrement countInStock and broadcast live
+    for (const item of normItems) {
+      try {
+        let p = null;
+        if (item.product && mongoose.Types.ObjectId.isValid(item.product)) {
+          p = await Product.findById(item.product);
+        }
+        if (!p && item.product) {
+          p = await Product.findOne({ slug: item.product.toString().toLowerCase() });
+        }
+        if (!p && item.name) {
+          p = await Product.findOne({ name: item.name });
+        }
+        if (p) {
+          const currentCount = typeof p.countInStock === 'number' ? p.countInStock : 10;
+          p.countInStock = Math.max(0, currentCount - (item.quantity || 1));
+          if (p.countInStock <= 0) {
+            p.inStock = false;
+          }
+          await p.save();
+          emitBroadcast('product:updated', renderProductView(p));
+        }
+      } catch (stockErr) {
+        console.warn('Inventory decrement notice:', stockErr.message);
+      }
+    }
+
+    // ⚡ Real-Time WebSocket Emission: notify admins and customer
+    emitToAdmins('order:new', savedOrder);
+    if (userId) {
+      emitToUser(userId, 'order:new', savedOrder);
+    }
+
     return renderSuccess(res, 201, 'Order placed successfully', savedOrder);
   } catch (error) {
     next(error);
@@ -132,7 +168,14 @@ export const createOrder = async (req, res, next) => {
  */
 export const getMyOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const userEmail = (req.user?.email || '').trim().toLowerCase();
+    const query = {
+      $or: [
+        { user: req.user._id },
+        ...(userEmail ? [{ customerEmail: new RegExp(`^${userEmail}$`, 'i') }] : []),
+      ],
+    };
+    const orders = await Order.find(query).sort({ createdAt: -1 });
     return renderSuccess(res, 200, `Retrieved ${orders.length} order(s)`, orders);
   } catch (error) {
     next(error);
@@ -225,8 +268,37 @@ export const updateOrderStatus = async (req, res, next) => {
       });
     }
 
+    // ⚡ Real-Time WebSocket Emission: update order across admin and customer dashboards
+    emitToAdmins('order:updated', updatedOrder);
+    if (order.user) {
+      emitToUser(order.user, 'order:updated', updatedOrder);
+    }
+
     return renderSuccess(res, 200, 'Order status updated', updatedOrder);
   } catch (error) {
     next(error);
   }
 };
+
+/**
+ * @desc    Delete order / booking
+ * @route   DELETE /api/orders/:id or /api/admin/orders/:id
+ * @access  Private/Admin
+ */
+export const deleteOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return renderError(res, 404, 'Order not found');
+    }
+    await Order.findByIdAndDelete(req.params.id);
+
+    // ⚡ Real-Time WebSocket Emission: delete order
+    emitToAdmins('order:deleted', { id: req.params.id });
+
+    return renderSuccess(res, 200, 'Order deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+

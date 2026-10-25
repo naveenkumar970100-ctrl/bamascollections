@@ -14,6 +14,7 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerContext } from "@/components/bamas/auth-context";
 import { SiteHeader, SiteFooter } from "@/components/bamas/shell";
+import { MobileBottomBar } from "@/components/bamas/mobile-bottom-bar";
 import { Button } from "@/components/ui/button";
 
 import appCss from "../styles.css?url";
@@ -46,6 +47,23 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+
+    // Auto-recover from stale dynamic module import errors in dev/prod
+    if (
+      typeof window !== 'undefined' &&
+      error?.message &&
+      (error.message.includes('dynamically imported module') ||
+        error.message.includes('Failed to fetch dynamically imported') ||
+        error.message.includes('Importing a module script failed'))
+    ) {
+      const reloadKey = 'bamas_chunk_reload';
+      const lastReload = sessionStorage.getItem(reloadKey);
+      const now = Date.now();
+      if (!lastReload || now - Number(lastReload) > 10000) {
+        sessionStorage.setItem(reloadKey, String(now));
+        window.location.reload();
+      }
+    }
   }, [error]);
 
   return (
@@ -60,8 +78,12 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Button
             onClick={() => {
-              router.invalidate();
-              reset();
+              if (typeof window !== 'undefined') {
+                window.location.reload();
+              } else {
+                router.invalidate();
+                reset();
+              }
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
@@ -256,6 +278,7 @@ function RootComponent() {
     routerState.location.pathname === '/register' ||
     routerState.location.pathname === '/reset-password'
   );
+  const isProfileRoute = routerState.location.pathname === '/profile';
 
   useEffect(() => {
     // When logged in as Admin, never show public pages: redirect immediately to the Admin Dashboard
@@ -303,8 +326,11 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <CustomerContext.Provider value={{ user, ready }}>
         {!isAdminRoute && !isAdminUser && <SiteHeader />}
-        <Outlet />
-        {!isAdminRoute && !isAdminUser && !isAuthRoute && <SiteFooter />}
+        <div className={(!isAdminRoute && !isAdminUser) ? "customer-main-content" : undefined}>
+          <Outlet />
+        </div>
+        {!isAdminRoute && !isAdminUser && !isAuthRoute && !isProfileRoute && <SiteFooter />}
+        {!isAdminRoute && !isAdminUser && <MobileBottomBar />}
       </CustomerContext.Provider>
     </QueryClientProvider>
   );

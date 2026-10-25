@@ -1,8 +1,10 @@
 import dotenv from 'dotenv';
 import express from 'express';
+import http from 'http';
 import cors from 'cors';
 import morgan from 'morgan';
 import connectDB from './config/db.js';
+import { initSocket } from './config/socket.js';
 
 // MVC View for root status & dashboard
 import { renderHomeView } from './views/homeView.js';
@@ -28,6 +30,10 @@ connectDB().then((conn) => {
 });
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO engine
+initSocket(server);
 
 // Middleware setup
 const allowedOrigins = [
@@ -110,11 +116,12 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`\n======================================================`);
   console.log(`✨ Bamas Collections Backend Server Running ✨`);
   console.log(`🚀 Mode:     ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 Server:   http://localhost:${PORT}`);
+  console.log(`⚡ Sockets:  ws://localhost:${PORT}`);
   console.log(`📋 API Docs: http://localhost:${PORT}/`);
   console.log(`======================================================\n`);
 });

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from '@tanstack/react-router';
 import {
   Bell,
   Check,
@@ -9,7 +10,8 @@ import {
   UserPlus,
   Send,
   X,
-  Clock,
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -17,12 +19,13 @@ import { useCustomer } from './auth-context';
 
 export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
   const { user } = useCustomer();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'orders'>('all');
 
-  // Send message modal
+  // Compose Message Screen
   const [showCompose, setShowCompose] = useState(false);
   const [composeTitle, setComposeTitle] = useState('');
   const [composeMessage, setComposeMessage] = useState('');
@@ -41,7 +44,7 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
         setUnreadCount(res.data.unreadCount || 0);
       }
     } catch {
-      // Ignore if unauthenticated or offline
+      // Ignore if offline
     }
   };
 
@@ -55,21 +58,41 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
 
     fetchNotifications();
 
-    // Real-time polling every 8 seconds for new messages
     const interval = setInterval(fetchNotifications, 8000);
-
     const handleFocus = () => fetchNotifications();
+    const handleSync = () => fetchNotifications();
+
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('bamas_notification_received', handleSync);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('bamas_notification_received', handleSync);
     };
   }, [user]);
 
-  // Close dropdown on outside click
+  // Lock mobile body scroll when open on mobile
+  useEffect(() => {
+    if (open) {
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+      if (isMobile) {
+        document.body.style.overflow = 'hidden';
+      }
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  // Close dropdown on outside click (for desktop)
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+      if (isMobile) return;
+
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
@@ -80,11 +103,12 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
-  const handleMarkRead = async (id: string) => {
+  const handleMarkRead = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     try {
       await api.notifications.markRead(id);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+        prev.map((n) => (n.id === id || n._id === id ? { ...n, isRead: true } : n))
       );
       setUnreadCount((c) => Math.max(0, c - 1));
     } catch (err) {
@@ -121,38 +145,93 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
       setTimeout(() => {
         setComposeSuccess(false);
         setShowCompose(false);
-      }, 1500);
+      }, 1400);
     } catch (err: any) {
-      alert(err.message || 'Failed to send notification');
+      alert(err.message || 'Failed to send message');
     } finally {
       setComposeSending(false);
     }
   };
 
-  const getIcon = (type: string) => {
+  const getAvatarBadge = (type: string) => {
     switch (type) {
       case 'order':
-        return <ShoppingBag size={15} style={{ color: '#d4af37' }} />;
+        return (
+          <div className="notification-icon-avatar" style={{ background: '#fefce8', color: '#b45309', border: '1px solid #fef08a' }}>
+            <ShoppingBag size={16} />
+          </div>
+        );
       case 'inquiry':
-        return <MessageSquare size={15} style={{ color: '#38bdf8' }} />;
+        return (
+          <div className="notification-icon-avatar" style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe' }}>
+            <MessageSquare size={16} />
+          </div>
+        );
       case 'registration':
-        return <UserPlus size={15} style={{ color: '#10b981' }} />;
+        return (
+          <div className="notification-icon-avatar" style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
+            <UserPlus size={16} />
+          </div>
+        );
       case 'status_update':
-        return <Check size={15} style={{ color: '#10b981' }} />;
+        return (
+          <div className="notification-icon-avatar" style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0' }}>
+            <Check size={16} />
+          </div>
+        );
       default:
-        return <Sparkles size={15} style={{ color: '#d4af37' }} />;
+        return (
+          <div className="notification-icon-avatar" style={{ background: '#fdf4ff', color: '#9333ea', border: '1px solid #f5d0fe' }}>
+            <Sparkles size={16} />
+          </div>
+        );
     }
   };
 
   const formatTime = (dateStr: string) => {
     try {
-      const diff = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / 1000);
+      const date = new Date(dateStr);
+      const diff = Math.floor((new Date().getTime() - date.getTime()) / 1000);
       if (diff < 60) return 'Just now';
       if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
       if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-      return `${Math.floor(diff / 86400)}d ago`;
+      if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+      return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
     } catch {
       return '';
+    }
+  };
+
+  // Filter list
+  const filteredNotifications = notifications.filter((n) => {
+    if (activeTab === 'unread') return !n.isRead;
+    if (activeTab === 'orders') return n.type === 'order';
+    return true;
+  });
+
+  const orderCount = notifications.filter((n) => n.type === 'order').length;
+
+  const quickTopics = isAdmin
+    ? [
+        '✨ Festive Silk Edit Now Live',
+        '📢 Special Handloom Artisan Showcase',
+        '⚡ Express Delivery Available Across India',
+      ]
+    : [
+        'Custom Blouse & Drape Inquiry',
+        'Order Delivery Status Check',
+        'Bridal Silk Consultation Request',
+        'Pure Mulberry Silk Care Advice',
+      ];
+
+  const handleCardClick = (n: any) => {
+    const id = n.id || n._id;
+    if (!n.isRead) {
+      handleMarkRead(id);
+    }
+    if (n.targetUrl) {
+      setOpen(false);
+      navigate({ to: n.targetUrl as any });
     }
   };
 
@@ -162,194 +241,163 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
       <button
         onClick={() => {
           setOpen(!open);
-          if (!open) fetchNotifications();
+          if (!open) {
+            setShowCompose(false);
+            fetchNotifications();
+          }
         }}
-        title="Real-time Notifications"
-        style={{
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '38px',
-          height: '38px',
-          borderRadius: '50%',
-          background: isAdmin ? '#ffffff' : 'rgba(212, 175, 55, 0.08)',
-          border: '1px solid rgba(212, 175, 55, 0.35)',
-          color: '#092330',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = '#d4af37';
-          e.currentTarget.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.35)';
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
+        title="Notifications"
+        aria-label="Real-time Notifications"
+        className="notification-bell-btn"
       >
-        <Bell size={18} style={{ color: '#092330' }} />
+        <Bell size={18} />
         {unreadCount > 0 && (
-          <span
-            style={{
-              position: 'absolute',
-              top: '-3px',
-              right: '-3px',
-              minWidth: '18px',
-              height: '18px',
-              padding: '0 4px',
-              borderRadius: '999px',
-              background: '#ef4444',
-              color: '#ffffff',
-              fontSize: '0.65rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)',
-              border: '2px solid #ffffff',
-            }}
-          >
+          <span className="notification-badge-pip">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Notification Dropdown Drawer */}
+      {/* Full-Page on Mobile / Floating Dropdown on Desktop */}
       {open && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 10px)',
-            right: 0,
-            width: '360px',
-            maxWidth: 'calc(100vw - 24px)',
-            background: '#ffffff',
-            borderRadius: '12px',
-            border: '1px solid rgba(212, 175, 55, 0.3)',
-            boxShadow: '0 16px 40px rgba(6, 24, 33, 0.2)',
-            zIndex: 9999,
-            overflow: 'hidden',
-            animation: 'fadeIn 0.2s ease',
-          }}
-        >
-          {/* Panel Header */}
-          <div
-            style={{
-              padding: '0.9rem 1rem',
-              background: 'linear-gradient(135deg, #061821 0%, #0a2432 100%)',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderBottom: '1px solid rgba(212, 175, 55, 0.25)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Bell size={16} style={{ color: '#d4af37' }} />
-              <span style={{ fontWeight: 600, fontSize: '0.92rem' }}>
-                Notifications
-              </span>
-              {unreadCount > 0 && (
-                <span
-                  style={{
-                    background: '#d4af37',
-                    color: '#061821',
-                    fontSize: '0.68rem',
-                    fontWeight: 700,
-                    padding: '0.1rem 0.45rem',
-                    borderRadius: '999px',
-                  }}
-                >
-                  {unreadCount} new
+        <div className="notification-drawer" role="dialog" aria-modal="true" aria-label="Notifications Drawer">
+          {/* Top App Bar Header */}
+          <div className="notification-drawer-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <button
+                type="button"
+                className="back-btn"
+                onClick={() => {
+                  if (showCompose) {
+                    setShowCompose(false);
+                  } else {
+                    setOpen(false);
+                  }
+                }}
+                aria-label="Close notifications"
+              >
+                <ChevronLeft size={20} />
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <span style={{ fontWeight: 700, fontSize: '1.08rem', color: '#092330', letterSpacing: '-0.01em' }}>
+                  Notifications
                 </span>
-              )}
+                {unreadCount > 0 && (
+                  <span
+                    style={{
+                      background: '#092330',
+                      color: '#ffffff',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '1px 7px',
+                      borderRadius: '999px',
+                    }}
+                  >
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {unreadCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              {unreadCount > 0 && !showCompose && (
                 <button
+                  type="button"
                   onClick={handleMarkAllRead}
-                  title="Mark all as read"
                   style={{
                     background: 'transparent',
                     border: 'none',
-                    color: '#d4af37',
-                    cursor: 'pointer',
-                    fontSize: '0.75rem',
+                    color: '#b8860b',
+                    fontSize: '0.78rem',
                     fontWeight: 600,
+                    cursor: 'pointer',
+                    padding: '4px 6px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.2rem',
-                    padding: '0.2rem 0.4rem',
-                    borderRadius: '4px',
+                    gap: '0.25rem',
                   }}
                 >
-                  <CheckCheck size={14} /> Read all
+                  <CheckCheck size={14} /> Mark all read
                 </button>
               )}
               <button
+                type="button"
                 onClick={() => setOpen(false)}
+                title="Close"
+                aria-label="Close"
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'rgba(255,255,255,0.6)',
+                  color: '#64748b',
                   cursor: 'pointer',
-                  padding: '2px',
+                  padding: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '6px',
                 }}
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
           </div>
 
-          {/* Quick Action Button: Send Message */}
-          <div
-            style={{
-              padding: '0.6rem 1rem',
-              background: '#f8fafc',
-              borderBottom: '1px solid #edf2f7',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-              {isAdmin ? 'Admin Console' : 'Customer Concierge'}
-            </span>
-            <button
-              onClick={() => setShowCompose(true)}
-              style={{
-                background: '#061821',
-                color: '#d4af37',
-                border: '1px solid #d4af37',
-                padding: '0.3rem 0.65rem',
-                borderRadius: '6px',
-                fontSize: '0.74rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-              }}
-            >
-              <Send size={11} />
-              {isAdmin ? 'Send to Customers' : 'Message Admin'}
-            </button>
-          </div>
+          {/* Segmented Filter Bar (Clean & Professional) */}
+          {!showCompose && (
+            <div className="notification-segment-bar">
+              <button
+                type="button"
+                className={`notification-segment-btn ${activeTab === 'all' ? 'active' : ''}`}
+                onClick={() => setActiveTab('all')}
+              >
+                All {notifications.length > 0 ? `(${notifications.length})` : ''}
+              </button>
+              <button
+                type="button"
+                className={`notification-segment-btn ${activeTab === 'unread' ? 'active' : ''}`}
+                onClick={() => setActiveTab('unread')}
+              >
+                Unread {unreadCount > 0 ? `(${unreadCount})` : ''}
+              </button>
+              {orderCount > 0 && (
+                <button
+                  type="button"
+                  className={`notification-segment-btn ${activeTab === 'orders' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('orders')}
+                >
+                  Orders ({orderCount})
+                </button>
+              )}
+            </div>
+          )}
 
-          {/* Notifications List or Inline Compose View */}
+          {/* Concierge Action Strip */}
+          {!showCompose && (
+            <div className="notification-concierge-bar">
+              <span>{isAdmin ? 'Reach all customer portals' : 'Have questions or styling requests?'}</span>
+              <button
+                type="button"
+                className="notification-concierge-btn"
+                onClick={() => setShowCompose(true)}
+              >
+                <Send size={11} />
+                {isAdmin ? 'Broadcast' : 'Message Concierge'}
+              </button>
+            </div>
+          )}
+
+          {/* Content: List or Compose */}
           {showCompose ? (
-            <div style={{ padding: '1rem' }}>
+            /* Compose View */
+            <div className="notification-compose-pane">
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: '0.85rem',
-                  paddingBottom: '0.6rem',
-                  borderBottom: '1px solid #e2e8f0',
+                  paddingBottom: '0.5rem',
+                  borderBottom: '1px solid #f1f5f9',
                 }}
               >
                 <button
@@ -359,34 +407,53 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
                     background: 'transparent',
                     border: 'none',
                     color: '#092330',
-                    fontSize: '0.8rem',
+                    fontSize: '0.82rem',
                     fontWeight: 600,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.35rem',
+                    gap: '0.3rem',
                     padding: 0,
                   }}
                 >
-                  ← Back to Alerts
+                  <ChevronLeft size={16} /> Back to notifications
                 </button>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d4af37' }}>
-                  {isAdmin ? '📢 Broadcast Announcement' : '✉️ Message Admin'}
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>
+                  {isAdmin ? 'Customer Broadcast' : 'Direct Concierge Desk'}
                 </span>
               </div>
 
-              <form onSubmit={handleSendCompose}>
-                <div style={{ marginBottom: '0.75rem' }}>
+              {/* Suggestions */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 600, color: '#64748b', marginBottom: '0.35rem' }}>
+                  Suggested topics:
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                  {quickTopics.map((topic) => (
+                    <button
+                      key={topic}
+                      type="button"
+                      className="notification-topic-pill"
+                      onClick={() => setComposeTitle(topic)}
+                    >
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <form onSubmit={handleSendCompose} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div>
                   <label
                     style={{
                       display: 'block',
-                      fontSize: '0.78rem',
+                      fontSize: '0.8rem',
                       fontWeight: 600,
                       color: '#092330',
-                      marginBottom: '0.25rem',
+                      marginBottom: '0.3rem',
                     }}
                   >
-                    Subject / Title *
+                    Subject *
                   </label>
                   <input
                     required
@@ -394,51 +461,55 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
                     placeholder={
                       isAdmin
                         ? 'e.g. Exclusive Festive Bridal Edit Now Live'
-                        : 'e.g. Question on Mulberry Silk Customization'
+                        : 'e.g. Inquiry regarding Custom Saree Blouse'
                     }
                     value={composeTitle}
                     onChange={(e) => setComposeTitle(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '0.5rem 0.65rem',
-                      borderRadius: '6px',
-                      border: '1px solid #dce8ec',
-                      fontSize: '0.82rem',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '15px',
                       color: '#092330',
+                      boxSizing: 'border-box',
+                      outline: 'none',
                     }}
                   />
                 </div>
 
-                <div style={{ marginBottom: '0.85rem' }}>
+                <div>
                   <label
                     style={{
                       display: 'block',
-                      fontSize: '0.78rem',
+                      fontSize: '0.8rem',
                       fontWeight: 600,
                       color: '#092330',
-                      marginBottom: '0.25rem',
+                      marginBottom: '0.3rem',
                     }}
                   >
                     Message *
                   </label>
                   <textarea
                     required
-                    rows={3}
+                    rows={4}
                     placeholder={
                       isAdmin
-                        ? 'Write message to broadcast to customer portals...'
-                        : 'Type your message directly to Bamas administrators...'
+                        ? 'Type announcement message for all customer accounts...'
+                        : 'Describe your question, required dates, or custom drape needs...'
                     }
                     value={composeMessage}
                     onChange={(e) => setComposeMessage(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '0.5rem 0.65rem',
-                      borderRadius: '6px',
-                      border: '1px solid #dce8ec',
-                      fontSize: '0.82rem',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '15px',
                       color: '#092330',
                       resize: 'none',
+                      boxSizing: 'border-box',
+                      outline: 'none',
                     }}
                   ></textarea>
                 </div>
@@ -446,31 +517,31 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
                 {composeSuccess && (
                   <div
                     style={{
-                      padding: '0.45rem',
+                      padding: '0.65rem',
                       background: '#ecfdf5',
                       color: '#065f46',
-                      borderRadius: '6px',
-                      fontSize: '0.78rem',
-                      marginBottom: '0.75rem',
+                      borderRadius: '8px',
+                      fontSize: '0.82rem',
                       textAlign: 'center',
                       fontWeight: 600,
                     }}
                   >
-                    ✓ Notification dispatched successfully!
+                    ✓ Dispatched successfully!
                   </div>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.25rem' }}>
                   <button
                     type="button"
                     onClick={() => setShowCompose(false)}
                     style={{
-                      padding: '0.45rem 0.85rem',
-                      borderRadius: '6px',
-                      border: '1px solid #dce8ec',
+                      padding: '0.55rem 1rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
                       background: '#ffffff',
                       color: '#64748b',
-                      fontSize: '0.8rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
                       cursor: 'pointer',
                     }}
                   >
@@ -480,12 +551,12 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
                     type="submit"
                     disabled={composeSending}
                     style={{
-                      padding: '0.45rem 1rem',
-                      borderRadius: '6px',
-                      border: '1px solid #d4af37',
-                      background: 'linear-gradient(135deg, #061821 0%, #0a2432 100%)',
-                      color: '#d4af37',
-                      fontSize: '0.8rem',
+                      padding: '0.55rem 1.25rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#092330',
+                      color: '#ffffff',
+                      fontSize: '0.82rem',
                       fontWeight: 600,
                       cursor: 'pointer',
                       display: 'flex',
@@ -494,131 +565,134 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
                     }}
                   >
                     <Send size={13} />
-                    {composeSending ? 'Dispatching...' : 'Send'}
+                    {composeSending ? 'Sending...' : 'Send Message'}
                   </button>
                 </div>
               </form>
             </div>
           ) : (
-            <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
-              {notifications.length === 0 ? (
-                <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: '#94a3b8' }}>
-                  <Bell size={28} style={{ margin: '0 auto 0.5rem', opacity: 0.3 }} />
-                  <p style={{ margin: 0, fontSize: '0.85rem' }}>No notifications yet</p>
-                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem' }}>
-                    {isAdmin
-                      ? 'Inquiries and customer orders will arrive here in real time.'
-                      : 'Order updates and stylist responses will appear here.'}
+            /* Notification Cards Feed */
+            <div className="notification-drawer-body">
+              {filteredNotifications.length === 0 ? (
+                <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#94a3b8' }}>
+                  <div
+                    style={{
+                      width: '50px',
+                      height: '50px',
+                      borderRadius: '50%',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 0.85rem',
+                    }}
+                  >
+                    <Bell size={22} style={{ color: '#94a3b8' }} />
+                  </div>
+                  <h4 style={{ margin: '0 0 0.3rem', fontSize: '0.95rem', fontWeight: 600, color: '#092330' }}>
+                    {activeTab === 'unread' ? 'All caught up' : 'No notifications'}
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', maxWidth: '260px', marginInline: 'auto', lineHeight: 1.45 }}>
+                    {activeTab === 'unread'
+                      ? 'You have reviewed all your notifications.'
+                      : 'New order updates and messages will appear here.'}
                   </p>
                 </div>
               ) : (
-                notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => !n.isRead && handleMarkRead(n.id)}
-                    style={{
-                      padding: '0.85rem 1rem',
-                      borderBottom: '1px solid #f1f5f9',
-                      background: n.isRead ? '#ffffff' : 'rgba(212, 175, 55, 0.05)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      gap: '0.75rem',
-                      alignItems: 'flex-start',
-                      transition: 'background 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = n.isRead ? '#f8fafc' : 'rgba(212, 175, 55, 0.09)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = n.isRead ? '#ffffff' : 'rgba(212, 175, 55, 0.05)';
-                    }}
-                  >
+                filteredNotifications.map((n) => {
+                  const id = n.id || n._id;
+                  const isRead = !!n.isRead;
+                  return (
                     <div
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '8px',
-                        background: '#061821',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        marginTop: '2px',
-                      }}
+                      key={id}
+                      className={`notification-card ${!isRead ? 'unread' : ''}`}
+                      onClick={() => handleCardClick(n)}
                     >
-                      {getIcon(n.type)}
-                    </div>
+                      <div className="notification-card-top">
+                        {getAvatarBadge(n.type)}
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '0.5rem',
-                        }}
-                      >
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: '0.83rem',
-                            fontWeight: n.isRead ? 600 : 700,
-                            color: '#092330',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {n.title}
-                        </p>
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>
-                          {formatTime(n.createdAt)}
-                        </span>
-                      </div>
+                        <div className="notification-card-content">
+                          <div className="notification-card-header-row">
+                            <span className="notification-card-sender">
+                              {n.senderName || 'Bamas Collections'}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <span className="notification-card-time">{formatTime(n.createdAt)}</span>
+                              {!isRead && (
+                                <span
+                                  style={{
+                                    width: '7px',
+                                    height: '7px',
+                                    borderRadius: '50%',
+                                    background: '#d4af37',
+                                    display: 'inline-block',
+                                  }}
+                                ></span>
+                              )}
+                            </div>
+                          </div>
 
-                      <p
-                        style={{
-                          margin: '0.2rem 0 0',
-                          fontSize: '0.78rem',
-                          color: '#64748b',
-                          lineHeight: '1.35',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {n.message}
-                      </p>
+                          <h4 className="notification-card-title">{n.title}</h4>
+                          <p className="notification-card-message">{n.message}</p>
 
-                      <div
-                        style={{
-                          marginTop: '0.35rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <span style={{ fontSize: '0.68rem', color: '#d4af37', fontWeight: 600 }}>
-                          {n.senderName || 'Bamas Collections'}
-                        </span>
-                        {!n.isRead && (
-                          <span
-                            style={{
-                              width: '7px',
-                              height: '7px',
-                              borderRadius: '50%',
-                              background: '#d4af37',
-                            }}
-                          ></span>
-                        )}
+                          <div className="notification-card-footer">
+                            {n.targetUrl ? (
+                              <span className="notification-card-link">
+                                View details <ChevronRight size={13} />
+                              </span>
+                            ) : (
+                              <span></span>
+                            )}
+
+                            {!isRead && (
+                              <button
+                                type="button"
+                                className="notification-mark-read-btn"
+                                onClick={(e) => handleMarkRead(id, e)}
+                              >
+                                <Check size={12} /> Mark read
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
+
+          {/* Desktop Footer Link */}
+          <div
+            className="hidden md:flex"
+            style={{
+              padding: '0.55rem 1rem',
+              background: '#f8fafc',
+              borderTop: '1px solid #f1f5f9',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.74rem',
+              color: '#64748b',
+            }}
+          >
+            <span>Live updates active</span>
+            <Link
+              to="/notifications"
+              onClick={() => setOpen(false)}
+              style={{
+                color: '#092330',
+                fontWeight: 600,
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+              }}
+            >
+              Full Page View <ExternalLink size={12} />
+            </Link>
+          </div>
         </div>
       )}
     </div>

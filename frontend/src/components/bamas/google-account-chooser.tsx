@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { UserRound, LoaderCircle, X, ChevronDown, ArrowRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import bamasLogo from '@/assets/bamas-logo.jpg';
+import { validateEmail } from '@/lib/validation';
 
 interface GoogleAccountChooserProps {
   open: boolean;
@@ -24,6 +25,9 @@ export function GoogleAccountChooser({
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customEmail, setCustomEmail] = useState('');
   const [customName, setCustomName] = useState('');
+  const [customTouched, setCustomTouched] = useState(false);
+
+  const customEmailVal = validateEmail(customEmail);
 
   if (!open) return null;
 
@@ -191,19 +195,30 @@ export function GoogleAccountChooser({
                     }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#c4c7c5' }}>
-                        Your Google Account email:
-                      </span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#c4c7c5' }}>
+                          Your Google Account email:
+                        </span>
+                        {customTouched && customEmailVal.valid && (
+                          <span style={{ fontSize: '0.7rem', color: '#34a853', fontWeight: 600 }}>✓ Valid Google Email</span>
+                        )}
+                      </div>
                       <input
                         type="email"
                         required
                         autoFocus
                         placeholder="example@gmail.com"
                         value={customEmail}
-                        onChange={(e) => setCustomEmail(e.target.value)}
+                        onBlur={() => setCustomTouched(true)}
+                        onChange={(e) => {
+                          setCustomEmail(e.target.value);
+                          if (!customTouched) setCustomTouched(true);
+                        }}
                         style={{
                           background: '#28292a',
-                          border: '1px solid #444746',
+                          border: customTouched
+                            ? (!customEmailVal.valid ? '1.5px solid #ea4335' : '1.5px solid #34a853')
+                            : '1px solid #444746',
                           color: '#e3e3e3',
                           borderRadius: '6px',
                           padding: '8px 12px',
@@ -211,6 +226,11 @@ export function GoogleAccountChooser({
                           outline: 'none',
                         }}
                       />
+                      {customTouched && !customEmailVal.valid && (
+                        <span style={{ fontSize: '0.7rem', color: '#ea4335' }}>
+                          {customEmailVal.error}
+                        </span>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.2rem' }}>
                       <button

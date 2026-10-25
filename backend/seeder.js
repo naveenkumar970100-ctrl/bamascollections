@@ -58,14 +58,13 @@ const importData = async () => {
   try {
     await connectDB();
 
-    // Clear existing collection data
+    // Reset seed users, orders, inquiries and site config (Preserve all admin-created products in DB)
     await Order.deleteMany();
-    await Product.deleteMany();
     await User.deleteMany();
     await Inquiry.deleteMany();
     await SiteConfig.deleteMany();
 
-    console.log('[Seeder]: Cleared existing database records.');
+    console.log('[Seeder]: Refreshed admin auth and site config (products in database preserved).');
 
     // Seed brand and logo metadata in MongoDB Atlas
     const logoDataUri = getBase64DataUri('bamas-logo.jpg');
@@ -115,47 +114,14 @@ const importData = async () => {
       },
     ]);
 
-    console.log(`[Seeder]: Created ${createdUsers.length} seed users (Admin & Customer).`);
+    console.log(`[Seeder]: Created ${createdUsers.length} seed user(s) (Admin & Customer).`);
 
-    // Attach base64 images to products
-    const slugToFile = {
-      emerald: 'saree-hero.jpg',
-      rose: 'rose-saree.jpg',
-      ivory: 'ivory-saree.jpg',
-      wine: 'wine-saree.jpg',
-      sapphire: 'sapphire-saree.jpg',
-      'maroon-bridal': 'maroon-saree.jpg',
-      tissue: 'tissue-saree.jpg',
-      lavender: 'lavender-saree.jpg',
-    };
+    // Seed ONLY the authentic old collections in MongoDB
+    await Product.deleteMany();
+    const insertedProducts = await Product.insertMany(products);
+    console.log(`[Seeder]: Seeded ${insertedProducts.length} authentic Bamas old collections in MongoDB Atlas.`);
 
-    const productsWithImages = products.map((prod) => {
-      const fileName = slugToFile[prod.slug];
-      const dataUri = fileName ? getBase64DataUri(fileName) : null;
-      return {
-        ...prod,
-        image: dataUri || prod.image,
-        images: dataUri ? [dataUri] : prod.images,
-      };
-    });
-
-    // Insert products
-    const insertedProducts = await Product.insertMany(productsWithImages);
-    console.log(`[Seeder]: Successfully inserted ${insertedProducts.length} Bamas Collection sarees with images in MongoDB!`);
-
-    // Create sample inquiry
-    await Inquiry.create({
-      name: 'Priya Sharma',
-      email: 'priya@example.com',
-      phone: '+91 99887 76655',
-      subject: 'Custom Bridal Blouse Matching',
-      message: 'I adore The Emerald Edit saree! Can this be paired with a contrast magenta unstitched blouse piece?',
-      sareeInterest: 'The Emerald Edit',
-      status: 'New',
-    });
-
-    console.log('[Seeder]: Sample inquiry created.');
-    console.log('✅ [Seeder Complete]: All initial data imported to MongoDB Atlas!');
+    console.log('✅ [Seeder Complete]: Old collections and Admin account ready in MongoDB Atlas!');
     process.exit(0);
   } catch (error) {
     console.error(`❌ [Seeder Failed]: ${error.message}`);

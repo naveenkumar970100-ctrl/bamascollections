@@ -6,8 +6,9 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  createProductReview,
 } from '../controllers/productController.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -17,6 +18,8 @@ router
   .post(protect, admin, createProduct);
 
 router.get('/featured', getFeaturedProducts);
+
+router.route('/:idOrSlug/reviews').post(optionalAuth, createProductReview);
 
 router
   .route('/:idOrSlug')

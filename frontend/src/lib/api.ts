@@ -1,3 +1,5 @@
+import { refreshSocketAuth } from './socket';
+
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api';
 
 /**
@@ -50,6 +52,7 @@ export const api = {
       if (res.data?.token) {
         localStorage.setItem('bamas_token', res.data.token);
         localStorage.setItem('bamas_user', JSON.stringify(res.data));
+        refreshSocketAuth();
       }
       return res;
     },
@@ -62,6 +65,7 @@ export const api = {
       if (res.data?.token) {
         localStorage.setItem('bamas_token', res.data.token);
         localStorage.setItem('bamas_user', JSON.stringify(res.data));
+        refreshSocketAuth();
       }
       return res;
     },
@@ -74,6 +78,7 @@ export const api = {
       if (res.data?.token) {
         localStorage.setItem('bamas_token', res.data.token);
         localStorage.setItem('bamas_user', JSON.stringify(res.data));
+        refreshSocketAuth();
       }
       return res;
     },
@@ -92,6 +97,7 @@ export const api = {
     logout() {
       localStorage.removeItem('bamas_token');
       localStorage.removeItem('bamas_user');
+      refreshSocketAuth();
     },
 
     getCurrentUser() {
@@ -114,6 +120,37 @@ export const api = {
       return apiRequest('/admin/users', { method: 'GET' });
     },
 
+    async createUser(payload: {
+      name: string;
+      email?: string;
+      phone?: string;
+      password: string;
+      role?: 'customer' | 'admin';
+      address?: any;
+    }) {
+      return apiRequest('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async updateUser(
+      id: string,
+      payload: {
+        name?: string;
+        email?: string;
+        phone?: string;
+        role?: 'customer' | 'admin';
+        address?: any;
+        password?: string;
+      }
+    ) {
+      return apiRequest(`/admin/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    },
+
     async updateUserRole(id: string, role: 'customer' | 'admin') {
       return apiRequest(`/admin/users/${id}/role`, {
         method: 'PUT',
@@ -134,6 +171,10 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ status }),
       });
+    },
+
+    async deleteOrder(id: string) {
+      return apiRequest(`/admin/orders/${id}`, { method: 'DELETE' });
     },
 
     async createProduct(productData: any) {
@@ -168,6 +209,21 @@ export const api = {
     async deleteInquiry(id: string) {
       return apiRequest(`/admin/inquiries/${id}`, { method: 'DELETE' });
     },
+
+    async sendInquiryMessage(id: string, payload: { text: string; senderName?: string }) {
+      return apiRequest(`/inquiries/${id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ ...payload, senderRole: 'admin' }),
+      });
+    },
+
+    async getReviews() {
+      return apiRequest('/admin/reviews', { method: 'GET' });
+    },
+
+    async deleteReview(productId: string, reviewId: string) {
+      return apiRequest(`/admin/reviews/${productId}/${reviewId}`, { method: 'DELETE' });
+    },
   },
 
   // Product endpoints
@@ -188,6 +244,22 @@ export const api = {
 
     async getBySlugOrId(idOrSlug: string) {
       return apiRequest(`/products/${idOrSlug}`, { method: 'GET' });
+    },
+
+    async createReview(
+      idOrSlug: string,
+      reviewData: {
+        rating: number;
+        comment: string;
+        images?: string[];
+        name?: string;
+        orderId?: string;
+      }
+    ) {
+      return apiRequest(`/products/${idOrSlug}/reviews`, {
+        method: 'POST',
+        body: JSON.stringify(reviewData),
+      });
     },
   },
 
@@ -220,6 +292,22 @@ export const api = {
       sareeInterest?: string;
     }) {
       return apiRequest('/inquiries', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async getMy(email?: string) {
+      const qs = email ? `?email=${encodeURIComponent(email)}` : '';
+      return apiRequest(`/inquiries/my${qs}`, { method: 'GET' });
+    },
+
+    async getById(id: string) {
+      return apiRequest(`/inquiries/${id}`, { method: 'GET' });
+    },
+
+    async sendMessage(id: string, payload: { text: string; senderName?: string; senderRole?: 'admin' | 'user' }) {
+      return apiRequest(`/inquiries/${id}/messages`, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

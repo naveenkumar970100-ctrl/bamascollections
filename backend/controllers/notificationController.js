@@ -1,6 +1,7 @@
 import Notification from '../models/Notification.js';
 import User from '../models/User.js';
 import { renderSuccess, renderError } from '../views/responseView.js';
+import { emitToAdmins, emitToUser, emitBroadcast } from '../config/socket.js';
 
 /**
  * Internal helper to dispatch system notifications between Admin and User
@@ -16,7 +17,7 @@ export const dispatchNotification = async ({
   targetUrl = '',
 }) => {
   try {
-    return await Notification.create({
+    const notif = await Notification.create({
       recipientRole,
       recipient,
       sender,
@@ -26,6 +27,17 @@ export const dispatchNotification = async ({
       type,
       targetUrl,
     });
+
+    // ⚡ Real-Time WebSocket Emission: deliver instantly
+    if (recipientRole === 'admin') {
+      emitToAdmins('notification:new', notif);
+    } else if (recipientRole === 'all') {
+      emitBroadcast('notification:new', notif);
+    } else if (recipient) {
+      emitToUser(recipient, 'notification:new', notif);
+    }
+
+    return notif;
   } catch (err) {
     console.error('[Notification Dispatch Error]:', err.message);
     return null;
@@ -198,6 +210,15 @@ export const sendCustomNotification = async (req, res, next) => {
       type,
       targetUrl,
     });
+
+    // ⚡ Real-Time WebSocket Emission
+    if (targetRole === 'admin') {
+      emitToAdmins('notification:new', notification);
+    } else if (targetRecipient) {
+      emitToUser(targetRecipient, 'notification:new', notification);
+    } else {
+      emitBroadcast('notification:new', notification);
+    }
 
     return renderSuccess(res, 201, 'Notification sent successfully', notification);
   } catch (error) {

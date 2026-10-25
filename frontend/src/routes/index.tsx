@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, ArrowUpRight, Flower2, Gem, Heart, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Pieces } from '@/components/bamas/pieces';
+import { SareeDetailFullPage } from '@/components/bamas/saree-detail-full-page';
 import { collection } from '@/lib/collection';
 import { pageHead } from '@/lib/page-head';
 import { api } from '@/lib/api';
@@ -62,34 +64,103 @@ function Home() {
 
   const heroImage = configResp?.data?.heroBannerUrl || hero;
 
-  // Prioritize featured and newly added sarees on the homepage
-  const sortedProducts = productsResp?.data && productsResp.data.length > 0
-    ? [...productsResp.data].sort((a: any, b: any) => {
-        if (a.isFeatured && !b.isFeatured) return -1;
-        if (!a.isFeatured && b.isFeatured) return 1;
-        return (new Date(b.createdAt || 0).getTime()) - (new Date(a.createdAt || 0).getTime());
-      })
-    : [];
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [selectedSaree, setSelectedSaree] = useState<any | null>(null);
 
-  const displayItems =
-    sortedProducts.length > 0
-      ? sortedProducts.slice(0, 8).map((p: any) => ({
-          id: p.slug || p.id || p._id,
-          name: p.name,
-          category: p.category,
-          price: p.price,
-          formattedPrice: p.formattedPrice || `₹${(p.price || 0).toLocaleString('en-IN')}`,
-          image:
-            p.image && (p.image.startsWith('http') || p.image.startsWith('data:'))
-              ? p.image
-              : imageMap[p.image] || imageMap[p.slug] || p.image || hero,
-          detail: p.detail || p.description,
-          fabric: p.fabric,
-          color: p.color,
-          position: p.position || '',
-          isFeatured: p.isFeatured,
-        }))
-      : collection;
+  // Prioritize featured and newly added sarees on the homepage
+  const rawProducts =
+    productsResp?.data && productsResp.data.length > 0 ? productsResp.data : collection;
+
+  // Dynamically derive clean categories from live products
+  const homeCategories = [
+    'All',
+    'Silk',
+    'Bridal',
+    'Festive',
+    'Everyday',
+    ...Array.from(
+      new Set(
+        rawProducts
+          .map((p: any) => (p.category ? p.category.trim() : ''))
+          .filter(
+            (c: string) =>
+              c &&
+              c.toLowerCase() !== 'all' &&
+              c.toLowerCase() !== 'test' &&
+              !['Silk', 'Bridal', 'Festive', 'Everyday'].some(
+                (std) => std.toLowerCase() === c.toLowerCase()
+              )
+          )
+      )
+    ),
+  ];
+
+  const filteredRawProducts =
+    activeCategory === 'All'
+      ? rawProducts
+      : rawProducts.filter(
+          (p: any) => (p.category || '').toLowerCase() === activeCategory.toLowerCase()
+        );
+
+  const sortedProducts = [...filteredRawProducts].sort((a: any, b: any) => {
+    if (a.isFeatured && !b.isFeatured) return -1;
+    if (!a.isFeatured && b.isFeatured) return 1;
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+  });
+
+  const displayItems = sortedProducts.slice(0, 8).map((p: any) => {
+    const primaryImg =
+      p.image && (p.image.startsWith('http') || p.image.startsWith('data:'))
+        ? p.image
+        : imageMap[p.image] || imageMap[p.slug] || p.image || hero;
+
+    const rawImages = Array.isArray(p.images) && p.images.length > 0 ? p.images : [primaryImg];
+    const mappedImages = rawImages.map((img: string) =>
+      img && (img.startsWith('http') || img.startsWith('data:')) ? img : imageMap[img] || img
+    );
+
+    const priceNum = typeof p.price === 'number' ? p.price : Number(p.price || 0);
+    const countInStock =
+      typeof p.countInStock === 'number'
+        ? p.countInStock
+        : p.countInStock !== undefined
+        ? Number(p.countInStock)
+        : 10;
+    const inStock = p.inStock !== false && countInStock > 0 && priceNum > 0;
+
+    return {
+      ...p,
+      id: p.slug || p.id || p._id,
+      name: p.name,
+      category: p.category,
+      price: priceNum,
+      countInStock,
+      inStock,
+      formattedPrice: priceNum > 0 ? `₹${priceNum.toLocaleString('en-IN')}` : 'Out of Stock',
+      image: primaryImg,
+      images: mappedImages,
+      detail: p.detail || p.description,
+      fabric: p.fabric,
+      color: p.color,
+      position: p.position || '',
+      isFeatured: p.isFeatured,
+    };
+  });
+
+  // If a specific saree was clicked from the homepage, show the exact details page directly
+  if (selectedSaree) {
+    return (
+      <main>
+        <SareeDetailFullPage
+          saree={selectedSaree}
+          onBack={() => {
+            setSelectedSaree(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      </main>
+    );
+  }
 
   return (
     <main>
@@ -168,7 +239,87 @@ function Home() {
             View collection <ArrowUpRight size={16} />
           </Link>
         </div>
-        <Pieces items={displayItems} />
+
+        {/* Dynamic Collection Category Filter with Side Scroller */}
+        <div style={{ margin: '0.75rem 0 1.5rem', width: '100%', overflow: 'hidden' }}>
+          <div className="category-filter-rail" role="tablist" aria-label="Curated Categories">
+            {homeCategories.map((cat) => {
+              const isSelected = activeCategory === cat;
+              const count =
+                cat === 'All'
+                  ? rawProducts.length
+                  : rawProducts.filter((p: any) => {
+                      const pCat = (p.category || '').toLowerCase();
+                      const qCat = cat.toLowerCase();
+                      return pCat.includes(qCat) || qCat.includes(pCat);
+                    }).length;
+
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSelected}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`category-pill-btn ${isSelected ? 'active' : ''}`}
+                >
+                  {isSelected && <Sparkles size={12} className="category-pill-sparkle" />}
+                  <span>{cat === 'All' ? 'All Curations' : cat}</span>
+                  <span className="category-pill-count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {displayItems.length > 0 ? (
+          <Pieces
+            items={displayItems}
+            onSelectPiece={(s) => {
+              setSelectedSaree(s);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              padding: '3.5rem 1.5rem',
+              textAlign: 'center',
+              background: '#ffffff',
+              borderRadius: '12px',
+              border: '1px solid rgba(212, 175, 55, 0.25)',
+              boxShadow: '0 4px 20px rgba(9, 35, 48, 0.04)',
+            }}
+          >
+            <span className="eyebrow" style={{ color: 'var(--gold)', marginBottom: '0.5rem' }}>
+              Bamas Curated Archive
+            </span>
+            <h3
+              style={{
+                fontSize: '1.85rem',
+                margin: '0.5rem 0',
+                fontFamily: 'Cormorant Garamond, serif',
+                color: 'var(--foreground)',
+              }}
+            >
+              Curating New Heirloom Collections
+            </h3>
+            <p
+              style={{
+                maxWidth: '480px',
+                margin: '0.5rem auto 1.5rem',
+                color: 'var(--muted-foreground)',
+                fontSize: '0.95rem',
+                lineHeight: '1.6',
+              }}
+            >
+              All collections are dynamically maintained in the database. As the administration team adds new saree pieces, they will automatically be unveiled here.
+            </p>
+            <Link to="/products" className="text-link" style={{ fontSize: '0.9rem' }}>
+              Explore Collection Catalog &rarr;
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* Royal Bridal & Festive Spotlight */}

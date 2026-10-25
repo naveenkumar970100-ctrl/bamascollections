@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { pageHead } from '@/lib/page-head';
 import { api } from '@/lib/api';
+import { validateName, validateEmail, validatePhone, validateRequired } from '@/lib/validation';
 import { useCustomer } from '@/components/bamas/auth-context';
 import hero from '@/assets/saree-hero.jpg';
 import maroon from '@/assets/maroon-saree.jpg';
@@ -40,14 +41,22 @@ function ContactPage() {
     email: user?.email || '',
     phone: user?.phone || '',
     sareeInterest: 'Bridal & Heirloom Silks',
-    preferredContact: 'WhatsApp',
+    preferredContact: 'Email',
     subject: '',
     message: '',
   });
 
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submittedInquiry, setSubmittedInquiry] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Real-time validation checks
+  const nameVal = validateName(formData.name, 'Full name');
+  const emailVal = validateEmail(formData.email, true);
+  const phoneVal = validatePhone(formData.phone, false);
+  const messageVal = validateRequired(formData.message, 'Message', 10);
+  const isFormValid = nameVal.valid && emailVal.valid && (!formData.phone || phoneVal.valid) && messageVal.valid;
 
   const sareeInterests = [
     'Bridal & Heirloom Silks',
@@ -63,9 +72,13 @@ function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setTouched({ name: true, email: true, phone: true, message: true });
 
-    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
-      setErrorMessage('Please provide your name, email address, and a message.');
+    if (!isFormValid) {
+      if (!nameVal.valid) setErrorMessage(nameVal.error);
+      else if (!emailVal.valid) setErrorMessage(emailVal.error);
+      else if (formData.phone && !phoneVal.valid) setErrorMessage(phoneVal.error);
+      else if (!messageVal.valid) setErrorMessage(messageVal.error);
       return;
     }
 
@@ -101,15 +114,11 @@ function ContactPage() {
       email: user?.email || '',
       phone: user?.phone || '',
       sareeInterest: 'Bridal & Heirloom Silks',
-      preferredContact: 'WhatsApp',
+      preferredContact: 'Email',
       subject: '',
       message: '',
     });
   };
-
-  const whatsappMessage = encodeURIComponent(
-    `Hello Bamas Collection Concierge,\n\nI am contacting you regarding: ${formData.sareeInterest || 'Handloom Sarees'}.\nName: ${formData.name}\n${formData.message ? `Notes: ${formData.message}` : ''}`
-  );
 
   return (
     <main style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
@@ -188,19 +197,20 @@ function ContactPage() {
       </section>
 
       {/* 4 Luxury Contact Cards */}
+      {/* Luxury Contact Cards */}
       <section style={{ maxWidth: '1280px', margin: '-40px auto 60px', padding: '0 24px', position: 'relative', zIndex: 10 }}>
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: '20px',
           }}
         >
-          {/* Card 1: WhatsApp Concierge */}
+          {/* Card 1: Official Support Mail (Sole Digital Support Option) */}
           <div
             style={{
               background: 'var(--card)',
-              border: '1px solid rgba(212, 175, 55, 0.3)',
+              border: '1.5px solid rgba(212, 175, 55, 0.45)',
               borderRadius: '12px',
               padding: '28px 24px',
               boxShadow: '0 12px 30px rgba(0,0,0,0.06)',
@@ -216,19 +226,19 @@ function ContactPage() {
                   width: '46px',
                   height: '46px',
                   borderRadius: '10px',
-                  background: 'rgba(37, 211, 102, 0.12)',
-                  color: '#25D366',
+                  background: 'rgba(212, 175, 55, 0.15)',
+                  color: 'var(--gold)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: '16px',
                 }}
               >
-                <MessageSquare size={22} />
+                <Mail size={22} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                 <h3 style={{ margin: 0, fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
-                  WhatsApp Concierge
+                  Official Support Mail
                 </h3>
                 <span
                   style={{
@@ -236,38 +246,38 @@ function ContactPage() {
                     width: '8px',
                     height: '8px',
                     borderRadius: '50%',
-                    background: '#25D366',
+                    background: '#22c55e',
                   }}
-                  title="Online now"
+                  title="Active Support Desk"
                 />
               </div>
               <p style={{ margin: '0 0 16px', fontSize: '0.88rem', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-                Direct, live styling support with photos, video drape reveals, and fast assistance.
+                Direct email desk for handloom inquiries, order updates, bespoke bridal styling, and customer assistance.
               </p>
             </div>
             <a
-              href={`https://wa.me/919876543210?text=${whatsappMessage}`}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="mailto:support@bamascollections.com"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                padding: '10px 18px',
+                padding: '11px 18px',
                 borderRadius: '6px',
-                background: '#25D366',
+                background: 'var(--primary)',
                 color: '#ffffff',
                 fontWeight: 600,
-                fontSize: '0.88rem',
+                fontSize: '0.9rem',
                 textDecoration: 'none',
+                border: '1px solid rgba(212, 175, 55, 0.4)',
+                boxShadow: '0 4px 14px rgba(9, 35, 48, 0.2)',
               }}
             >
-              Chat on WhatsApp <ArrowUpRight size={15} />
+              <Mail size={16} /> support@bamascollections.com <ArrowUpRight size={15} />
             </a>
           </div>
 
-          {/* Card 2: Showroom Studio */}
+          {/* Card 2: Heritage Weave Studio */}
           <div
             style={{
               background: 'var(--card)',
@@ -308,59 +318,7 @@ function ContactPage() {
             </div>
           </div>
 
-          {/* Card 3: Email & Support */}
-          <div
-            style={{
-              background: 'var(--card)',
-              border: '1px solid rgba(212, 175, 55, 0.3)',
-              borderRadius: '12px',
-              padding: '28px 24px',
-              boxShadow: '0 12px 30px rgba(0,0,0,0.06)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '10px',
-                  background: 'rgba(11, 32, 31, 0.08)',
-                  color: 'var(--primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '16px',
-                }}
-              >
-                <Mail size={22} />
-              </div>
-              <h3 style={{ margin: '0 0 6px', fontSize: '1.25rem', fontFamily: 'var(--font-display)', fontWeight: 600 }}>
-                Email Desk
-              </h3>
-              <p style={{ margin: '0 0 16px', fontSize: '0.88rem', color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-                For order updates, shipping questions, or bespoke sourcing inquiries.
-              </p>
-            </div>
-            <a
-              href="mailto:concierge@bamascollections.com"
-              style={{
-                color: 'var(--primary)',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              concierge@bamascollections.com <ArrowUpRight size={14} />
-            </a>
-          </div>
-
-          {/* Card 4: Bridal Appointments */}
+          {/* Card 3: Certified Silk Mark */}
           <div
             style={{
               background: 'var(--card)',
@@ -520,9 +478,7 @@ function ContactPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '320px', margin: '0 auto' }}>
                   <a
-                    href={`https://wa.me/919876543210?text=${whatsappMessage}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="mailto:support@bamascollections.com"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -530,14 +486,15 @@ function ContactPage() {
                       gap: '8px',
                       padding: '12px 20px',
                       borderRadius: '6px',
-                      background: '#25D366',
+                      background: 'var(--primary)',
                       color: '#ffffff',
                       fontWeight: 600,
                       fontSize: '0.9rem',
                       textDecoration: 'none',
+                      border: '1px solid rgba(212, 175, 55, 0.4)',
                     }}
                   >
-                    Open WhatsApp Chat <ArrowUpRight size={16} />
+                    <Mail size={16} /> Email Support Team <ArrowUpRight size={16} />
                   </a>
 
                   <Button
@@ -572,85 +529,133 @@ function ContactPage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                   <div>
-                    <label
-                      htmlFor="contact-name"
-                      style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '6px' }}
-                    >
-                      Your Full Name <span style={{ color: 'var(--gold)' }}>*</span>
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label
+                        htmlFor="contact-name"
+                        style={{ fontSize: '0.82rem', fontWeight: 600 }}
+                      >
+                        Your Full Name <span style={{ color: 'var(--gold)' }}>*</span>
+                      </label>
+                      {touched.name && nameVal.valid && (
+                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid</span>
+                      )}
+                    </div>
                     <input
                       id="contact-name"
                       type="text"
                       required
                       placeholder="e.g. Radhika Sharma"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onBlur={() => setTouched((p) => ({ ...p, name: true }))}
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        if (!touched.name) setTouched((p) => ({ ...p, name: true }));
+                      }}
                       style={{
                         width: '100%',
                         padding: '10px 14px',
                         borderRadius: '6px',
-                        border: '1px solid var(--border)',
+                        border: touched.name ? (!nameVal.valid ? '1.5px solid #ef4444' : '1.5px solid #10b981') : '1px solid var(--border)',
+                        boxShadow: touched.name && !nameVal.valid ? '0 0 0 1px #ef4444' : 'none',
                         background: 'var(--background)',
                         color: 'var(--foreground)',
                         fontSize: '0.9rem',
                         boxSizing: 'border-box',
+                        outline: 'none',
                       }}
                     />
+                    {touched.name && !nameVal.valid && (
+                      <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '4px', display: 'block' }}>
+                        {nameVal.error}
+                      </span>
+                    )}
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="contact-email"
-                      style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '6px' }}
-                    >
-                      Email Address <span style={{ color: 'var(--gold)' }}>*</span>
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label
+                        htmlFor="contact-email"
+                        style={{ fontSize: '0.82rem', fontWeight: 600 }}
+                      >
+                        Email Address <span style={{ color: 'var(--gold)' }}>*</span>
+                      </label>
+                      {touched.email && emailVal.valid && (
+                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid</span>
+                      )}
+                    </div>
                     <input
                       id="contact-email"
                       type="email"
                       required
                       placeholder="radhika@example.com"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onBlur={() => setTouched((p) => ({ ...p, email: true }))}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        if (!touched.email) setTouched((p) => ({ ...p, email: true }));
+                      }}
                       style={{
                         width: '100%',
                         padding: '10px 14px',
                         borderRadius: '6px',
-                        border: '1px solid var(--border)',
+                        border: touched.email ? (!emailVal.valid ? '1.5px solid #ef4444' : '1.5px solid #10b981') : '1px solid var(--border)',
+                        boxShadow: touched.email && !emailVal.valid ? '0 0 0 1px #ef4444' : 'none',
                         background: 'var(--background)',
                         color: 'var(--foreground)',
                         fontSize: '0.9rem',
                         boxSizing: 'border-box',
+                        outline: 'none',
                       }}
                     />
+                    {touched.email && !emailVal.valid && (
+                      <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '4px', display: 'block' }}>
+                        {emailVal.error}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                   <div>
-                    <label
-                      htmlFor="contact-phone"
-                      style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '6px' }}
-                    >
-                      Phone / WhatsApp Number
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label
+                        htmlFor="contact-phone"
+                        style={{ fontSize: '0.82rem', fontWeight: 600 }}
+                      >
+                        Phone Number (Optional)
+                      </label>
+                      {touched.phone && formData.phone && phoneVal.valid && (
+                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ 10 Digits</span>
+                      )}
+                    </div>
                     <input
                       id="contact-phone"
                       type="tel"
                       placeholder="+91 98765 43210"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onBlur={() => setTouched((p) => ({ ...p, phone: true }))}
+                      onChange={(e) => {
+                        setFormData({ ...formData, phone: e.target.value });
+                        if (!touched.phone) setTouched((p) => ({ ...p, phone: true }));
+                      }}
                       style={{
                         width: '100%',
                         padding: '10px 14px',
                         borderRadius: '6px',
-                        border: '1px solid var(--border)',
+                        border: touched.phone && formData.phone ? (!phoneVal.valid ? '1.5px solid #ef4444' : '1.5px solid #10b981') : '1px solid var(--border)',
+                        boxShadow: touched.phone && formData.phone && !phoneVal.valid ? '0 0 0 1px #ef4444' : 'none',
                         background: 'var(--background)',
                         color: 'var(--foreground)',
                         fontSize: '0.9rem',
                         boxSizing: 'border-box',
+                        outline: 'none',
                       }}
                     />
+                    {touched.phone && formData.phone && !phoneVal.valid && (
+                      <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '4px', display: 'block' }}>
+                        {phoneVal.error}
+                      </span>
+                    )}
                   </div>
 
                   <div>
@@ -711,61 +716,70 @@ function ContactPage() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="contact-message"
-                    style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '6px' }}
-                  >
-                    Your Message or Saree Requirements <span style={{ color: 'var(--gold)' }}>*</span>
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label
+                      htmlFor="contact-message"
+                      style={{ fontSize: '0.82rem', fontWeight: 600 }}
+                    >
+                      Your Message or Saree Requirements <span style={{ color: 'var(--gold)' }}>*</span>
+                    </label>
+                    {touched.message && messageVal.valid && (
+                      <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Detailed</span>
+                    )}
+                  </div>
                   <textarea
                     id="contact-message"
                     required
                     rows={4}
                     placeholder="Describe your saree preferences, event date, color palette, or any specific weaves you are looking for..."
                     value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    onBlur={() => setTouched((p) => ({ ...p, message: true }))}
+                    onChange={(e) => {
+                      setFormData({ ...formData, message: e.target.value });
+                      if (!touched.message) setTouched((p) => ({ ...p, message: true }));
+                    }}
                     style={{
                       width: '100%',
                       padding: '12px 14px',
                       borderRadius: '6px',
-                      border: '1px solid var(--border)',
+                      border: touched.message ? (!messageVal.valid ? '1.5px solid #ef4444' : '1.5px solid #10b981') : '1px solid var(--border)',
+                      boxShadow: touched.message && !messageVal.valid ? '0 0 0 1px #ef4444' : 'none',
                       background: 'var(--background)',
                       color: 'var(--foreground)',
                       fontSize: '0.9rem',
                       boxSizing: 'border-box',
                       fontFamily: 'inherit',
                       resize: 'vertical',
+                      outline: 'none',
                     }}
                   />
+                  {touched.message && !messageVal.valid && (
+                    <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '4px', display: 'block' }}>
+                      {messageVal.error}
+                    </span>
+                  )}
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '8px' }}>
-                    Preferred Method of Response
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '6px' }}>
+                    Method of Response
                   </label>
-                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    {['WhatsApp', 'Email', 'Phone Call'].map((method) => (
-                      <label
-                        key={method}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '0.86rem',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="preferredContact"
-                          value={method}
-                          checked={formData.preferredContact === method}
-                          onChange={(e) => setFormData({ ...formData, preferredContact: e.target.value })}
-                          style={{ accentColor: 'var(--gold)' }}
-                        />
-                        {method}
-                      </label>
-                    ))}
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 14px',
+                      background: 'rgba(212, 175, 55, 0.08)',
+                      border: '1px solid rgba(212, 175, 55, 0.35)',
+                      borderRadius: '6px',
+                      fontSize: '0.86rem',
+                      color: 'var(--foreground)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <Mail size={16} style={{ color: 'var(--gold)' }} />
+                    <span>Official Support Email (support@bamascollections.com)</span>
                   </div>
                 </div>
 
@@ -891,7 +905,7 @@ function ContactPage() {
                 <div>
                   <h4 style={{ margin: '0 0 4px', fontSize: '0.92rem', fontWeight: 600 }}>Fast Response</h4>
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>
-                    Replies within 2 to 4 hours on WhatsApp and email.
+                    Replies within 2 to 4 hours via official support email.
                   </p>
                 </div>
               </div>
@@ -907,11 +921,11 @@ function ContactPage() {
               </div>
             </div>
 
-            {/* Direct WhatsApp Callout Banner */}
+            {/* Direct Support Mail Callout Banner */}
             <div
               style={{
-                background: 'linear-gradient(135deg, rgba(37, 211, 102, 0.12) 0%, rgba(6, 24, 33, 0.05) 100%)',
-                border: '1px solid rgba(37, 211, 102, 0.35)',
+                background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(6, 24, 33, 0.05) 100%)',
+                border: '1px solid rgba(212, 175, 55, 0.35)',
                 borderRadius: '12px',
                 padding: '20px 24px',
                 display: 'flex',
@@ -921,19 +935,17 @@ function ContactPage() {
               }}
             >
               <div>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#166534', display: 'block' }}>
-                  Need Immediate Assistance?
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--gold)', display: 'block' }}>
+                  Need Direct Support?
                 </span>
                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--foreground)' }}>
-                  WhatsApp: +91 98765 43210
+                  Email: support@bamascollections.com
                 </span>
               </div>
               <a
-                href="https://wa.me/919876543210?text=Hello%20Bamas%20Collection,%20I%20would%20like%20to%20inquire%20about%20your%20sarees."
-                target="_blank"
-                rel="noopener noreferrer"
+                href="mailto:support@bamascollections.com"
                 style={{
-                  background: '#25D366',
+                  background: 'var(--primary)',
                   color: '#ffffff',
                   padding: '8px 16px',
                   borderRadius: '6px',
@@ -944,9 +956,10 @@ function ContactPage() {
                   alignItems: 'center',
                   gap: '6px',
                   flexShrink: 0,
+                  border: '1px solid rgba(212, 175, 55, 0.4)',
                 }}
               >
-                Chat Now <ArrowUpRight size={14} />
+                <Mail size={14} /> Send Email <ArrowUpRight size={14} />
               </a>
             </div>
           </div>
@@ -985,7 +998,7 @@ function ContactPage() {
           {[
             {
               q: 'How do video drape appointments work?',
-              a: 'Once you submit your inquiry or reach out on WhatsApp, our senior stylist will schedule a private 20-minute video call to show you sarees draped on mannequins under natural studio lighting, detail the zari borders, and answer any styling queries.',
+              a: 'Once you submit your inquiry or reach out to our support email desk, our senior stylist will schedule a private 20-minute video call to show you sarees draped on mannequins under natural studio lighting, detail the zari borders, and answer any styling queries.',
             },
             {
               q: 'Are your sarees accompanied by a Silk Mark certificate?',

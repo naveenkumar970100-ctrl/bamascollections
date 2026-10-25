@@ -4,6 +4,7 @@ import { CheckCircle2, LoaderCircle, Send } from 'lucide-react';
 import { pageHead } from '@/lib/page-head';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { validateName, validateEmail, validatePhone, validateRequired } from '@/lib/validation';
 
 export const Route = createFileRoute('/faq')({
   head: () =>
@@ -54,9 +55,27 @@ function FAQ() {
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const nameVal = validateName(name);
+  const emailVal = validateEmail(email);
+  const phoneVal = validatePhone(phone);
+  const msgVal = validateRequired(message, 'Inquiry Message', 10);
+
+  const isFormValid = nameVal.valid && emailVal.valid && phoneVal.valid && msgVal.valid;
 
   async function handleContactSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setTouched({ name: true, email: true, phone: true, message: true });
+
+    if (!isFormValid) {
+      if (!nameVal.valid) { setError(nameVal.error); return; }
+      if (!emailVal.valid) { setError(emailVal.error); return; }
+      if (!phoneVal.valid) { setError(phoneVal.error); return; }
+      if (!msgVal.valid) { setError(msgVal.error); return; }
+      return;
+    }
+
     setBusy(true);
     setError('');
     setSuccess(false);
@@ -75,6 +94,7 @@ function FAQ() {
       setPhone('');
       setSubject('');
       setMessage('');
+      setTouched({});
     } catch (err: any) {
       setError(err.message || 'Failed to submit message. Please try again.');
     } finally {
@@ -122,63 +142,117 @@ function FAQ() {
             style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}
           >
             <div>
-              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: '0.3rem' }}>
-                Full name *
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.85rem' }}>
+                  Full name *
+                </label>
+                {touched.name && nameVal.valid && (
+                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid</span>
+                )}
+              </div>
               <input
                 required
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onBlur={() => setTouched((p) => ({ ...p, name: true }))}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (!touched.name) setTouched((p) => ({ ...p, name: true }));
+                }}
                 placeholder="Your full name"
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.85rem',
                   borderRadius: '0.4rem',
-                  border: '1px solid rgba(255,255,255,0.15)',
+                  border: touched.name
+                    ? (!nameVal.valid ? '1.5px solid #ef4444' : '1.5px solid #10b981')
+                    : '1px solid rgba(255,255,255,0.15)',
+                  boxShadow: touched.name && !nameVal.valid ? '0 0 0 1px #ef4444' : 'none',
                   background: 'rgba(0,0,0,0.2)',
                   color: 'inherit',
+                  outline: 'none',
                 }}
               />
+              {touched.name && !nameVal.valid && (
+                <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '3px', display: 'block' }}>
+                  {nameVal.error}
+                </span>
+              )}
             </div>
 
             <div>
-              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: '0.3rem' }}>
-                Email address *
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.85rem' }}>
+                  Email address *
+                </label>
+                {touched.email && emailVal.valid && (
+                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Email</span>
+                )}
+              </div>
               <input
                 required
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setTouched((p) => ({ ...p, email: true }))}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (!touched.email) setTouched((p) => ({ ...p, email: true }));
+                }}
                 placeholder="you@example.com"
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.85rem',
                   borderRadius: '0.4rem',
-                  border: '1px solid rgba(255,255,255,0.15)',
+                  border: touched.email
+                    ? (!emailVal.valid ? '1.5px solid #ef4444' : '1.5px solid #10b981')
+                    : '1px solid rgba(255,255,255,0.15)',
+                  boxShadow: touched.email && !emailVal.valid ? '0 0 0 1px #ef4444' : 'none',
                   background: 'rgba(0,0,0,0.2)',
                   color: 'inherit',
+                  outline: 'none',
                 }}
               />
+              {touched.email && !emailVal.valid && (
+                <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '3px', display: 'block' }}>
+                  {emailVal.error}
+                </span>
+              )}
             </div>
 
             <div>
-              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: '0.3rem' }}>
-                Phone number
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.85rem' }}>
+                  Phone number
+                </label>
+                {touched.phone && phone && phoneVal.valid && (
+                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Phone</span>
+                )}
+              </div>
               <input
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+91 98765 43210"
+                onBlur={() => setTouched((p) => ({ ...p, phone: true }))}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  if (!touched.phone) setTouched((p) => ({ ...p, phone: true }));
+                }}
+                placeholder="10-digit mobile number"
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.85rem',
                   borderRadius: '0.4rem',
-                  border: '1px solid rgba(255,255,255,0.15)',
+                  border: touched.phone && phone
+                    ? (!phoneVal.valid ? '1.5px solid #ef4444' : '1.5px solid #10b981')
+                    : '1px solid rgba(255,255,255,0.15)',
+                  boxShadow: touched.phone && phone && !phoneVal.valid ? '0 0 0 1px #ef4444' : 'none',
                   background: 'rgba(0,0,0,0.2)',
                   color: 'inherit',
+                  outline: 'none',
                 }}
               />
+              {touched.phone && phone && !phoneVal.valid && (
+                <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '3px', display: 'block' }}>
+                  {phoneVal.error}
+                </span>
+              )}
             </div>
 
             <div>
@@ -201,24 +275,42 @@ function FAQ() {
             </div>
 
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={{ fontSize: '0.85rem', display: 'block', marginBottom: '0.3rem' }}>
-                Your message *
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                <label style={{ fontSize: '0.85rem' }}>
+                  Your message *
+                </label>
+                {touched.message && msgVal.valid && (
+                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Message</span>
+                )}
+              </div>
               <textarea
                 required
                 rows={3}
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="How may our stylists assist your saree selection?"
+                onBlur={() => setTouched((p) => ({ ...p, message: true }))}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  if (!touched.message) setTouched((p) => ({ ...p, message: true }));
+                }}
+                placeholder="How may our stylists assist your saree selection? (minimum 10 characters)"
                 style={{
                   width: '100%',
                   padding: '0.65rem 0.85rem',
                   borderRadius: '0.4rem',
-                  border: '1px solid rgba(255,255,255,0.15)',
+                  border: touched.message
+                    ? (!msgVal.valid ? '1.5px solid #ef4444' : '1.5px solid #10b981')
+                    : '1px solid rgba(255,255,255,0.15)',
+                  boxShadow: touched.message && !msgVal.valid ? '0 0 0 1px #ef4444' : 'none',
                   background: 'rgba(0,0,0,0.2)',
                   color: 'inherit',
+                  outline: 'none',
                 }}
               />
+              {touched.message && !msgVal.valid && (
+                <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '3px', display: 'block' }}>
+                  {msgVal.error}
+                </span>
+              )}
             </div>
 
             {error && (

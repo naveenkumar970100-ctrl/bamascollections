@@ -2,7 +2,7 @@ import User from '../models/User.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Inquiry from '../models/Inquiry.js';
-import { renderSuccess, renderError } from '../views/responseView.js';
+import { renderSuccess, renderError, renderUserView } from '../views/responseView.js';
 
 /**
  * @desc    Get admin dashboard overview stats
@@ -100,6 +100,97 @@ export const getDashboardStats = async (req, res, next) => {
 };
 
 /**
+ * @desc    Create a new customer or admin user directly from Admin Panel
+ * @route   POST /api/admin/users
+ * @access  Private/Admin
+ */
+export const createAdminUser = async (req, res, next) => {
+  try {
+    const { name, email, phone, password, role, address } = req.body;
+    if (!name || (!email && !phone) || !password) {
+      return renderError(res, 400, 'Please provide customer name, password, and email or phone');
+    }
+
+    const cleanEmail = email ? email.toLowerCase().trim() : null;
+    const cleanPhone = phone ? phone.trim() : '';
+
+    const query = [];
+    if (cleanEmail) query.push({ email: cleanEmail });
+    if (cleanPhone) query.push({ phone: cleanPhone });
+    if (query.length > 0) {
+      const existing = await User.findOne({ $or: query });
+      if (existing) {
+        return renderError(res, 400, 'A customer with this email or phone number already exists');
+      }
+    }
+
+    const userEmail = cleanEmail || `${cleanPhone.replace(/[^0-9]/g, '')}@phone.bamascollections.com`;
+    const user = await User.create({
+      name: name.trim(),
+      email: userEmail,
+      phone: cleanPhone,
+      password,
+      role: role === 'admin' ? 'admin' : 'customer',
+      address: address || {},
+      authProvider: cleanEmail ? 'local' : 'phone',
+    });
+
+    const userView = renderUserView(user);
+    return renderSuccess(res, 201, 'Customer account created successfully', userView);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update a customer user profile and credentials (admin only)
+ * @route   PUT /api/admin/users/:id
+ * @access  Private/Admin
+ */
+export const updateAdminUser = async (req, res, next) => {
+  try {
+    const { name, email, phone, role, address, password } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return renderError(res, 404, 'Customer account not found');
+
+    if (name) user.name = name.trim();
+    if (email) {
+      const cleanEmail = email.toLowerCase().trim();
+      const existing = await User.findOne({ email: cleanEmail, _id: { $ne: user._id } });
+      if (existing) {
+        return renderError(res, 400, 'Another account is already registered with this email address');
+      }
+      user.email = cleanEmail;
+    }
+    if (phone !== undefined) user.phone = phone.trim();
+    if (role && ['customer', 'admin'].includes(role)) {
+      if (user.email === 'admin@bamas.com' && role !== 'admin') {
+        return renderError(res, 400, 'Cannot change the role of the primary root administrator account');
+      }
+      user.role = role;
+    }
+    if (address) {
+      user.address = {
+        street: address.street ?? user.address?.street ?? '',
+        city: address.city ?? user.address?.city ?? '',
+        state: address.state ?? user.address?.state ?? '',
+        postalCode: address.postalCode ?? user.address?.postalCode ?? '',
+        country: address.country ?? user.address?.country ?? 'India',
+      };
+    }
+    if (password && password.trim().length >= 6) {
+      user.password = password.trim();
+    }
+
+    await user.save();
+    const userView = renderUserView(user);
+    return renderSuccess(res, 200, 'Customer details updated successfully', userView);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Delete a user (admin only)
  * @route   DELETE /api/admin/users/:id
  * @access  Private/Admin
@@ -107,10 +198,15 @@ export const getDashboardStats = async (req, res, next) => {
 export const deleteUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
-    if (!user) return renderError(res, 404, 'User not found');
-    if (user.role === 'admin') return renderError(res, 400, 'Cannot delete admin account');
+    if (!user) return renderError(res, 404, 'Customer account not found');
+    if (user.email === 'admin@bamas.com') {
+      return renderError(res, 400, 'Cannot delete the primary root administrator account');
+    }
+    if (req.user && req.user._id && user._id.toString() === req.user._id.toString()) {
+      return renderError(res, 400, 'Cannot delete your own active administrator account');
+    }
     await user.deleteOne();
-    return renderSuccess(res, 200, 'User deleted', { id: req.params.id });
+    return renderSuccess(res, 200, 'Customer account deleted successfully', { id: req.params.id });
   } catch (error) {
     next(error);
   }
@@ -127,12 +223,13 @@ export const updateUserRole = async (req, res, next) => {
     if (!['customer', 'admin'].includes(role)) {
       return renderError(res, 400, 'Invalid role');
     }
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { role },
-      { new: true }
-    );
+    const user = await User.findById(req.params.id);
     if (!user) return renderError(res, 404, 'User not found');
+    if (user.email === 'admin@bamas.com' && role !== 'admin') {
+      return renderError(res, 400, 'Cannot change the role of the primary root administrator');
+    }
+    user.role = role;
+    await user.save();
     return renderSuccess(res, 200, 'User role updated', { id: user._id, role: user.role });
   } catch (error) {
     next(error);

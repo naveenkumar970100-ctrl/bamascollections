@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import {
@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import bamasLogo from '@/assets/bamas-logo.jpg';
 import { api } from '@/lib/api';
 import { NotificationBell } from './notification-bell';
+import { ProfileDropdown } from './profile-dropdown';
 import { cart } from '@/lib/cart';
 import { CartDrawer } from './cart-drawer';
 
@@ -37,7 +38,6 @@ const nav = [
 ] as const;
 
 export function SiteHeader() {
-  const [open, setOpen] = useState(false);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [cartCount, setCartCount] = useState(() => cart.getCount());
   const { user } = useCustomer();
@@ -74,8 +74,13 @@ export function SiteHeader() {
     await navigate({ to: '/login', replace: true });
   }
 
+  const routerState = useRouterState();
+  const currentPath = routerState?.location?.pathname?.replace(/\/+$/, '') || '';
+  const isProfilePage = currentPath === '/profile';
+  const isCartPage = currentPath === '/cart';
+
   return (
-    <header className="site-header">
+    <header className={`site-header ${isProfilePage ? 'profile-page-header' : ''} ${isCartPage ? 'cart-page-header' : ''}`}>
       <div className="header-inner">
         <Link to="/" className="wordmark" aria-label="Bamas Collection home">
           <img
@@ -119,15 +124,13 @@ export function SiteHeader() {
               </Link>
             </Button>
           )}
-          {/* Silk Bag (Cart) Toggle Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="header-bag-btn"
-            title="Silk Bag"
-            aria-label={`Silk Bag with ${cartCount} items`}
-            onClick={() => setCartDrawerOpen(true)}
-            style={{ position: 'relative' }}
+          {/* Silk Bag (Cart) Toggle Button - Links directly to full page /cart */}
+          <Link
+            to="/cart"
+            className="header-bag-btn inline-flex items-center justify-center p-2 rounded-full hover:bg-neutral-100 transition-colors"
+            title="Your Silk Bag"
+            aria-label={`Your Silk Bag with ${cartCount} items`}
+            style={{ position: 'relative', color: '#092330', textDecoration: 'none' }}
           >
             <ShoppingBag size={20} />
             {cartCount > 0 && (
@@ -153,53 +156,12 @@ export function SiteHeader() {
                 {cartCount}
               </span>
             )}
-          </Button>
+          </Link>
 
-          <Button asChild variant="ghost" size="icon" title={user ? 'My account' : 'Log in'}>
-            <Link to="/login" aria-label={user ? 'My account' : 'Log in'}>
-              <UserRound />
-            </Link>
-          </Button>
-          {user ? (
-            <Button variant="ghost" size="icon" title="Sign out" onClick={signOut}>
-              <LogOut />
-            </Button>
-          ) : (
-            <Button asChild variant="outline" className="register-link">
-              <Link to="/register">
-                Join Bamas <ArrowUpRight />
-              </Link>
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="mobile-menu-toggle"
-            aria-label={open ? 'Close menu' : 'Open menu'}
-            aria-expanded={open}
-            onClick={() => setOpen(!open)}
-          >
-            {open ? <X /> : <Menu />}
-          </Button>
+          {/* Interactive Patron Profile Dropdown */}
+          <ProfileDropdown />
         </div>
       </div>
-      {open && (
-        <nav className="mobile-nav" aria-label="Mobile navigation">
-          {nav.map((n) => (
-            <Link key={n.to} to={n.to} onClick={() => setOpen(false)}>
-              {n.label}
-            </Link>
-          ))}
-          {user?.role === 'admin' && (
-            <Link to="/admin" onClick={() => setOpen(false)} style={{ color: '#d4af37', fontWeight: 700 }}>
-              👑 Admin Dashboard
-            </Link>
-          )}
-          <Link to="/register" onClick={() => setOpen(false)}>
-            Join Bamas
-          </Link>
-        </nav>
-      )}
 
       {/* Cart Drawer */}
       <CartDrawer
@@ -207,7 +169,7 @@ export function SiteHeader() {
         onClose={() => setCartDrawerOpen(false)}
         onProceedToCheckout={() => {
           setCartDrawerOpen(false);
-          navigate({ to: '/products' });
+          navigate({ to: '/cart' });
         }}
       />
     </header>
@@ -293,6 +255,9 @@ export function SiteFooter() {
               <Link to="/contact">Contact Us</Link>
             </li>
             <li>
+              <Link to="/cart">Your Silk Bag</Link>
+            </li>
+            <li>
               <Link to="/login">My Account</Link>
             </li>
           </ul>
@@ -353,12 +318,15 @@ export function SiteFooter() {
           )}
 
           <a
-            href="https://wa.me/919876543210?text=Hello%20Bamas%20Collection,%20I%20would%20like%20to%20inquire%20about%20your%20handloom%20sarees."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="footer-whatsapp-btn"
+            href="mailto:support@bamascollections.com"
+            className="footer-support-btn"
+            style={{
+              background: 'linear-gradient(135deg, #092330 0%, #163e52 100%)',
+              border: '1px solid rgba(212, 175, 55, 0.45)',
+              color: '#d4af37',
+            }}
           >
-            <span>WhatsApp Concierge</span>
+            <span>Support Mail Desk</span>
             <ArrowUpRight size={14} />
           </a>
         </div>
