@@ -234,6 +234,20 @@ export const updateUserProfile = async (req, res, next) => {
       };
     }
 
+    if (Array.isArray(req.body.addresses)) {
+      user.addresses = req.body.addresses;
+      const defaultAddr = user.addresses.find((a) => a.isDefault) || user.addresses[0];
+      if (defaultAddr) {
+        user.address = {
+          street: defaultAddr.street || user.address?.street || '',
+          city: defaultAddr.city || user.address?.city || '',
+          state: defaultAddr.state || user.address?.state || '',
+          postalCode: defaultAddr.postalCode || defaultAddr.pincode || user.address?.postalCode || '',
+          country: defaultAddr.country || user.address?.country || 'India',
+        };
+      }
+    }
+
     if (req.body.password) {
       user.password = req.body.password;
     }

@@ -87,7 +87,7 @@ export const api = {
       return apiRequest('/auth/profile', { method: 'GET' });
     },
 
-    async updateProfile(payload: { name?: string; phone?: string; address?: any; password?: string }) {
+    async updateProfile(payload: { name?: string; phone?: string; address?: any; addresses?: any[]; password?: string }) {
       return apiRequest('/auth/profile', {
         method: 'PUT',
         body: JSON.stringify(payload),

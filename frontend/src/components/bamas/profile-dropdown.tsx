@@ -398,7 +398,10 @@ export function ProfileDropdown() {
 
                 <button
                   type="button"
-                  onClick={goToFullPage}
+                  onClick={() => {
+                    setOpen(false);
+                    navigate({ to: user ? '/address' : '/login' });
+                  }}
                   style={{
                     width: '100%',
                     display: 'flex',

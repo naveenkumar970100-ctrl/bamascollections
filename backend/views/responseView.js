@@ -29,6 +29,7 @@ export const renderUserView = (user, token = null) => {
     role: user.role,
     phone: user.phone || '',
     address: user.address || {},
+    addresses: user.addresses || [],
     createdAt: user.createdAt,
   };
 

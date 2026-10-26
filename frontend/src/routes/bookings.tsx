@@ -97,8 +97,17 @@ function BookingsPage() {
     };
   }, [user]);
 
+  // Manage body class for removing top nav bar on mobile
+  useEffect(() => {
+    document.body.classList.add('bookings-view-open');
+    return () => {
+      document.body.classList.remove('bookings-view-open');
+    };
+  }, []);
+
   return (
     <div
+      className="bookings-page-container"
       style={{
         minHeight: '100vh',
         background: '#f8fafb',

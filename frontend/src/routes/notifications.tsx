@@ -318,26 +318,28 @@ function NotificationsPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => setShowCompose(!showCompose)}
-            style={{
-              background: '#092330',
-              color: '#ffffff',
-              border: 'none',
-              padding: '0.55rem 1.15rem',
-              borderRadius: '8px',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              transition: 'background 0.15s ease',
-            }}
-          >
-            <Send size={13} />
-            {showCompose ? 'Back to Alerts' : isAdmin ? '+ Broadcast' : '+ Message Concierge'}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowCompose(!showCompose)}
+              style={{
+                background: '#092330',
+                color: '#ffffff',
+                border: 'none',
+                padding: '0.55rem 1.15rem',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'background 0.15s ease',
+              }}
+            >
+              <Send size={13} />
+              {showCompose ? 'Back to Alerts' : '+ Broadcast'}
+            </button>
+          )}
         </div>
 
         {/* Compose Form */}

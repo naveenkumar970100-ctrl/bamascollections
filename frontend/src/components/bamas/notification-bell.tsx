@@ -372,20 +372,6 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
             </div>
           )}
 
-          {/* Concierge Action Strip */}
-          {!showCompose && (
-            <div className="notification-concierge-bar">
-              <span>{isAdmin ? 'Reach all customer portals' : 'Have questions or styling requests?'}</span>
-              <button
-                type="button"
-                className="notification-concierge-btn"
-                onClick={() => setShowCompose(true)}
-              >
-                <Send size={11} />
-                {isAdmin ? 'Broadcast' : 'Message Concierge'}
-              </button>
-            </div>
-          )}
 
           {/* Content: List or Compose */}
           {showCompose ? (

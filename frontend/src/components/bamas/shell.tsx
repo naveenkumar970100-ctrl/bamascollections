@@ -78,9 +78,11 @@ export function SiteHeader() {
   const currentPath = routerState?.location?.pathname?.replace(/\/+$/, '') || '';
   const isProfilePage = currentPath === '/profile';
   const isCartPage = currentPath === '/cart';
+  const isBookingsPage = currentPath === '/bookings';
+  const isAddressPage = currentPath === '/address';
 
   return (
-    <header className={`site-header ${isProfilePage ? 'profile-page-header' : ''} ${isCartPage ? 'cart-page-header' : ''}`}>
+    <header className={`site-header ${isProfilePage ? 'profile-page-header' : ''} ${isCartPage ? 'cart-page-header' : ''} ${isBookingsPage ? 'bookings-page-header' : ''} ${isAddressPage ? 'address-page-header' : ''}`}>
       <div className="header-inner">
         <Link to="/" className="wordmark" aria-label="Bamas Collection home">
           <img
@@ -158,8 +160,10 @@ export function SiteHeader() {
             )}
           </Link>
 
-          {/* Interactive Patron Profile Dropdown */}
-          <ProfileDropdown />
+          {/* Interactive Patron Profile Dropdown - Desktop only */}
+          <div className="header-profile-wrap hidden sm:inline-flex">
+            <ProfileDropdown />
+          </div>
         </div>
       </div>
 
