@@ -528,6 +528,26 @@
   .admin-mobile-bottom-bar {
     display: grid !important;
   }
+  .admin-sidebar {
+    display: none !important;
+    transform: translateX(-100%) !important;
+  }
+  .admin-main-wrap {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Mobile Admin Overview Page Redesign */
+@media (max-width: 767px) {
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem !important;
+  }
+  .admin-saree-overview-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem !important;
+  }
 }
 
 /* Admin Dashboard Layout Transitions */

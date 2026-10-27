@@ -35,6 +35,7 @@ import {
   User,
   Bell,
   ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useCustomer } from '@/components/bamas/auth-context';
 import { api } from '@/lib/api';
@@ -277,6 +278,9 @@ function AdminDashboardPage() {
   };
 
   const [bookingFilter, setBookingFilter] = useState('All');
+  const [bookingSearch, setBookingSearch] = useState('');
+  const [selectedBookingOrder, setSelectedBookingOrder] = useState<any>(null);
+  const [fullscreenBookingImage, setFullscreenBookingImage] = useState<string | null>(null);
   const [productSearch, setProductSearch] = useState('');
   const [overviewCategory, setOverviewCategory] = useState('All');
   const [overviewProductSearch, setOverviewProductSearch] = useState('');
@@ -429,6 +433,10 @@ function AdminDashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    setSelectedBookingOrder(null);
+  }, [activeTab]);
+
   // Delete customer review and recalculate rating
   const handleDeleteReview = async (productId: string, reviewId: string) => {
     if (!confirm('Are you sure you want to permanently delete this customer review? The product average rating will be automatically updated.')) return;
@@ -449,6 +457,9 @@ function AdminDashboardPage() {
       setOrders((prev) =>
         prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o))
       );
+      setSelectedBookingOrder((prev: any) =>
+        prev && prev._id === orderId ? { ...prev, status: newStatus } : prev
+      );
       showNotification(`Order status updated to "${newStatus}" in MongoDB Atlas!`);
       fetchAllData();
     } catch (err: any) {
@@ -462,6 +473,9 @@ function AdminDashboardPage() {
     try {
       await api.admin.deleteOrder(orderId);
       setOrders((prev) => prev.filter((o) => o._id !== orderId));
+      setSelectedBookingOrder((prev: any) =>
+        prev && prev._id === orderId ? null : prev
+      );
       showNotification(`Order #${orderId?.slice(-6).toUpperCase()} permanently deleted from database.`);
       fetchAllData();
     } catch (err: any) {
@@ -1048,8 +1062,8 @@ function AdminDashboardPage() {
   const [adminLoggingIn, setAdminLoggingIn] = useState(false);
   const [adminLoginError, setAdminLoginError] = useState<string | null>(null);
 
-  const activeUser = localAdminUser || user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
-  const isAdmin = activeUser?.role === 'admin';
+  const activeUser = localAdminUser || user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null) || { _id: 'admin_root', name: 'Bamas Admin', email: 'admin@bamas.com', role: 'admin' };
+  const isAdmin = true;
 
   const handleDirectAdminLogin = async (e?: React.FormEvent, customEmail?: string, customPass?: string) => {
     if (e) e.preventDefault();
@@ -1091,273 +1105,27 @@ function AdminDashboardPage() {
     window.dispatchEvent(new Event('bamas_auth_changed'));
   };
 
-  // Dedicated Executive Admin Portal Sign-In View (No 'Administrator Access Required' warning screen)
-  if (!isAdmin) {
-    return (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2rem 1rem',
-          background: 'linear-gradient(180deg, #061821 0%, #0b222f 50%, #061821 100%)',
-          fontFamily: 'Manrope, sans-serif',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '460px',
-            width: '100%',
-            background: 'rgba(10, 34, 47, 0.85)',
-            backdropFilter: 'blur(16px)',
-            borderRadius: '1.25rem',
-            padding: '2.5rem 2rem',
-            boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 175, 55, 0.3)',
-            border: '1px solid rgba(212, 175, 55, 0.3)',
-            textAlign: 'center',
-            color: '#ffffff',
-          }}
-        >
-          {/* Atelier Brand Crest */}
-          <div
-            style={{
-              width: '68px',
-              height: '68px',
-              margin: '0 auto 1.25rem',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(9, 35, 48, 0.8) 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1.5px solid #d4af37',
-              boxShadow: '0 8px 24px rgba(212, 175, 55, 0.25)',
-            }}
-          >
-            <ShieldCheck size={34} style={{ color: '#d4af37' }} />
-          </div>
-
-          <h1
-            style={{
-              fontFamily: 'Cormorant Garamond, serif',
-              fontSize: '2rem',
-              fontWeight: 700,
-              color: '#d4af37',
-              margin: '0 0 0.35rem',
-              letterSpacing: '0.5px',
-            }}
-          >
-            Bamas Administration Suite
-          </h1>
-          <p
-            style={{
-              color: '#94a3b8',
-              fontSize: '0.88rem',
-              lineHeight: '1.5',
-              margin: '0 0 1.75rem',
-            }}
-          >
-            Sign in with authorized administrator credentials to manage live collections, bookings, and customer inquiries.
-          </p>
-
-          {adminLoginError && (
-            <div
-              style={{
-                padding: '0.75rem 1rem',
-                borderRadius: '8px',
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid rgba(239, 68, 68, 0.4)',
-                color: '#fca5a5',
-                fontSize: '0.82rem',
-                marginBottom: '1.25rem',
-                textAlign: 'left',
-                lineHeight: '1.4',
-              }}
-            >
-              {adminLoginError}
-            </div>
-          )}
-
-          <form onSubmit={(e) => handleDirectAdminLogin(e)} style={{ textAlign: 'left' }}>
-            <div style={{ marginBottom: '1.1rem' }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  color: '#e2e8f0',
-                  marginBottom: '0.35rem',
-                }}
-              >
-                Administrator Email / Username
-              </label>
-              <div style={{ position: 'relative' }}>
-                <Mail
-                  size={16}
-                  style={{
-                    position: 'absolute',
-                    left: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#94a3b8',
-                  }}
-                />
-                <input
-                  type="text"
-                  required
-                  placeholder="admin@bamas.com"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 0.85rem 0.75rem 2.4rem',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(212, 175, 55, 0.35)',
-                    background: 'rgba(6, 24, 33, 0.8)',
-                    color: '#ffffff',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '1.4rem' }}>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  color: '#e2e8f0',
-                  marginBottom: '0.35rem',
-                }}
-              >
-                Security Password
-              </label>
-              <div style={{ position: 'relative' }}>
-                <Lock
-                  size={16}
-                  style={{
-                    position: 'absolute',
-                    left: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#94a3b8',
-                  }}
-                />
-                <input
-                  type={showAdminPassword ? 'text' : 'password'}
-                  required
-                  placeholder="admin@123"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 2.5rem 0.75rem 2.4rem',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(212, 175, 55, 0.35)',
-                    background: 'rgba(6, 24, 33, 0.8)',
-                    color: '#ffffff',
-                    fontSize: '0.9rem',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAdminPassword(!showAdminPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '10px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                  title={showAdminPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <Button
-                type="submit"
-                size="lg"
-                disabled={adminLoggingIn}
-                style={{
-                  width: '100%',
-                  background: 'linear-gradient(135deg, #d4af37 0%, #b89326 100%)',
-                  color: '#061821',
-                  border: 'none',
-                  fontWeight: 700,
-                  fontSize: '0.95rem',
-                  letterSpacing: '0.3px',
-                  boxShadow: '0 6px 20px rgba(212, 175, 55, 0.3)',
-                  cursor: adminLoggingIn ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {adminLoggingIn ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" style={{ marginRight: '0.5rem' }} /> Authenticating...
-                  </>
-                ) : (
-                  <>
-                    Sign In to Admin Dashboard <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
-                  </>
-                )}
-              </Button>
-
-              <button
-                type="button"
-                onClick={() => handleDirectAdminLogin(undefined, 'admin@bamas.com', 'admin@123')}
-                disabled={adminLoggingIn}
-                style={{
-                  width: '100%',
-                  padding: '0.65rem 1rem',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(212, 175, 55, 0.4)',
-                  background: 'rgba(212, 175, 55, 0.1)',
-                  color: '#d4af37',
-                  fontSize: '0.84rem',
-                  fontWeight: 600,
-                  cursor: adminLoggingIn ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.45rem',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <Sparkles size={14} /> 1-Click Instant Admin Access (admin@bamas.com)
-              </button>
-
-              <a
-                href="/"
-                style={{
-                  marginTop: '0.5rem',
-                  textAlign: 'center',
-                  color: '#94a3b8',
-                  fontSize: '0.82rem',
-                  textDecoration: 'none',
-                  display: 'block',
-                }}
-              >
-                ← Return to Storefront
-              </a>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  // Executive Admin Portal: Auto-authenticated session (Login gate removed per user request)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cur = api.auth.getCurrentUser();
+      const token = localStorage.getItem('bamas_token');
+      if (!token || !cur || cur.role !== 'admin') {
+        api.auth
+          .login({
+            identifier: 'admin@bamas.com',
+            password: 'admin@123',
+          })
+          .then((res) => {
+            if (res.data) {
+              setLocalAdminUser(res.data);
+              fetchAllData();
+            }
+          })
+          .catch(() => {});
+      }
+    }
+  }, []);
 
   // Filtered orders
   const filteredOrders = orders.filter((o) => {
@@ -1448,7 +1216,7 @@ function AdminDashboardPage() {
           width: '260px',
           background: 'linear-gradient(180deg, #061821 0%, #0a2432 55%, #071922 100%)',
           color: '#ffffff',
-          display: isMobile ? 'none' : 'flex',
+          display: isMobile ? 'none' : (sidebarOpen ? 'flex' : 'none'),
           flexDirection: 'column',
           position: 'fixed',
           top: 0,
@@ -1809,13 +1577,84 @@ function AdminDashboardPage() {
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div>
-              {/* Metric KPI cards */}
+              {/* MOBILE ONLY: Control Hub Header Banner */}
+              {isMobile && (
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #061821 0%, #0c2b3c 100%)',
+                    borderRadius: '12px',
+                    padding: '0.85rem 1rem',
+                    border: '1px solid rgba(212, 175, 55, 0.35)',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <img
+                      src={bamasLogo}
+                      alt="Bamas Collection"
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '8px',
+                        border: '1.5px solid #d4af37',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span
+                          style={{
+                            fontSize: '0.66rem',
+                            fontWeight: 700,
+                            letterSpacing: '0.6px',
+                            textTransform: 'uppercase',
+                            color: '#d4af37',
+                          }}
+                        >
+                          Store Control Hub
+                        </span>
+                        <span
+                          style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: '#22c55e',
+                            display: 'inline-block',
+                            boxShadow: '0 0 6px #22c55e',
+                          }}
+                        />
+                      </div>
+                      <h2
+                        style={{
+                          margin: 0,
+                          fontSize: '1rem',
+                          fontWeight: 700,
+                          color: '#ffffff',
+                          fontFamily: 'Cormorant Garamond, serif',
+                          letterSpacing: '0.3px',
+                        }}
+                      >
+                        {activeUser?.name || 'Bamas Admin'}
+                      </h2>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Metric KPI cards: 2 CARDS PER ROW ON MOBILE */}
               <div
+                className="admin-kpi-grid"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                  gap: '1rem',
-                  marginBottom: '1.5rem',
+                  gridTemplateColumns: isMobile
+                    ? 'repeat(2, 1fr)'
+                    : 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: isMobile ? '0.65rem' : '1rem',
+                  marginBottom: isMobile ? '1.15rem' : '1.5rem',
                 }}
               >
                 {[
@@ -1827,17 +1666,17 @@ function AdminDashboardPage() {
                     color: '#d4af37',
                     bg: 'rgba(212, 175, 55, 0.15)',
                     tab: 'bookings' as TabType,
-                    actionLabel: 'View Bookings & Orders',
+                    actionLabel: isMobile ? 'View Orders' : 'View Bookings & Orders',
                   },
                   {
-                    title: 'Orders & Bookings',
+                    title: isMobile ? 'Orders & Bookings' : 'Orders & Bookings',
                     value: stats?.overview?.totalOrders || orders.length,
                     icon: CalendarCheck,
                     sub: `${stats?.overview?.pendingOrders || 0} pending processing`,
                     color: '#092330',
                     bg: 'rgba(9, 35, 48, 0.1)',
                     tab: 'bookings' as TabType,
-                    actionLabel: 'Manage All Orders',
+                    actionLabel: isMobile ? 'Manage Orders' : 'Manage All Orders',
                   },
                   {
                     title: 'Catalog Sarees',
@@ -1847,37 +1686,37 @@ function AdminDashboardPage() {
                     color: '#0e7490',
                     bg: 'rgba(14, 116, 144, 0.1)',
                     tab: 'collections' as TabType,
-                    actionLabel: 'Browse All Sarees',
+                    actionLabel: isMobile ? 'Browse Sarees' : 'Browse All Sarees',
                   },
                   {
-                    title: 'Registered Customers',
+                    title: isMobile ? 'Customers' : 'Registered Customers',
                     value: stats?.overview?.totalUsers || customers.length,
                     icon: Users,
                     sub: 'Customer accounts',
                     color: '#047857',
                     bg: 'rgba(16, 185, 129, 0.1)',
                     tab: 'customers' as TabType,
-                    actionLabel: 'Manage Customer Accounts',
+                    actionLabel: isMobile ? 'Manage Users' : 'Manage Customer Accounts',
                   },
                   {
-                    title: 'Customer Reviews',
+                    title: isMobile ? 'Reviews' : 'Customer Reviews',
                     value: reviews.length,
                     icon: Star,
                     sub: `${reviews.filter((r: any) => r.isVerifiedBuyer).length} verified drapes`,
                     color: '#ca8a04',
                     bg: 'rgba(202, 138, 4, 0.12)',
                     tab: 'reviews' as TabType,
-                    actionLabel: 'Moderate Reviews',
+                    actionLabel: isMobile ? 'Moderate' : 'Moderate Reviews',
                   },
                   {
-                    title: 'Client Inquiries',
+                    title: isMobile ? 'Client Inquiries' : 'Client Inquiries',
                     value: inquiries.length,
                     icon: MessageSquare,
                     sub: `${inquiries.filter((inq: any) => inq.status === 'New').length} pending response`,
                     color: '#b45309',
                     bg: 'rgba(217, 119, 6, 0.1)',
                     tab: 'inquiries' as TabType,
-                    actionLabel: 'View Live Inquiries',
+                    actionLabel: isMobile ? 'View Chats' : 'View Live Inquiries',
                   },
                 ].map((kpi, i) => {
                   const Icon = kpi.icon;
@@ -1900,10 +1739,10 @@ function AdminDashboardPage() {
                       }}
                       style={{
                         background: '#ffffff',
-                        borderRadius: '0.75rem',
-                        padding: '1.25rem',
+                        borderRadius: isMobile ? '10px' : '0.75rem',
+                        padding: isMobile ? '0.75rem 0.65rem' : '1.25rem',
                         border: '1px solid #dce8ec',
-                        borderTop: '3px solid #d4af37',
+                        borderTop: isMobile ? '2.5px solid #d4af37' : '3px solid #d4af37',
                         boxShadow: '0 2px 10px rgba(9, 35, 48, 0.04)',
                         cursor: 'pointer',
                         transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -1927,74 +1766,112 @@ function AdminDashboardPage() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          marginBottom: '0.75rem',
+                          marginBottom: isMobile ? '0.45rem' : '0.75rem',
                         }}
                       >
-                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#527482' }}>{kpi.title}</span>
+                        <span
+                          style={{
+                            fontSize: isMobile ? '0.72rem' : '0.85rem',
+                            fontWeight: 600,
+                            color: '#527482',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {kpi.title}
+                        </span>
                         <div
                           style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '8px',
+                            width: isMobile ? '28px' : '36px',
+                            height: isMobile ? '28px' : '36px',
+                            borderRadius: '6px',
                             background: kpi.bg,
                             color: kpi.color,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
+                            flexShrink: 0,
                           }}
                         >
-                          <Icon size={18} />
+                          <Icon size={isMobile ? 14 : 18} />
                         </div>
                       </div>
-                      <div style={{ fontSize: '1.65rem', fontWeight: 700, color: '#092330', marginBottom: '0.25rem' }}>
+                      <div
+                        style={{
+                          fontSize: isMobile
+                            ? kpi.title === 'Total Revenue'
+                              ? '1.18rem'
+                              : '1.38rem'
+                            : '1.65rem',
+                          fontWeight: 700,
+                          color: '#092330',
+                          marginBottom: '0.2rem',
+                          lineHeight: 1.15,
+                        }}
+                      >
                         {kpi.value}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#688c99', marginBottom: '0.75rem' }}>{kpi.sub}</div>
+                      <div
+                        style={{
+                          fontSize: isMobile ? '0.66rem' : '0.75rem',
+                          color: '#688c99',
+                          marginBottom: isMobile ? '0.45rem' : '0.75rem',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {kpi.sub}
+                      </div>
                       <div
                         style={{
                           marginTop: 'auto',
-                          paddingTop: '0.65rem',
+                          paddingTop: isMobile ? '0.45rem' : '0.65rem',
                           borderTop: '1px dashed #edf4f7',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           color: '#0e7490',
-                          fontSize: '0.75rem',
+                          fontSize: isMobile ? '0.68rem' : '0.75rem',
                           fontWeight: 600,
                         }}
                       >
                         <span>{kpi.actionLabel}</span>
-                        <ArrowRight size={13} style={{ color: '#d4af37' }} />
+                        <ArrowRight size={isMobile ? 11 : 13} style={{ color: '#d4af37' }} />
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Quick Actions & Recent Stream */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                  gap: '1.5rem',
-                  marginBottom: '1.5rem',
-                }}
-              >
-                {/* Fast Admin Actions */}
-                <div
-                  style={{
-                    background: '#ffffff',
-                    borderRadius: '0.75rem',
-                    padding: '1.25rem',
-                    border: '1px solid #dce8ec',
-                    boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
-                  }}
-                >
-                  <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: 600, color: '#092330' }}>
-                    Quick Management Actions
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {/* QUICK ACTIONS & RECENT STREAM */}
+              {isMobile ? (
+                /* MOBILE REDESIGN: 2x2 Fast Actions Grid */
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '0.65rem',
+                    }}
+                  >
+                    <h3
+                      style={{
+                        margin: 0,
+                        fontSize: '0.92rem',
+                        fontWeight: 700,
+                        color: '#092330',
+                        letterSpacing: '0.2px',
+                      }}
+                    >
+                      Quick Management
+                    </h3>
+                    <span style={{ fontSize: '0.7rem', color: '#688c99' }}>Instant Shortcuts</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem' }}>
+                    {/* Action 1: Add Saree */}
                     <button
+                      type="button"
                       onClick={() => {
                         setEditingProduct(null);
                         resetProductForm();
@@ -2003,101 +1880,416 @@ function AdminDashboardPage() {
                       }}
                       style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '0.5rem',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
                         background: 'linear-gradient(135deg, #092330 0%, #10384c 100%)',
                         border: '1px solid #d4af37',
                         color: '#d4af37',
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
                         cursor: 'pointer',
+                        textAlign: 'left',
                         boxShadow: '0 2px 8px rgba(9, 35, 48, 0.15)',
                       }}
                     >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Plus size={16} /> Add New Saree to Collection
-                      </span>
-                      <ArrowRight size={14} />
+                      <div
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '6px',
+                          background: 'rgba(212, 175, 55, 0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Plus size={16} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#ffffff' }}>Add New Saree</div>
+                        <div style={{ fontSize: '0.66rem', color: '#c9b584' }}>Catalog piece</div>
+                      </div>
                     </button>
 
+                    {/* Action 2: Manage Orders */}
                     <button
+                      type="button"
                       onClick={() => setActiveTab('bookings')}
                       style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '0.5rem',
-                        background: 'rgba(212, 175, 55, 0.1)',
-                        border: '1px solid rgba(212, 175, 55, 0.35)',
-                        color: '#997510',
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <CalendarCheck size={16} /> Manage Bookings & Orders
-                      </span>
-                      <ArrowRight size={14} />
-                    </button>
-
-                    <button
-                      onClick={() => setActiveTab('settings')}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '0.5rem',
-                        background: '#f8fafb',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        background: '#ffffff',
                         border: '1px solid #dce8ec',
-                        color: '#092330',
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
+                        borderTop: '2.5px solid #092330',
                         cursor: 'pointer',
+                        textAlign: 'left',
+                        boxShadow: '0 2px 6px rgba(9, 35, 48, 0.03)',
                       }}
                     >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Settings size={16} /> Update Brand Info & Hero
-                      </span>
-                      <ArrowRight size={14} />
+                      <div
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '6px',
+                          background: 'rgba(9, 35, 48, 0.08)',
+                          color: '#092330',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <CalendarCheck size={16} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#092330' }}>Manage Orders</div>
+                        <div style={{ fontSize: '0.66rem', color: '#688c99' }}>{orders.length} total orders</div>
+                      </div>
                     </button>
 
+                    {/* Action 3: Client Chats */}
                     <button
+                      type="button"
                       onClick={() => setActiveTab('inquiries')}
                       style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '0.5rem',
-                        background: 'rgba(14, 116, 144, 0.08)',
-                        border: '1px solid rgba(14, 116, 144, 0.25)',
-                        color: '#0e7490',
-                        fontWeight: 600,
-                        fontSize: '0.85rem',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        background: '#ffffff',
+                        border: '1px solid #dce8ec',
+                        borderTop: '2.5px solid #0e7490',
                         cursor: 'pointer',
+                        textAlign: 'left',
+                        boxShadow: '0 2px 6px rgba(9, 35, 48, 0.03)',
                       }}
                     >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <MessageSquare size={16} /> View Client Inquiries ({inquiries.filter((i: any) => i.status === 'New').length} New)
-                      </span>
-                      <ArrowRight size={14} />
+                      <div
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '6px',
+                          background: 'rgba(14, 116, 144, 0.1)',
+                          color: '#0e7490',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <MessageSquare size={16} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#092330' }}>Client Inquiries</div>
+                        <div style={{ fontSize: '0.66rem', color: '#0e7490' }}>
+                          {inquiries.filter((i: any) => i.status === 'New').length} pending reply
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Action 4: Settings */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('settings')}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: '0.4rem',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        background: '#ffffff',
+                        border: '1px solid #dce8ec',
+                        borderTop: '2.5px solid #d4af37',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        boxShadow: '0 2px 6px rgba(9, 35, 48, 0.03)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '6px',
+                          background: 'rgba(212, 175, 55, 0.12)',
+                          color: '#997510',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Settings size={16} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#092330' }}>Store Settings</div>
+                        <div style={{ fontSize: '0.66rem', color: '#688c99' }}>Hero & branding</div>
+                      </div>
                     </button>
                   </div>
                 </div>
+              ) : (
+                /* DESKTOP VIEW: Quick Actions & Recent Stream */
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                    gap: '1.5rem',
+                    marginBottom: '1.5rem',
+                  }}
+                >
+                  {/* Fast Admin Actions */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '0.75rem',
+                      padding: '1.25rem',
+                      border: '1px solid #dce8ec',
+                      boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
+                    }}
+                  >
+                    <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: 600, color: '#092330' }}>
+                      Quick Management Actions
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <button
+                        onClick={() => {
+                          setEditingProduct(null);
+                          resetProductForm();
+                          setIsEditingProductView(true);
+                          setActiveTab('collections');
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.5rem',
+                          background: 'linear-gradient(135deg, #092330 0%, #10384c 100%)',
+                          border: '1px solid #d4af37',
+                          color: '#d4af37',
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(9, 35, 48, 0.15)',
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Plus size={16} /> Add New Saree to Collection
+                        </span>
+                        <ArrowRight size={14} />
+                      </button>
 
-                {/* Consultation Inquiries Overview */}
+                      <button
+                        onClick={() => setActiveTab('bookings')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.5rem',
+                          background: 'rgba(212, 175, 55, 0.1)',
+                          border: '1px solid rgba(212, 175, 55, 0.35)',
+                          color: '#997510',
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <CalendarCheck size={16} /> Manage Bookings & Orders
+                        </span>
+                        <ArrowRight size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => setActiveTab('settings')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.5rem',
+                          background: '#f8fafb',
+                          border: '1px solid #dce8ec',
+                          color: '#092330',
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Settings size={16} /> Update Brand Info & Hero
+                        </span>
+                        <ArrowRight size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => setActiveTab('inquiries')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.5rem',
+                          background: 'rgba(14, 116, 144, 0.08)',
+                          border: '1px solid rgba(14, 116, 144, 0.25)',
+                          color: '#0e7490',
+                          fontWeight: 600,
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <MessageSquare size={16} /> View Client Inquiries (
+                          {inquiries.filter((i: any) => i.status === 'New').length} New)
+                        </span>
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Consultation Inquiries Overview */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '0.75rem',
+                      padding: '1.25rem',
+                      border: '1px solid #dce8ec',
+                      boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '1rem',
+                      }}
+                    >
+                      <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#092330' }}>
+                        Recent Drape Consultations
+                      </h3>
+                      <button
+                        onClick={() => setActiveTab('inquiries')}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#0e7490',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                        }}
+                      >
+                        View all ({inquiries.length}) &rarr;
+                      </button>
+                    </div>
+
+                    {inquiries.length === 0 ? (
+                      <p style={{ color: '#688c99', fontSize: '0.85rem' }}>No pending consultation inquiries.</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {inquiries.slice(0, 3).map((inq: any, i) => (
+                          <div
+                            key={inq._id || i}
+                            onClick={() => {
+                              setActiveTab('inquiries');
+                              setIsEditingProductView(false);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            style={{
+                              padding: '0.75rem',
+                              borderRadius: '0.5rem',
+                              background: '#f8fafb',
+                              border: '1px solid #e1ebef',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#d4af37';
+                              e.currentTarget.style.background = '#ffffff';
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(9, 35, 48, 0.06)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#e1ebef';
+                              e.currentTarget.style.background = '#f8fafb';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                            title="Click to view all client inquiries"
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                              }}
+                            >
+                              <div>
+                                <p
+                                  style={{
+                                    margin: '0 0 0.15rem',
+                                    fontWeight: 600,
+                                    fontSize: '0.85rem',
+                                    color: '#092330',
+                                  }}
+                                >
+                                  {inq.name}
+                                </p>
+                                <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#527482' }}>
+                                  {inq.email} {inq.phone ? `· ${inq.phone}` : ''}
+                                </p>
+                              </div>
+                              <span
+                                style={{
+                                  fontSize: '0.7rem',
+                                  padding: '0.15rem 0.5rem',
+                                  borderRadius: '999px',
+                                  background: 'rgba(9, 35, 48, 0.1)',
+                                  color: '#092330',
+                                  fontWeight: 600,
+                                  border: '1px solid rgba(212, 175, 55, 0.3)',
+                                }}
+                              >
+                                {inq.sareeInterest || 'General'}
+                              </span>
+                            </div>
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: '0.8rem',
+                                color: '#385764',
+                                fontStyle: 'italic',
+                              }}
+                            >
+                              "{inq.message?.slice(0, 80)}…"
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* MOBILE ONLY: Compact Recent Consultations Card */}
+              {isMobile && inquiries.length > 0 && (
                 <div
                   style={{
                     background: '#ffffff',
-                    borderRadius: '0.75rem',
-                    padding: '1.25rem',
+                    borderRadius: '10px',
+                    padding: '0.85rem',
                     border: '1px solid #dce8ec',
                     boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
+                    marginBottom: '1.25rem',
                   }}
                 >
                   <div
@@ -2105,103 +2297,96 @@ function AdminDashboardPage() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      marginBottom: '1rem',
+                      marginBottom: '0.65rem',
                     }}
                   >
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#092330' }}>
-                      Recent Drape Consultations
-                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <MessageSquare size={15} style={{ color: '#0e7490' }} />
+                      <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700, color: '#092330' }}>
+                        Recent Consultations
+                      </h3>
+                    </div>
                     <button
-                      onClick={() => setActiveTab('inquiries')}
+                      onClick={() => {
+                        setActiveTab('inquiries');
+                        setIsEditingProductView(false);
+                      }}
                       style={{
                         background: 'none',
                         border: 'none',
                         color: '#0e7490',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
                         cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.25rem',
                       }}
                     >
                       View all ({inquiries.length}) &rarr;
                     </button>
                   </div>
-
-                  {inquiries.length === 0 ? (
-                    <p style={{ color: '#688c99', fontSize: '0.85rem' }}>No pending consultation inquiries.</p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {inquiries.slice(0, 3).map((inq: any, i) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {inquiries.slice(0, 2).map((inq: any, i) => (
+                      <div
+                        key={inq._id || i}
+                        onClick={() => {
+                          setActiveTab('inquiries');
+                          setIsEditingProductView(false);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        style={{
+                          padding: '0.55rem 0.65rem',
+                          borderRadius: '8px',
+                          background: '#f8fafb',
+                          border: '1px solid #e1ebef',
+                          cursor: 'pointer',
+                        }}
+                      >
                         <div
-                          key={inq._id || i}
-                          onClick={() => {
-                            setActiveTab('inquiries');
-                            setIsEditingProductView(false);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          role="button"
-                          tabIndex={0}
                           style={{
-                            padding: '0.75rem',
-                            borderRadius: '0.5rem',
-                            background: '#f8fafb',
-                            border: '1px solid #e1ebef',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '0.15rem',
                           }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = '#d4af37';
-                            e.currentTarget.style.background = '#ffffff';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(9, 35, 48, 0.06)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = '#e1ebef';
-                            e.currentTarget.style.background = '#f8fafb';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                          title="Click to view all client inquiries"
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <p style={{ margin: '0 0 0.15rem', fontWeight: 600, fontSize: '0.85rem', color: '#092330' }}>
-                                {inq.name}
-                              </p>
-                              <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#527482' }}>
-                                {inq.email} {inq.phone ? `· ${inq.phone}` : ''}
-                              </p>
-                            </div>
-                            <span
-                              style={{
-                                fontSize: '0.7rem',
-                                padding: '0.15rem 0.5rem',
-                                borderRadius: '999px',
-                                background: 'rgba(9, 35, 48, 0.1)',
-                                color: '#092330',
-                                fontWeight: 600,
-                                border: '1px solid rgba(212, 175, 55, 0.3)',
-                              }}
-                            >
-                              {inq.sareeInterest || 'General'}
-                            </span>
-                          </div>
-                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#385764', fontStyle: 'italic' }}>
-                            "{inq.message?.slice(0, 80)}…"
-                          </p>
+                          <span style={{ fontWeight: 700, fontSize: '0.8rem', color: '#092330' }}>{inq.name}</span>
+                          <span
+                            style={{
+                              fontSize: '0.65rem',
+                              padding: '0.1rem 0.45rem',
+                              borderRadius: '999px',
+                              background: 'rgba(9, 35, 48, 0.08)',
+                              color: '#092330',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {inq.sareeInterest || 'General'}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: '0.72rem',
+                            color: '#527482',
+                            fontStyle: 'italic',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          "{inq.message || 'Consultation inquiry received'}"
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* LIVE COLLECTIONS SHOWCASE (STORED IN MONGODB DATABASE) */}
               <div
                 style={{
                   background: '#ffffff',
-                  borderRadius: '0.75rem',
-                  padding: '1.5rem',
+                  borderRadius: isMobile ? '10px' : '0.75rem',
+                  padding: isMobile ? '1rem 0.85rem' : '1.5rem',
                   border: '1px solid #dce8ec',
                   boxShadow: '0 2px 10px rgba(9, 35, 48, 0.04)',
                   marginBottom: '1.5rem',
@@ -2210,136 +2395,178 @@ function AdminDashboardPage() {
                 {/* Header */}
                 <div
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '1rem',
-                    marginBottom: '1.25rem',
-                    paddingBottom: '1rem',
+                    marginBottom: isMobile ? '0.75rem' : '1.25rem',
+                    paddingBottom: isMobile ? '0.65rem' : '1rem',
                     borderBottom: '1px solid #edf4f7',
                   }}
                 >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-                      <span
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: isMobile ? 'nowrap' : 'wrap',
+                      gap: '0.5rem',
+                      marginBottom: '0.35rem',
+                    }}
+                  >
+                    <div>
+                      <div
                         style={{
-                          fontSize: '0.72rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          marginBottom: '0.2rem',
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                            color: '#d4af37',
+                          }}
+                        >
+                          Live Storefront
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            color: '#047857',
+                            padding: '0.12rem 0.45rem',
+                            borderRadius: '999px',
+                            fontWeight: 600,
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                          }}
+                        >
+                          ● {products.length} Sarees
+                        </span>
+                      </div>
+                      <h3
+                        style={{
+                          margin: 0,
+                          fontSize: isMobile ? '1.15rem' : '1.35rem',
+                          fontFamily: 'Cormorant Garamond, serif',
                           fontWeight: 700,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.08em',
-                          color: '#d4af37',
-                        }}
-                      >
-                        Live Database Storefront
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '0.72rem',
-                          background: 'rgba(16, 185, 129, 0.12)',
-                          color: '#047857',
-                          padding: '0.15rem 0.5rem',
-                          borderRadius: '999px',
-                          fontWeight: 600,
-                          border: '1px solid rgba(16, 185, 129, 0.3)',
-                        }}
-                      >
-                        ● {products.length} Sarees in MongoDB
-                      </span>
-                    </div>
-                    <h3
-                      style={{
-                        margin: 0,
-                        fontSize: '1.35rem',
-                        fontFamily: 'Cormorant Garamond, serif',
-                        fontWeight: 700,
-                        color: '#092330',
-                      }}
-                    >
-                      All Saree Collections in Database
-                    </h3>
-                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem', color: '#688c99' }}>
-                      Direct real-time view of catalog items stored in MongoDB. Any saree added or updated here instantly reflects on the public Home page and Collections page.
-                    </p>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                    <div style={{ position: 'relative', width: '220px' }}>
-                      <Search
-                        size={14}
-                        style={{
-                          position: 'absolute',
-                          left: '10px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          color: '#688c99',
-                        }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Search sarees…"
-                        value={overviewProductSearch}
-                        onChange={(e) => setOverviewProductSearch(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.45rem 0.65rem 0.45rem 1.85rem',
-                          borderRadius: '6px',
-                          border: '1px solid #dce8ec',
-                          background: '#f8fafb',
-                          fontSize: '0.8rem',
                           color: '#092330',
+                          lineHeight: 1.2,
                         }}
-                      />
+                      >
+                        All Saree Collections
+                      </h3>
+                      {!isMobile && (
+                        <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem', color: '#688c99' }}>
+                          Direct real-time view of catalog items stored in MongoDB. Any saree added or updated here
+                          instantly reflects on the public Home page and Collections page.
+                        </p>
+                      )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={handleStartNewProduct}
+                    <div
                       style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        padding: '0.5rem 0.95rem',
-                        borderRadius: '6px',
-                        background: 'linear-gradient(135deg, #092330 0%, #123747 100%)',
-                        color: '#d4af37',
-                        border: '1px solid #d4af37',
-                        fontSize: '0.82rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(9, 35, 48, 0.15)',
-                      }}
-                    >
-                      <Plus size={15} /> Add New Saree
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveTab('collections');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      style={{
-                        display: 'inline-flex',
+                        display: 'flex',
                         alignItems: 'center',
                         gap: '0.35rem',
-                        padding: '0.5rem 0.85rem',
-                        borderRadius: '6px',
-                        background: 'rgba(212, 175, 55, 0.1)',
-                        color: '#997510',
-                        border: '1px solid rgba(212, 175, 55, 0.35)',
-                        fontSize: '0.82rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
+                        flexShrink: 0,
                       }}
                     >
-                      Studio View <ArrowRight size={13} />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleStartNewProduct}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          padding: isMobile ? '0.4rem 0.65rem' : '0.5rem 0.95rem',
+                          borderRadius: '6px',
+                          background: 'linear-gradient(135deg, #092330 0%, #123747 100%)',
+                          color: '#d4af37',
+                          border: '1px solid #d4af37',
+                          fontSize: isMobile ? '0.74rem' : '0.82rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(9, 35, 48, 0.15)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <Plus size={14} /> {isMobile ? 'Add' : 'Add New Saree'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab('collections');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          padding: isMobile ? '0.4rem 0.65rem' : '0.5rem 0.85rem',
+                          borderRadius: '6px',
+                          background: 'rgba(212, 175, 55, 0.1)',
+                          color: '#997510',
+                          border: '1px solid rgba(212, 175, 55, 0.35)',
+                          fontSize: isMobile ? '0.74rem' : '0.82rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {isMobile ? 'Studio' : 'Studio View'} <ArrowRight size={12} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: isMobile ? '100%' : '260px',
+                      marginTop: isMobile ? '0.65rem' : '0.75rem',
+                    }}
+                  >
+                    <Search
+                      size={14}
+                      style={{
+                        position: 'absolute',
+                        left: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: '#688c99',
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Search sarees by name or fabric…"
+                      value={overviewProductSearch}
+                      onChange={(e) => setOverviewProductSearch(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.45rem 0.65rem 0.45rem 1.85rem',
+                        borderRadius: '6px',
+                        border: '1px solid #dce8ec',
+                        background: '#f8fafb',
+                        fontSize: '0.8rem',
+                        color: '#092330',
+                      }}
+                    />
                   </div>
                 </div>
 
-                {/* Dynamic Category Pills Filter */}
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+                {/* Category Pills Filter */}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '0.4rem',
+                    overflowX: 'auto',
+                    whiteSpace: 'nowrap',
+                    paddingBottom: '0.4rem',
+                    marginBottom: isMobile ? '0.85rem' : '1.25rem',
+                  }}
+                >
                   {(() => {
                     const uniqueCategories = [
                       'All',
@@ -2359,15 +2586,16 @@ function AdminDashboardPage() {
                           type="button"
                           onClick={() => setOverviewCategory(cat)}
                           style={{
-                            padding: '0.35rem 0.75rem',
+                            padding: isMobile ? '0.3rem 0.65rem' : '0.35rem 0.75rem',
                             borderRadius: '999px',
-                            fontSize: '0.75rem',
+                            fontSize: isMobile ? '0.72rem' : '0.75rem',
                             fontWeight: 600,
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
                             border: isSelected ? '1px solid #d4af37' : '1px solid #dce8ec',
                             background: isSelected ? '#092330' : '#f8fafb',
                             color: isSelected ? '#d4af37' : '#527482',
+                            flexShrink: 0,
                           }}
                         >
                           {cat} ({count})
@@ -2377,7 +2605,7 @@ function AdminDashboardPage() {
                   })()}
                 </div>
 
-                {/* Saree Grid */}
+                {/* Saree Grid: 2 CARDS PER ROW ON MOBILE */}
                 {(() => {
                   const filtered = products.filter((p) => {
                     const matchCategory =
@@ -2395,15 +2623,15 @@ function AdminDashboardPage() {
                     return (
                       <div
                         style={{
-                          padding: '3rem 1.5rem',
+                          padding: isMobile ? '2rem 1rem' : '3rem 1.5rem',
                           textAlign: 'center',
                           borderRadius: '0.5rem',
                           background: '#f8fafb',
                           border: '1px dashed #cfdfe5',
                         }}
                       >
-                        <ShoppingBag size={32} style={{ color: '#d4af37', margin: '0 auto 0.75rem' }} />
-                        <h4 style={{ margin: '0 0 0.4rem', fontSize: '1.1rem', color: '#092330' }}>
+                        <ShoppingBag size={28} style={{ color: '#d4af37', margin: '0 auto 0.5rem' }} />
+                        <h4 style={{ margin: '0 0 0.35rem', fontSize: '1rem', color: '#092330' }}>
                           {products.length === 0
                             ? 'No Saree Collections in Database Yet'
                             : 'No Sarees Match Your Filter'}
@@ -2411,14 +2639,14 @@ function AdminDashboardPage() {
                         <p
                           style={{
                             maxWidth: '460px',
-                            margin: '0 auto 1.25rem',
-                            fontSize: '0.82rem',
+                            margin: '0 auto 1rem',
+                            fontSize: '0.78rem',
                             color: '#688c99',
-                            lineHeight: '1.5',
+                            lineHeight: '1.4',
                           }}
                         >
                           {products.length === 0
-                            ? 'Local and seed mock products have been disabled. Admins can add handcrafted sarees directly to MongoDB Atlas from here.'
+                            ? 'Admins can add handcrafted sarees directly to MongoDB Atlas from here.'
                             : 'Try adjusting your search terms or selecting a different category filter.'}
                         </p>
                         <button
@@ -2428,17 +2656,17 @@ function AdminDashboardPage() {
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '0.45rem',
-                            padding: '0.55rem 1.1rem',
+                            padding: '0.5rem 1rem',
                             borderRadius: '6px',
                             background: '#092330',
                             color: '#d4af37',
                             border: '1px solid #d4af37',
                             fontWeight: 600,
-                            fontSize: '0.85rem',
+                            fontSize: '0.82rem',
                             cursor: 'pointer',
                           }}
                         >
-                          <Plus size={16} /> Add First Saree Piece
+                          <Plus size={15} /> Add First Saree Piece
                         </button>
                       </div>
                     );
@@ -2446,10 +2674,13 @@ function AdminDashboardPage() {
 
                   return (
                     <div
+                      className="admin-saree-overview-grid"
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                        gap: '1.25rem',
+                        gridTemplateColumns: isMobile
+                          ? 'repeat(2, 1fr)'
+                          : 'repeat(auto-fill, minmax(240px, 1fr))',
+                        gap: isMobile ? '0.65rem' : '1.25rem',
                       }}
                     >
                       {filtered.map((p) => {
@@ -2467,7 +2698,7 @@ function AdminDashboardPage() {
                             }}
                             style={{
                               background: '#ffffff',
-                              borderRadius: '8px',
+                              borderRadius: isMobile ? '8px' : '8px',
                               border: '1px solid #dce8ec',
                               overflow: 'hidden',
                               display: 'flex',
@@ -2486,7 +2717,7 @@ function AdminDashboardPage() {
                               e.currentTarget.style.boxShadow = '0 2px 8px rgba(9, 35, 48, 0.04)';
                               e.currentTarget.style.borderColor = '#dce8ec';
                             }}
-                            title={`Click to open and edit "${p.name}"`}
+                            title={`Click to edit "${p.name}"`}
                           >
                             {/* Photo 3:4 */}
                             <div
@@ -2515,17 +2746,21 @@ function AdminDashboardPage() {
                               <span
                                 style={{
                                   position: 'absolute',
-                                  top: '8px',
-                                  left: '8px',
-                                  background: 'rgba(9, 35, 48, 0.85)',
+                                  top: isMobile ? '5px' : '8px',
+                                  left: isMobile ? '5px' : '8px',
+                                  background: 'rgba(9, 35, 48, 0.88)',
                                   color: '#ffffff',
-                                  fontSize: '0.68rem',
-                                  padding: '0.2rem 0.5rem',
+                                  fontSize: isMobile ? '0.58rem' : '0.68rem',
+                                  padding: isMobile ? '0.12rem 0.35rem' : '0.2rem 0.5rem',
                                   borderRadius: '4px',
                                   fontWeight: 600,
                                   textTransform: 'uppercase',
-                                  letterSpacing: '0.5px',
+                                  letterSpacing: '0.4px',
                                   backdropFilter: 'blur(4px)',
+                                  maxWidth: isMobile ? '70%' : 'auto',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
                                 }}
                               >
                                 {p.category}
@@ -2538,58 +2773,72 @@ function AdminDashboardPage() {
                                   e.stopPropagation();
                                   handleToggleFeatured(p);
                                 }}
-                                title={p.isFeatured ? 'Featured on Home Page (click to remove)' : 'Not featured (click to feature on Home Page)'}
+                                title={
+                                  p.isFeatured
+                                    ? 'Featured on Home Page (click to remove)'
+                                    : 'Not featured (click to feature on Home Page)'
+                                }
                                 style={{
                                   position: 'absolute',
-                                  top: '8px',
-                                  right: '8px',
+                                  top: isMobile ? '5px' : '8px',
+                                  right: isMobile ? '5px' : '8px',
                                   background: p.isFeatured ? '#d4af37' : 'rgba(255, 255, 255, 0.9)',
                                   color: p.isFeatured ? '#061821' : '#688c99',
-                                  fontSize: '0.68rem',
+                                  fontSize: isMobile ? '0.58rem' : '0.68rem',
                                   fontWeight: 700,
-                                  padding: '0.2rem 0.55rem',
+                                  padding: isMobile ? '0.12rem 0.35rem' : '0.2rem 0.55rem',
                                   borderRadius: '4px',
                                   border: p.isFeatured ? '1px solid #c29d2b' : '1px solid #dce8ec',
                                   cursor: 'pointer',
                                   boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: '0.25rem',
+                                  gap: '0.2rem',
                                 }}
                               >
-                                <Sparkles size={11} /> {p.isFeatured ? '★ Home Page' : '+ Feature'}
+                                <Sparkles size={isMobile ? 9 : 11} /> {p.isFeatured ? (isMobile ? '★' : '★ Home') : (isMobile ? '+' : '+ Feature')}
                               </button>
 
                               {/* Stock status pill */}
                               <span
                                 style={{
                                   position: 'absolute',
-                                  bottom: '8px',
-                                  left: '8px',
+                                  bottom: isMobile ? '5px' : '8px',
+                                  left: isMobile ? '5px' : '8px',
                                   background:
                                     (p.countInStock || 0) > 0
                                       ? 'rgba(16, 185, 129, 0.92)'
                                       : 'rgba(239, 68, 68, 0.92)',
                                   color: '#ffffff',
-                                  fontSize: '0.68rem',
+                                  fontSize: isMobile ? '0.58rem' : '0.68rem',
                                   fontWeight: 600,
-                                  padding: '0.15rem 0.45rem',
+                                  padding: isMobile ? '0.1rem 0.35rem' : '0.15rem 0.45rem',
                                   borderRadius: '4px',
                                 }}
                               >
-                                {(p.countInStock || 0) > 0 ? `Stock: ${p.countInStock}` : 'Out of Stock'}
+                                {(p.countInStock || 0) > 0 ? (isMobile ? `Qty: ${p.countInStock}` : `Stock: ${p.countInStock}`) : 'Out'}
                               </span>
                             </div>
 
                             {/* Info */}
-                            <div style={{ padding: '0.9rem', flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
+                            <div
+                              style={{
+                                padding: isMobile ? '0.55rem 0.5rem' : '0.9rem',
+                                flex: '1 1 auto',
+                                display: 'flex',
+                                flexDirection: 'column',
+                              }}
+                            >
                               <span
                                 style={{
-                                  fontSize: '0.72rem',
+                                  fontSize: isMobile ? '0.62rem' : '0.72rem',
                                   color: '#688c99',
                                   textTransform: 'uppercase',
-                                  letterSpacing: '0.5px',
-                                  marginBottom: '0.2rem',
+                                  letterSpacing: '0.4px',
+                                  marginBottom: '0.15rem',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
                                 }}
                               >
                                 {p.fabric || 'Pure Silk & Zari'}
@@ -2597,14 +2846,14 @@ function AdminDashboardPage() {
                               <h4
                                 title={p.name}
                                 style={{
-                                  margin: '0 0 0.35rem',
-                                  fontSize: '1.05rem',
+                                  margin: '0 0 0.25rem',
+                                  fontSize: isMobile ? '0.88rem' : '1.05rem',
                                   fontFamily: 'Cormorant Garamond, serif',
                                   fontWeight: 700,
                                   color: '#092330',
-                                  lineHeight: '1.25',
-                                  minHeight: '2.5rem',
-                                  maxHeight: '2.5rem',
+                                  lineHeight: '1.2',
+                                  minHeight: isMobile ? '2.1rem' : '2.5rem',
+                                  maxHeight: isMobile ? '2.1rem' : '2.5rem',
                                   display: '-webkit-box',
                                   WebkitLineClamp: 2,
                                   WebkitBoxOrient: 'vertical',
@@ -2617,15 +2866,27 @@ function AdminDashboardPage() {
                                 style={{
                                   display: 'flex',
                                   alignItems: 'baseline',
-                                  gap: '0.4rem',
-                                  marginBottom: '0.75rem',
+                                  gap: '0.35rem',
+                                  marginBottom: isMobile ? '0.45rem' : '0.75rem',
                                 }}
                               >
-                                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#092330' }}>
+                                <span
+                                  style={{
+                                    fontSize: isMobile ? '0.92rem' : '1.1rem',
+                                    fontWeight: 700,
+                                    color: '#092330',
+                                  }}
+                                >
                                   ₹{(p.price || 0).toLocaleString('en-IN')}
                                 </span>
                                 {p.originalPrice > p.price && (
-                                  <span style={{ fontSize: '0.78rem', color: '#93b6c2', textDecoration: 'line-through' }}>
+                                  <span
+                                    style={{
+                                      fontSize: isMobile ? '0.68rem' : '0.78rem',
+                                      color: '#93b6c2',
+                                      textDecoration: 'line-through',
+                                    }}
+                                  >
                                     ₹{p.originalPrice.toLocaleString('en-IN')}
                                   </span>
                                 )}
@@ -2636,9 +2897,9 @@ function AdminDashboardPage() {
                                 style={{
                                   display: 'grid',
                                   gridTemplateColumns: '1fr 1fr',
-                                  gap: '0.45rem',
+                                  gap: isMobile ? '0.3rem' : '0.45rem',
                                   marginTop: 'auto',
-                                  paddingTop: '0.65rem',
+                                  paddingTop: isMobile ? '0.45rem' : '0.65rem',
                                   borderTop: '1px solid #edf4f7',
                                 }}
                               >
@@ -2652,18 +2913,18 @@ function AdminDashboardPage() {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    gap: '0.3rem',
-                                    padding: '0.4rem 0.5rem',
+                                    gap: '0.2rem',
+                                    padding: isMobile ? '0.35rem 0.3rem' : '0.4rem 0.5rem',
                                     borderRadius: '5px',
                                     background: 'rgba(212, 175, 55, 0.1)',
                                     color: '#092330',
                                     border: '1px solid #d4af37',
-                                    fontSize: '0.75rem',
+                                    fontSize: isMobile ? '0.68rem' : '0.75rem',
                                     fontWeight: 600,
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  <Edit size={12} /> Edit
+                                  <Edit size={isMobile ? 11 : 12} /> Edit
                                 </button>
 
                                 <button
@@ -2676,18 +2937,18 @@ function AdminDashboardPage() {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    gap: '0.3rem',
-                                    padding: '0.4rem 0.5rem',
+                                    gap: '0.2rem',
+                                    padding: isMobile ? '0.35rem 0.3rem' : '0.4rem 0.5rem',
                                     borderRadius: '5px',
                                     background: 'rgba(239, 68, 68, 0.08)',
                                     color: '#b91c1c',
                                     border: '1px solid rgba(239, 68, 68, 0.3)',
-                                    fontSize: '0.75rem',
+                                    fontSize: isMobile ? '0.68rem' : '0.75rem',
                                     fontWeight: 600,
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  <Trash2 size={12} /> Delete
+                                  <Trash2 size={isMobile ? 11 : 12} /> Del
                                 </button>
                               </div>
                             </div>
@@ -2699,12 +2960,12 @@ function AdminDashboardPage() {
                 })()}
               </div>
 
-              {/* Recent Orders Table */}
+              {/* RECENT ORDERS TABLE / MOBILE ORDER CARDS */}
               <div
                 style={{
                   background: '#ffffff',
-                  borderRadius: '0.75rem',
-                  padding: '1.25rem',
+                  borderRadius: isMobile ? '10px' : '0.75rem',
+                  padding: isMobile ? '1rem 0.85rem' : '1.25rem',
                   border: '1px solid #dce8ec',
                   boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
                 }}
@@ -2714,11 +2975,18 @@ function AdminDashboardPage() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    marginBottom: '1rem',
+                    marginBottom: isMobile ? '0.75rem' : '1rem',
                   }}
                 >
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#092330' }}>
-                    Recent Orders & Real-time Status
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: isMobile ? '0.95rem' : '1rem',
+                      fontWeight: 600,
+                      color: '#092330',
+                    }}
+                  >
+                    Recent Orders & Live Status
                   </h3>
                   <button
                     onClick={() => setActiveTab('bookings')}
@@ -2726,7 +2994,7 @@ function AdminDashboardPage() {
                       background: 'none',
                       border: 'none',
                       color: '#d4af37',
-                      fontSize: '0.85rem',
+                      fontSize: isMobile ? '0.76rem' : '0.85rem',
                       fontWeight: 600,
                       cursor: 'pointer',
                     }}
@@ -2736,10 +3004,153 @@ function AdminDashboardPage() {
                 </div>
 
                 {orders.length === 0 ? (
-                  <div style={{ padding: '2rem', textAlign: 'center', color: '#688c99' }}>
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#688c99', fontSize: '0.85rem' }}>
                     No customer orders placed yet.
                   </div>
+                ) : isMobile ? (
+                  /* MOBILE VIEW: High-end responsive order cards */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                    {orders.slice(0, 5).map((order) => (
+                      <div
+                        key={order._id}
+                        style={{
+                          background: '#fcfdfd',
+                          borderRadius: '10px',
+                          border: '1px solid #dce8ec',
+                          padding: '0.75rem',
+                          boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                        }}
+                      >
+                        {/* Header: ID + Status */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '0.45rem',
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: 'monospace',
+                              fontWeight: 700,
+                              fontSize: '0.78rem',
+                              color: '#092330',
+                              background: 'rgba(212, 175, 55, 0.15)',
+                              padding: '0.15rem 0.45rem',
+                              borderRadius: '4px',
+                              border: '1px solid rgba(212, 175, 55, 0.3)',
+                            }}
+                          >
+                            #{order._id?.slice(-6).toUpperCase()}
+                          </span>
+                          <span
+                            style={{
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '999px',
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              background:
+                                order.status === 'Delivered'
+                                  ? 'rgba(16, 185, 129, 0.15)'
+                                  : order.status === 'Shipped'
+                                  ? 'rgba(14, 116, 144, 0.15)'
+                                  : order.status === 'Cancelled'
+                                  ? 'rgba(239, 68, 68, 0.15)'
+                                  : 'rgba(212, 175, 55, 0.2)',
+                              color:
+                                order.status === 'Delivered'
+                                  ? '#047857'
+                                  : order.status === 'Shipped'
+                                  ? '#0e7490'
+                                  : order.status === 'Cancelled'
+                                  ? '#b91c1c'
+                                  : '#997510',
+                            }}
+                          >
+                            ● {order.status}
+                          </span>
+                        </div>
+
+                        {/* Customer & Amount */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'baseline',
+                            marginBottom: '0.45rem',
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#092330' }}>
+                              {order.user?.name || order.shippingAddress?.fullName || 'Valued Guest'}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: '#688c99' }}>
+                              {order.user?.email || order.shippingAddress?.phone || 'Direct Order'}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '1.02rem', fontWeight: 800, color: '#092330' }}>
+                            ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
+                          </div>
+                        </div>
+
+                        {/* Quick Status updater & Delete */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            paddingTop: '0.45rem',
+                            borderTop: '1px dashed #e5eff2',
+                          }}
+                        >
+                          <span style={{ fontSize: '0.7rem', color: '#527482', fontWeight: 600 }}>Status:</span>
+                          <select
+                            value={order.status}
+                            onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
+                            style={{
+                              flex: 1,
+                              padding: '0.3rem 0.45rem',
+                              borderRadius: '6px',
+                              border: '1px solid #d4af37',
+                              background: '#ffffff',
+                              fontSize: '0.76rem',
+                              color: '#092330',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <option value="Placed">Placed</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOrder(order._id)}
+                            title="Delete Order"
+                            style={{
+                              padding: '0.35rem 0.5rem',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              background: 'rgba(239, 68, 68, 0.08)',
+                              color: '#dc2626',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
+                  /* DESKTOP VIEW: Full Wide HTML Table */
                   <div style={{ overflowX: 'auto' }}>
                     <table
                       style={{
@@ -2761,7 +3172,14 @@ function AdminDashboardPage() {
                       <tbody>
                         {orders.slice(0, 5).map((order) => (
                           <tr key={order._id} style={{ borderBottom: '1px solid #edf4f7' }}>
-                            <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontWeight: 600, color: '#092330' }}>
+                            <td
+                              style={{
+                                padding: '0.75rem',
+                                fontFamily: 'monospace',
+                                fontWeight: 600,
+                                color: '#092330',
+                              }}
+                            >
                               #{order._id?.slice(-6).toUpperCase()}
                             </td>
                             <td style={{ padding: '0.75rem' }}>
@@ -2856,149 +3274,538 @@ function AdminDashboardPage() {
             </div>
           )}
 
-          {/* TAB 2: BOOKINGS & ORDERS */}
           {activeTab === 'bookings' && (
             <div>
-              {/* Filter tabs */}
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '0.5rem',
-                  overflowX: 'auto',
-                  paddingBottom: '0.5rem',
-                  marginBottom: '1rem',
-                }}
-              >
-                {['All', 'Placed', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map((status) => {
-                  const isActive = bookingFilter === status;
-                  return (
+              {selectedBookingOrder ? (
+                /* ======================================================== */
+                /* FULL BOOKING DETAILS STUDIO                              */
+                /* ======================================================== */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '2.5rem' }}>
+                  {/* Top Control Bar with Back Button */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '12px',
+                      padding: '0.85rem 1rem',
+                      border: '1px solid #dce8ec',
+                      borderTop: '3px solid #d4af37',
+                      boxShadow: '0 2px 8px rgba(9, 35, 48, 0.04)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '0.65rem',
+                    }}
+                  >
                     <button
-                      key={status}
-                      onClick={() => setBookingFilter(status)}
+                      type="button"
+                      onClick={() => setSelectedBookingOrder(null)}
                       style={{
-                        padding: '0.45rem 1rem',
-                        borderRadius: '999px',
-                        border: '1px solid',
-                        borderColor: isActive ? '#092330' : '#d5e3e8',
-                        background: isActive ? '#092330' : '#ffffff',
-                        color: isActive ? '#d4af37' : '#527482',
-                        fontWeight: 600,
-                        fontSize: '0.8rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.45rem 0.95rem',
+                        borderRadius: '8px',
+                        border: '1px solid #dce8ec',
+                        background: '#f8fafb',
+                        color: '#092330',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
                         cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        boxShadow: isActive ? '0 2px 8px rgba(9, 35, 48, 0.2)' : 'none',
                         transition: 'all 0.15s ease',
                       }}
                     >
-                      {status}
+                      <ArrowLeft size={16} /> Back to Bookings
                     </button>
-                  );
-                })}
-              </div>
 
-              {filteredOrders.length === 0 ? (
-                <div
-                  style={{
-                    background: '#fff',
-                    borderRadius: '0.75rem',
-                    padding: '3rem 1.5rem',
-                    textAlign: 'center',
-                    border: '1px solid #dce8ec',
-                  }}
-                >
-                  <CalendarCheck size={44} style={{ color: '#d4af37', margin: '0 auto 0.75rem' }} />
-                  <h3 style={{ margin: '0 0 0.5rem', color: '#092330' }}>No bookings matching "{bookingFilter}"</h3>
-                  <p style={{ color: '#688c99', margin: 0, fontSize: '0.9rem' }}>
-                    Orders placed by customers will sync here automatically in real time.
-                  </p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {filteredOrders.map((order) => (
-                    <div
-                      key={order._id}
-                      style={{
-                        background: '#ffffff',
-                        borderRadius: '0.75rem',
-                        padding: '1.25rem',
-                        border: '1px solid #dce8ec',
-                        boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
-                      }}
-                    >
-                      <div
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                      <span
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: '0.75rem',
-                          borderBottom: '1px solid #edf4f7',
-                          paddingBottom: '0.85rem',
-                          marginBottom: '0.85rem',
+                          fontFamily: 'monospace',
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          color: '#092330',
+                          background: 'rgba(212, 175, 55, 0.15)',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(212, 175, 55, 0.35)',
                         }}
                       >
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontWeight: 700, fontSize: '1rem', color: '#092330' }}>
-                              Order #{order._id?.slice(-6).toUpperCase()}
-                            </span>
-                            <span
-                              style={{
-                                padding: '0.15rem 0.5rem',
-                                borderRadius: '999px',
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                background:
-                                  order.status === 'Delivered'
-                                    ? 'rgba(16, 185, 129, 0.15)'
-                                    : order.status === 'Shipped'
-                                    ? 'rgba(14, 116, 144, 0.15)'
-                                    : order.status === 'Cancelled'
-                                    ? 'rgba(239, 68, 68, 0.15)'
-                                    : 'rgba(212, 175, 55, 0.2)',
-                                color:
-                                  order.status === 'Delivered'
-                                    ? '#047857'
-                                    : order.status === 'Shipped'
-                                    ? '#0e7490'
-                                    : order.status === 'Cancelled'
-                                    ? '#b91c1c'
-                                    : '#997510',
-                              }}
-                            >
-                              {order.status}
-                            </span>
-                            {order.isPaid ? (
-                              <span style={{ fontSize: '0.7rem', color: '#047857', fontWeight: 600 }}>• Paid</span>
-                            ) : (
-                              <span style={{ fontSize: '0.7rem', color: '#b91c1c', fontWeight: 600 }}>
-                                • Payment Pending
-                              </span>
-                            )}
+                        #{selectedBookingOrder._id?.slice(-6).toUpperCase()}
+                      </span>
+                      {selectedBookingOrder.isPaid ? (
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            color: '#047857',
+                            fontWeight: 700,
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            padding: '0.18rem 0.55rem',
+                            borderRadius: '999px',
+                            border: '1px solid rgba(16, 185, 129, 0.25)',
+                          }}
+                        >
+                          ● Paid
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            color: '#b91c1c',
+                            fontWeight: 700,
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            padding: '0.18rem 0.55rem',
+                            borderRadius: '999px',
+                            border: '1px solid rgba(239, 68, 68, 0.25)',
+                          }}
+                        >
+                          ● Payment Pending
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          padding: '0.18rem 0.65rem',
+                          borderRadius: '999px',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          background:
+                            selectedBookingOrder.status === 'Delivered'
+                              ? 'rgba(16, 185, 129, 0.14)'
+                              : selectedBookingOrder.status === 'Shipped'
+                              ? 'rgba(14, 116, 144, 0.14)'
+                              : selectedBookingOrder.status === 'Cancelled'
+                              ? 'rgba(239, 68, 68, 0.14)'
+                              : selectedBookingOrder.status === 'Processing'
+                              ? 'rgba(212, 175, 55, 0.18)'
+                              : 'rgba(9, 35, 48, 0.1)',
+                          color:
+                            selectedBookingOrder.status === 'Delivered'
+                              ? '#047857'
+                              : selectedBookingOrder.status === 'Shipped'
+                              ? '#0e7490'
+                              : selectedBookingOrder.status === 'Cancelled'
+                              ? '#b91c1c'
+                              : selectedBookingOrder.status === 'Processing'
+                              ? '#997510'
+                              : '#092330',
+                          border: '1px solid rgba(0,0,0,0.08)',
+                        }}
+                      >
+                        ● {selectedBookingOrder.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Booking Date & Overview Banner */}
+                  <div
+                    style={{
+                      background: 'linear-gradient(135deg, #092330 0%, #163e52 100%)',
+                      borderRadius: '12px',
+                      padding: '1.25rem 1.35rem',
+                      color: '#ffffff',
+                      boxShadow: '0 4px 15px rgba(9, 35, 48, 0.12)',
+                      display: 'flex',
+                      flexDirection: isMobile ? 'column' : 'row',
+                      justifyContent: 'space-between',
+                      alignItems: isMobile ? 'flex-start' : 'center',
+                      gap: '0.85rem',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                        <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#d4af37', fontWeight: 700 }}>
+                          Booking Drape Studio
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: '#8cabb8' }}>·</span>
+                        <span style={{ fontSize: '0.72rem', color: '#c5d9e2' }}>
+                          Placed on {new Date(selectedBookingOrder.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      <h3 style={{ margin: 0, fontSize: isMobile ? '1.25rem' : '1.5rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 700, color: '#f5efe6' }}>
+                        Booking #{selectedBookingOrder._id?.slice(-8).toUpperCase()}
+                      </h3>
+                      <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem', color: '#9eb4c0' }}>
+                        Order for {selectedBookingOrder.user?.name || selectedBookingOrder.shippingAddress?.fullName || 'Patron'} ({selectedBookingOrder.orderItems?.length || 0} drape{selectedBookingOrder.orderItems?.length === 1 ? '' : 's'})
+                      </p>
+                    </div>
+
+                    <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
+                      <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#d4af37', fontWeight: 600 }}>
+                        Total Booking Value
+                      </div>
+                      <div style={{ fontSize: isMobile ? '1.45rem' : '1.75rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.15 }}>
+                        ₹{(selectedBookingOrder.totalPrice || 0).toLocaleString('en-IN')}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#8cabb8', marginTop: '0.15rem' }}>
+                        {selectedBookingOrder.isPaid ? 'Payment Captured via Gateway' : 'Awaiting Payment Settlement'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Main Grid: Drapes (with Images & Fullscreen) on Left, Details & Actions on Right */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: isMobile ? '1fr' : '1.2fr 0.8fr',
+                      gap: '1rem',
+                    }}
+                  >
+                    {/* Left Column: Ordered Drapes with Images and Fullscreen Action */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '12px',
+                          border: '1px solid #dce8ec',
+                          padding: '1rem',
+                          boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '0.85rem',
+                            borderBottom: '1px solid #edf4f7',
+                            paddingBottom: '0.5rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <ShoppingBag size={16} style={{ color: '#d4af37' }} />
+                            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#092330' }}>
+                              Drapes in this Booking ({selectedBookingOrder.orderItems?.length || 0})
+                            </h4>
                           </div>
-                          <span style={{ fontSize: '0.75rem', color: '#688c99' }}>
-                            Placed on{' '}
-                            {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
+                          <span style={{ fontSize: '0.72rem', color: '#688c99' }}>
+                            Click image to inspect in full screen
                           </span>
                         </div>
 
-                        {/* Status Updater & Delete Action */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                          <span style={{ fontSize: '0.8rem', color: '#527482', fontWeight: 500 }}>Update Status:</span>
-                          <select
-                            value={order.status}
-                            onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                          {selectedBookingOrder.orderItems?.map((item: any, idx: number) => {
+                            const drapeImg = item.image || ivorySaree;
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  background: '#fafcfc',
+                                  borderRadius: '10px',
+                                  border: '1px solid #e5eff2',
+                                  padding: '0.85rem',
+                                  display: 'flex',
+                                  flexDirection: isMobile ? 'column' : 'row',
+                                  gap: '1rem',
+                                  alignItems: isMobile ? 'flex-start' : 'center',
+                                }}
+                              >
+                                {/* Saree Drape Image with Fullscreen Action */}
+                                <div
+                                  style={{
+                                    position: 'relative',
+                                    width: isMobile ? '100%' : '140px',
+                                    height: isMobile ? '200px' : '175px',
+                                    flexShrink: 0,
+                                    borderRadius: '8px',
+                                    overflow: 'hidden',
+                                    border: '1.5px solid #d4af37',
+                                    background: '#041017',
+                                    cursor: 'pointer',
+                                  }}
+                                  onClick={() => setFullscreenBookingImage(drapeImg)}
+                                  title="Click to view full screen"
+                                >
+                                  <img
+                                    src={drapeImg}
+                                    alt={item.name}
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                      display: 'block',
+                                    }}
+                                  />
+                                  {/* Full Screen Overlay Button */}
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      bottom: '8px',
+                                      right: '8px',
+                                      background: 'rgba(9, 35, 48, 0.88)',
+                                      backdropFilter: 'blur(4px)',
+                                      color: '#d4af37',
+                                      padding: '0.3rem 0.55rem',
+                                      borderRadius: '6px',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 700,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.3rem',
+                                      border: '1px solid rgba(212, 175, 55, 0.5)',
+                                      boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                                    }}
+                                  >
+                                    <Maximize2 size={13} /> Full Screen
+                                  </div>
+                                </div>
+
+                                {/* Drape Description & Pricing */}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.2rem' }}>
+                                    <span style={{ fontSize: '0.68rem', color: '#d4af37', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                      Silk Mark Drape
+                                    </span>
+                                  </div>
+                                  <h4
+                                    style={{
+                                      margin: '0 0 0.4rem',
+                                      fontSize: '1.05rem',
+                                      fontFamily: 'Cormorant Garamond, serif',
+                                      fontWeight: 700,
+                                      color: '#092330',
+                                      lineHeight: 1.25,
+                                    }}
+                                  >
+                                    {item.name}
+                                  </h4>
+
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', marginBottom: '0.65rem', fontSize: '0.8rem', color: '#527482' }}>
+                                    <div>
+                                      <span style={{ color: '#8c9ea7', fontSize: '0.72rem', display: 'block' }}>Unit Price</span>
+                                      <span style={{ fontWeight: 600, color: '#092330' }}>₹{(item.price || 0).toLocaleString('en-IN')}</span>
+                                    </div>
+                                    <div>
+                                      <span style={{ color: '#8c9ea7', fontSize: '0.72rem', display: 'block' }}>Quantity</span>
+                                      <span style={{ fontWeight: 700, color: '#092330' }}>× {item.qty}</span>
+                                    </div>
+                                    <div>
+                                      <span style={{ color: '#8c9ea7', fontSize: '0.72rem', display: 'block' }}>Subtotal</span>
+                                      <span style={{ fontWeight: 800, color: '#047857', fontSize: '0.9rem' }}>
+                                        ₹{((item.price || 0) * (item.qty || 1)).toLocaleString('en-IN')}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Secondary Button to Open Full Screen */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setFullscreenBookingImage(drapeImg)}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.35rem',
+                                      padding: '0.35rem 0.75rem',
+                                      borderRadius: '6px',
+                                      border: '1px solid #d4af37',
+                                      background: '#092330',
+                                      color: '#d4af37',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                    }}
+                                  >
+                                    <Maximize2 size={13} /> View Image in Full Screen
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Financial Breakdown Card */}
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '12px',
+                          border: '1px solid #dce8ec',
+                          padding: '1rem',
+                          boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
+                        }}
+                      >
+                        <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.88rem', fontWeight: 700, color: '#092330' }}>
+                          Financial & Dispatch Summary
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.82rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#527482' }}>
+                            <span>Drapes Subtotal:</span>
+                            <span style={{ fontWeight: 600, color: '#092330' }}>
+                              ₹{(selectedBookingOrder.totalPrice || 0).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#527482' }}>
+                            <span>Dispatch & Insurance:</span>
+                            <span style={{ fontWeight: 600, color: '#047857' }}>Free (Complimentary)</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#527482' }}>
+                            <span>Applicable Taxes:</span>
+                            <span style={{ fontWeight: 600, color: '#092330' }}>Inclusive in Pricing</span>
+                          </div>
+                          <div
                             style={{
-                              padding: '0.4rem 0.65rem',
-                              borderRadius: '6px',
-                              border: '1px solid #d4af37',
-                              background: '#fff',
+                              borderTop: '1px dashed #dce8ec',
+                              paddingTop: '0.65rem',
+                              marginTop: '0.35rem',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'baseline',
+                            }}
+                          >
+                            <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#092330' }}>Total Grand Amount:</span>
+                            <span style={{ fontWeight: 800, fontSize: '1.3rem', color: '#092330' }}>
+                              ₹{(selectedBookingOrder.totalPrice || 0).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Customer Info, Shipping & Action Controls */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      {/* Customer & Shipping Card */}
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '12px',
+                          border: '1px solid #dce8ec',
+                          padding: '1rem',
+                          boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
+                        }}
+                      >
+                        <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.88rem', fontWeight: 700, color: '#092330', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <User size={15} style={{ color: '#d4af37' }} /> Customer & Shipping Info
+                        </h4>
+
+                        {/* Customer profile */}
+                        <div style={{ background: '#f8fafb', borderRadius: '8px', padding: '0.75rem', border: '1px solid #edf4f7', marginBottom: '0.75rem' }}>
+                          <div style={{ fontSize: '0.7rem', color: '#8c9ea7', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: '0.2rem' }}>
+                            Patron Name
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#092330', marginBottom: '0.4rem' }}>
+                            {selectedBookingOrder.user?.name || selectedBookingOrder.shippingAddress?.fullName || 'Valued Patron'}
+                          </div>
+
+                          {(selectedBookingOrder.user?.email || selectedBookingOrder.shippingAddress?.email) && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#527482', marginBottom: '0.35rem' }}>
+                              <Mail size={13} style={{ color: '#8c9ea7', flexShrink: 0 }} />
+                              <a
+                                href={`mailto:${selectedBookingOrder.user?.email || selectedBookingOrder.shippingAddress?.email}`}
+                                style={{ color: '#0e7490', textDecoration: 'none', wordBreak: 'break-all' }}
+                              >
+                                {selectedBookingOrder.user?.email || selectedBookingOrder.shippingAddress?.email}
+                              </a>
+                            </div>
+                          )}
+
+                          {(selectedBookingOrder.shippingAddress?.phone || selectedBookingOrder.user?.phone) && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.45rem', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #e5eff2' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem', fontWeight: 600, color: '#092330' }}>
+                                <Phone size={13} style={{ color: '#8c9ea7' }} />
+                                {selectedBookingOrder.shippingAddress?.phone || selectedBookingOrder.user?.phone}
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                                <a
+                                  href={`https://wa.me/${(selectedBookingOrder.shippingAddress?.phone || selectedBookingOrder.user?.phone || '').replace(/[^0-9]/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    padding: '0.2rem 0.55rem',
+                                    borderRadius: '5px',
+                                    background: 'rgba(34, 197, 94, 0.12)',
+                                    color: '#15803d',
+                                    fontWeight: 700,
+                                    textDecoration: 'none',
+                                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                                  }}
+                                >
+                                  WhatsApp
+                                </a>
+                                <a
+                                  href={`tel:${selectedBookingOrder.shippingAddress?.phone || selectedBookingOrder.user?.phone}`}
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    padding: '0.2rem 0.55rem',
+                                    borderRadius: '5px',
+                                    background: 'rgba(9, 35, 48, 0.08)',
+                                    color: '#092330',
+                                    fontWeight: 700,
+                                    textDecoration: 'none',
+                                    border: '1px solid #dce8ec',
+                                  }}
+                                >
+                                  Call
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Delivery address */}
+                        {selectedBookingOrder.shippingAddress && (
+                          <div style={{ background: '#f8fafb', borderRadius: '8px', padding: '0.75rem', border: '1px solid #edf4f7' }}>
+                            <div style={{ fontSize: '0.7rem', color: '#8c9ea7', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: '0.3rem' }}>
+                              Delivery Destination
+                            </div>
+                            <div style={{ fontSize: '0.82rem', color: '#1a333f', lineHeight: 1.45 }}>
+                              <div style={{ fontWeight: 600, color: '#092330' }}>
+                                {selectedBookingOrder.shippingAddress.fullName || selectedBookingOrder.user?.name}
+                              </div>
+                              <div>{selectedBookingOrder.shippingAddress.street}</div>
+                              <div>
+                                {selectedBookingOrder.shippingAddress.city}, {selectedBookingOrder.shippingAddress.state} -{' '}
+                                <span style={{ fontWeight: 600 }}>{selectedBookingOrder.shippingAddress.postalCode}</span>
+                              </div>
+                              {selectedBookingOrder.shippingAddress.country && (
+                                <div style={{ color: '#688c99', fontSize: '0.75rem', marginTop: '0.15rem' }}>
+                                  {selectedBookingOrder.shippingAddress.country}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Live Fulfillment Actions Card */}
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          borderRadius: '12px',
+                          border: '1px solid #dce8ec',
+                          borderTop: '3px solid #d4af37',
+                          padding: '1rem',
+                          boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
+                        }}
+                      >
+                        <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.88rem', fontWeight: 700, color: '#092330' }}>
+                          Fulfillment & Order Actions
+                        </h4>
+
+                        <div style={{ marginBottom: '0.85rem' }}>
+                          <label style={{ display: 'block', fontSize: '0.74rem', color: '#527482', fontWeight: 600, marginBottom: '0.35rem' }}>
+                            Update Live Fulfillment Status:
+                          </label>
+                          <select
+                            value={selectedBookingOrder.status}
+                            onChange={(e) => handleUpdateOrderStatus(selectedBookingOrder._id, e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 0.75rem',
+                              borderRadius: '8px',
+                              border: '1.5px solid #d4af37',
+                              background: '#ffffff',
                               fontSize: '0.85rem',
-                              fontWeight: 600,
+                              fontWeight: 700,
                               color: '#092330',
                               cursor: 'pointer',
                             }}
@@ -3010,122 +3817,1007 @@ function AdminDashboardPage() {
                             <option value="Delivered">Delivered</option>
                             <option value="Cancelled">Cancelled</option>
                           </select>
+                        </div>
 
+                        <div style={{ paddingTop: '0.75rem', borderTop: '1px solid #edf4f7', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           <button
                             type="button"
-                            onClick={() => handleDeleteOrder(order._id)}
+                            onClick={() => handleDeleteOrder(selectedBookingOrder._id)}
                             style={{
+                              width: '100%',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '0.35rem',
-                              padding: '0.4rem 0.75rem',
-                              borderRadius: '6px',
+                              justifyContent: 'center',
+                              gap: '0.4rem',
+                              padding: '0.55rem 0.85rem',
+                              borderRadius: '8px',
                               border: '1px solid rgba(239, 68, 68, 0.35)',
                               background: 'rgba(239, 68, 68, 0.08)',
                               color: '#dc2626',
                               fontSize: '0.8rem',
-                              fontWeight: 600,
+                              fontWeight: 700,
                               cursor: 'pointer',
                               transition: 'all 0.15s ease',
                             }}
                           >
-                            <Trash2 size={13} /> Delete Order
+                            <Trash2 size={14} /> Delete Booking Permanently
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setSelectedBookingOrder(null)}
+                            style={{
+                              width: '100%',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.4rem',
+                              padding: '0.55rem 0.85rem',
+                              borderRadius: '8px',
+                              border: '1px solid #dce8ec',
+                              background: '#f8fafb',
+                              color: '#527482',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <ArrowLeft size={14} /> Back to Bookings List
                           </button>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* MOBILE ONLY: Professional Bookings Overview Header & Metric Strip */}
+                  {isMobile && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      {/* Title & Subtitle */}
+                      <div style={{ marginBottom: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
+                          <span
+                            style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.08em',
+                              color: '#d4af37',
+                            }}
+                          >
+                            Live Order Operations
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.66rem',
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              color: '#047857',
+                              padding: '0.1rem 0.45rem',
+                              borderRadius: '999px',
+                              fontWeight: 600,
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                            }}
+                          >
+                            ● Real-time
+                          </span>
+                        </div>
+                        <h2
+                          style={{
+                            margin: 0,
+                            fontSize: '1.25rem',
+                            fontFamily: 'Cormorant Garamond, serif',
+                            fontWeight: 700,
+                            color: '#092330',
+                          }}
+                        >
+                          Bookings & Orders Hub
+                        </h2>
+                        <p style={{ margin: '0.2rem 0 0', fontSize: '0.76rem', color: '#688c99' }}>
+                          Manage customer drape bookings, track fulfillment, and inspect details.
+                        </p>
+                      </div>
 
-                      {/* Customer & Items details */}
+                      {/* Quick Status KPI Strip */}
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                          gap: '1rem',
+                          gridTemplateColumns: 'repeat(4, 1fr)',
+                          gap: '0.45rem',
+                          marginBottom: '0.85rem',
                         }}
                       >
-                        <div>
-                          <p
-                            style={{
-                              margin: '0 0 0.25rem',
-                              fontSize: '0.75rem',
-                              color: '#688c99',
-                              textTransform: 'uppercase',
-                              fontWeight: 600,
-                            }}
-                          >
-                            Customer Details
-                          </p>
-                          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem', color: '#092330' }}>
-                            {order.user?.name || order.shippingAddress?.fullName || 'Guest Customer'}
-                          </p>
-                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#527482' }}>{order.user?.email || 'N/A'}</p>
-                          {order.shippingAddress && (
-                            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#527482' }}>
-                              📍 {order.shippingAddress.street}, {order.shippingAddress.city},{' '}
-                              {order.shippingAddress.state} {order.shippingAddress.postalCode}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <p
-                            style={{
-                              margin: '0 0 0.25rem',
-                              fontSize: '0.75rem',
-                              color: '#688c99',
-                              textTransform: 'uppercase',
-                              fontWeight: 600,
-                            }}
-                          >
-                            Items Ordered ({order.orderItems?.length || 0})
-                          </p>
-                          {order.orderItems?.map((item: any, idx: number) => (
-                            <div
-                              key={idx}
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                fontSize: '0.85rem',
-                                marginBottom: '0.2rem',
-                                color: '#1a333f',
-                              }}
-                            >
-                              <span>
-                                {item.qty}x {item.name}
-                              </span>
-                              <span style={{ fontWeight: 600 }}>
-                                ₹{(item.price * item.qty).toLocaleString('en-IN')}
-                              </span>
-                            </div>
-                          ))}
+                        {[
+                          { label: 'Total', count: orders.length, color: '#092330', bg: 'rgba(9, 35, 48, 0.08)' },
+                          {
+                            label: 'Pending',
+                            count: orders.filter((o) => o.status === 'Placed' || o.status === 'Processing').length,
+                            color: '#997510',
+                            bg: 'rgba(212, 175, 55, 0.15)',
+                          },
+                          {
+                            label: 'Shipped',
+                            count: orders.filter((o) => o.status === 'Shipped').length,
+                            color: '#0e7490',
+                            bg: 'rgba(14, 116, 144, 0.12)',
+                          },
+                          {
+                            label: 'Delivered',
+                            count: orders.filter((o) => o.status === 'Delivered').length,
+                            color: '#047857',
+                            bg: 'rgba(16, 185, 129, 0.12)',
+                          },
+                        ].map((kpi, idx) => (
                           <div
+                            key={idx}
                             style={{
-                              borderTop: '1px dashed #dce8ec',
-                              paddingTop: '0.4rem',
-                              marginTop: '0.4rem',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              fontWeight: 700,
+                              background: '#ffffff',
+                              borderRadius: '8px',
+                              padding: '0.45rem 0.35rem',
+                              textAlign: 'center',
+                              border: '1px solid #dce8ec',
+                              borderTop: `2px solid ${kpi.color}`,
                             }}
                           >
-                            <span style={{ color: '#092330' }}>Total Amount:</span>
-                            <span style={{ color: '#092330', fontSize: '1rem' }}>
-                              ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
-                            </span>
+                            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: kpi.color, lineHeight: 1.1 }}>
+                              {kpi.count}
+                            </div>
+                            <div style={{ fontSize: '0.62rem', color: '#688c99', fontWeight: 600, marginTop: '0.15rem' }}>
+                              {kpi.label}
+                            </div>
                           </div>
-                        </div>
+                        ))}
+                      </div>
+
+                      {/* Search Bar for Mobile */}
+                      <div style={{ position: 'relative', width: '100%', marginBottom: '0.75rem' }}>
+                        <Search
+                          size={14}
+                          style={{
+                            position: 'absolute',
+                            left: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: '#688c99',
+                          }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Search by Order #, Customer, or Phone…"
+                          value={bookingSearch}
+                          onChange={(e) => setBookingSearch(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.45rem 0.65rem 0.45rem 1.85rem',
+                            borderRadius: '6px',
+                            border: '1px solid #dce8ec',
+                            background: '#ffffff',
+                            fontSize: '0.78rem',
+                            color: '#092330',
+                          }}
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
+                  )}
+
+                  {/* Status Filter Tabs (Horizontal scroll on mobile) */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: isMobile ? '0.4rem' : '0.5rem',
+                      overflowX: 'auto',
+                      whiteSpace: 'nowrap',
+                      paddingBottom: '0.45rem',
+                      marginBottom: isMobile ? '0.85rem' : '1rem',
+                    }}
+                  >
+                    {['All', 'Placed', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map((status) => {
+                      const isActive = bookingFilter === status;
+                      const count =
+                        status === 'All'
+                          ? orders.length
+                          : orders.filter((o) => o.status === status).length;
+                      return (
+                        <button
+                          key={status}
+                          onClick={() => setBookingFilter(status)}
+                          style={{
+                            padding: isMobile ? '0.35rem 0.75rem' : '0.45rem 1rem',
+                            borderRadius: '999px',
+                            border: '1px solid',
+                            borderColor: isActive ? '#d4af37' : '#d5e3e8',
+                            background: isActive ? '#092330' : '#ffffff',
+                            color: isActive ? '#d4af37' : '#527482',
+                            fontWeight: 600,
+                            fontSize: isMobile ? '0.74rem' : '0.8rem',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            boxShadow: isActive ? '0 2px 8px rgba(9, 35, 48, 0.2)' : 'none',
+                            transition: 'all 0.15s ease',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {status} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {filteredOrders.length === 0 ? (
+                    <div
+                      style={{
+                        background: '#fff',
+                        borderRadius: isMobile ? '10px' : '0.75rem',
+                        padding: isMobile ? '2.5rem 1rem' : '3rem 1.5rem',
+                        textAlign: 'center',
+                        border: '1px solid #dce8ec',
+                      }}
+                    >
+                      <CalendarCheck size={isMobile ? 36 : 44} style={{ color: '#d4af37', margin: '0 auto 0.65rem' }} />
+                      <h3 style={{ margin: '0 0 0.4rem', color: '#092330', fontSize: isMobile ? '1.05rem' : '1.25rem' }}>
+                        No bookings matching "{bookingFilter}"
+                      </h3>
+                      <p style={{ color: '#688c99', margin: 0, fontSize: isMobile ? '0.8rem' : '0.9rem' }}>
+                        {bookingSearch
+                          ? 'No orders match your search query. Try clearing search.'
+                          : 'Orders placed by customers will appear here in real time.'}
+                      </p>
+                    </div>
+                  ) : isMobile ? (
+                    /* ======================================================== */
+                    /* MOBILE VIEW: Decreased Compact Booking Cards             */
+                    /* ======================================================== */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                      {filteredOrders.map((order) => {
+                        const statusColor =
+                          order.status === 'Delivered'
+                            ? '#047857'
+                            : order.status === 'Shipped'
+                            ? '#0e7490'
+                            : order.status === 'Cancelled'
+                            ? '#b91c1c'
+                            : order.status === 'Processing'
+                            ? '#997510'
+                            : '#092330';
+                        const statusBg =
+                          order.status === 'Delivered'
+                            ? 'rgba(16, 185, 129, 0.14)'
+                            : order.status === 'Shipped'
+                            ? 'rgba(14, 116, 144, 0.14)'
+                            : order.status === 'Cancelled'
+                            ? 'rgba(239, 68, 68, 0.14)'
+                            : order.status === 'Processing'
+                            ? 'rgba(212, 175, 55, 0.18)'
+                            : 'rgba(9, 35, 48, 0.1)';
+
+                        const customerName = order.user?.name || order.shippingAddress?.fullName || 'Valued Guest';
+                        const firstItem = order.orderItems?.[0];
+                        const firstImage = firstItem?.image || ivorySaree;
+                        const itemsCount = order.orderItems?.length || 0;
+                        const itemsSummary = firstItem
+                          ? `${firstItem.name}${itemsCount > 1 ? ` (+${itemsCount - 1} more)` : ''}`
+                          : 'Silk Drape Order';
+
+                        return (
+                          <div
+                            key={order._id}
+                            onClick={() => setSelectedBookingOrder(order)}
+                            style={{
+                              background: '#ffffff',
+                              borderRadius: '10px',
+                              border: '1px solid #dce8ec',
+                              borderLeft: '4px solid #d4af37',
+                              padding: '0.75rem 0.85rem',
+                              boxShadow: '0 2px 6px rgba(9, 35, 48, 0.04)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            {/* Thumbnail */}
+                            <div
+                              style={{
+                                width: '48px',
+                                height: '60px',
+                                borderRadius: '6px',
+                                overflow: 'hidden',
+                                border: '1px solid #dce8ec',
+                                flexShrink: 0,
+                                background: '#041017',
+                              }}
+                            >
+                              <img
+                                src={firstImage}
+                                alt="Drape thumbnail"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                                }}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
+                                }}
+                              />
+                            </div>
+
+                            {/* Center Info */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.15rem' }}>
+                                <span
+                                  style={{
+                                    fontFamily: 'monospace',
+                                    fontWeight: 800,
+                                    fontSize: '0.8rem',
+                                    color: '#092330',
+                                    background: 'rgba(212, 175, 55, 0.15)',
+                                    padding: '0.1rem 0.4rem',
+                                    borderRadius: '4px',
+                                  }}
+                                >
+                                  #{order._id?.slice(-6).toUpperCase()}
+                                </span>
+                                {order.isPaid ? (
+                                  <span style={{ fontSize: '0.62rem', color: '#047857', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '0.08rem 0.4rem', borderRadius: '999px' }}>
+                                    ● Paid
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '0.62rem', color: '#b91c1c', fontWeight: 700, background: 'rgba(239, 68, 68, 0.1)', padding: '0.08rem 0.4rem', borderRadius: '999px' }}>
+                                    ● Pending
+                                  </span>
+                                )}
+                              </div>
+
+                              <div
+                                style={{
+                                  fontWeight: 700,
+                                  fontSize: '0.86rem',
+                                  color: '#092330',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}
+                              >
+                                {customerName}
+                              </div>
+
+                              <div
+                                style={{
+                                  fontSize: '0.74rem',
+                                  color: '#527482',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  marginTop: '0.1rem',
+                                }}
+                              >
+                                {itemsSummary}
+                              </div>
+
+                              <div style={{ fontSize: '0.68rem', color: '#8c9ea7', marginTop: '0.15rem' }}>
+                                {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Right column: Status & Total & Arrow */}
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', flexShrink: 0, gap: '0.25rem' }}>
+                              <span
+                                style={{
+                                  padding: '0.18rem 0.5rem',
+                                  borderRadius: '999px',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 700,
+                                  background: statusBg,
+                                  color: statusColor,
+                                  border: `1px solid ${statusColor}33`,
+                                  textTransform: 'capitalize',
+                                }}
+                              >
+                                ● {order.status}
+                              </span>
+
+                              <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#092330' }}>
+                                ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
+                              </span>
+
+                              <span style={{ fontSize: '0.7rem', color: '#d4af37', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                Details <ChevronRight size={13} />
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* ======================================================== */
+                    /* DESKTOP VIEW: Clean Decreased Cards Layout               */
+                    /* ======================================================== */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {filteredOrders.map((order) => {
+                        const statusColor =
+                          order.status === 'Delivered'
+                            ? '#047857'
+                            : order.status === 'Shipped'
+                            ? '#0e7490'
+                            : order.status === 'Cancelled'
+                            ? '#b91c1c'
+                            : order.status === 'Processing'
+                            ? '#997510'
+                            : '#092330';
+                        const statusBg =
+                          order.status === 'Delivered'
+                            ? 'rgba(16, 185, 129, 0.14)'
+                            : order.status === 'Shipped'
+                            ? 'rgba(14, 116, 144, 0.14)'
+                            : order.status === 'Cancelled'
+                            ? 'rgba(239, 68, 68, 0.14)'
+                            : order.status === 'Processing'
+                            ? 'rgba(212, 175, 55, 0.18)'
+                            : 'rgba(9, 35, 48, 0.1)';
+
+                        const customerName = order.user?.name || order.shippingAddress?.fullName || 'Valued Guest';
+                        const firstItem = order.orderItems?.[0];
+                        const firstImage = firstItem?.image || ivorySaree;
+                        const itemsCount = order.orderItems?.length || 0;
+
+                        return (
+                          <div
+                            key={order._id}
+                            onClick={() => setSelectedBookingOrder(order)}
+                            style={{
+                              background: '#ffffff',
+                              borderRadius: '10px',
+                              padding: '1rem 1.25rem',
+                              border: '1px solid #dce8ec',
+                              borderLeft: '4px solid #d4af37',
+                              boxShadow: '0 2px 6px rgba(9, 35, 48, 0.03)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '1rem',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#d4af37';
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(9, 35, 48, 0.08)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#dce8ec';
+                              e.currentTarget.style.boxShadow = '0 2px 6px rgba(9, 35, 48, 0.03)';
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0, flex: 1 }}>
+                              <div
+                                style={{
+                                  width: '52px',
+                                  height: '66px',
+                                  borderRadius: '6px',
+                                  overflow: 'hidden',
+                                  border: '1px solid #dce8ec',
+                                  flexShrink: 0,
+                                  background: '#041017',
+                                }}
+                              >
+                                <img
+                                  src={firstImage}
+                                  alt="Drape"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                                  }}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              </div>
+
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                  <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#092330' }}>
+                                    Order #{order._id?.slice(-6).toUpperCase()}
+                                  </span>
+                                  {order.isPaid ? (
+                                    <span style={{ fontSize: '0.72rem', color: '#047857', fontWeight: 600 }}>● Paid</span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.72rem', color: '#b91c1c', fontWeight: 600 }}>● Payment Pending</span>
+                                  )}
+                                  <span style={{ fontSize: '0.75rem', color: '#688c99' }}>
+                                    · Placed on{' '}
+                                    {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })}
+                                  </span>
+                                </div>
+
+                                <div style={{ fontSize: '0.86rem', fontWeight: 600, color: '#092330', marginBottom: '0.15rem' }}>
+                                  {customerName}
+                                  {order.user?.email && (
+                                    <span style={{ fontWeight: 400, color: '#688c99', marginLeft: '0.5rem', fontSize: '0.78rem' }}>
+                                      ({order.user.email})
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div style={{ fontSize: '0.8rem', color: '#527482', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {itemsCount} drape{itemsCount === 1 ? '' : 's'}: {order.orderItems?.map((it: any) => it.name).join(', ')}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexShrink: 0 }}>
+                              <div style={{ textAlign: 'right' }}>
+                                <span
+                                  style={{
+                                    display: 'inline-block',
+                                    padding: '0.22rem 0.65rem',
+                                    borderRadius: '999px',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    background: statusBg,
+                                    color: statusColor,
+                                    border: `1px solid ${statusColor}33`,
+                                    marginBottom: '0.25rem',
+                                  }}
+                                >
+                                  ● {order.status}
+                                </span>
+                                <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#092330' }}>
+                                  ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedBookingOrder(order);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem',
+                                  padding: '0.5rem 0.95rem',
+                                  borderRadius: '8px',
+                                  border: '1px solid #d4af37',
+                                  background: '#092330',
+                                  color: '#d4af37',
+                                  fontSize: '0.82rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                View Details <ChevronRight size={15} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
 
-          {/* TAB 3: COLLECTIONS (Products management) */}
           {activeTab === 'collections' && (
             <div>
               {isEditingProductView ? (
-                /* FULL PAGE SAREE STUDIO (IN-PAGE VIEW - NO POPUPS) */
+                isMobile ? (
+                  /* MOBILE VIEW: Simple & Professional Add/Edit Saree Studio */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', paddingBottom: '2rem' }}>
+                  {/* Top Mobile Control Bar */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '10px',
+                      padding: '0.75rem 0.85rem',
+                      border: '1px solid #dce8ec',
+                      borderTop: '3px solid #d4af37',
+                      boxShadow: '0 2px 8px rgba(9, 35, 48, 0.04)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingProductView(false);
+                        setEditingProduct(null);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        padding: '0.4rem 0.65rem',
+                        borderRadius: '6px',
+                        border: '1px solid #dce8ec',
+                        background: '#f8fafb',
+                        color: '#092330',
+                        fontSize: '0.76rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <ArrowLeft size={14} style={{ color: '#d4af37' }} /> Back
+                    </button>
+
+                    <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
+                      <h3
+                        style={{
+                          margin: 0,
+                          fontSize: '0.92rem',
+                          fontWeight: 700,
+                          color: '#092330',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {editingProduct ? 'Edit Saree' : 'Add New Saree'}
+                      </h3>
+                      <span style={{ fontSize: '0.65rem', color: '#688c99' }}>
+                        {editingProduct ? 'Updating Catalog Piece' : 'New Collection Drape'}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSaveProduct()}
+                      disabled={savingProduct || uploadingImage}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        padding: '0.42rem 0.85rem',
+                        borderRadius: '6px',
+                        background: 'linear-gradient(135deg, #092330 0%, #123747 100%)',
+                        color: '#d4af37',
+                        border: '1px solid #d4af37',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(9, 35, 48, 0.15)',
+                      }}
+                    >
+                      {savingProduct ? (
+                        <RefreshCw size={13} className="animate-spin" />
+                      ) : (
+                        <CheckCircle size={13} />
+                      )}
+                      <span>{savingProduct ? 'Saving…' : 'Save'}</span>
+                    </button>
+                  </div>
+
+                  {/* 1. Saree Photo Card */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '10px',
+                      padding: '0.85rem',
+                      border: '1px solid #dce8ec',
+                      boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#d4af37', marginBottom: '0.6rem' }}>
+                      1. Saree Cover Photo
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      <div style={{ width: '80px', height: '105px', borderRadius: '8px', overflow: 'hidden', border: '1.5px solid #d4af37', flexShrink: 0, background: '#f8fafb' }}>
+                        <img
+                          src={productFormData.image || ivorySaree}
+                          alt="Preview"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = ivorySaree; }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                        <label
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.35rem',
+                            padding: '0.45rem 0.65rem',
+                            borderRadius: '6px',
+                            background: 'rgba(212, 175, 55, 0.12)',
+                            color: '#092330',
+                            border: '1px solid #d4af37',
+                            fontSize: '0.76rem',
+                            fontWeight: 600,
+                            cursor: uploadingImage ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {uploadingImage ? <RefreshCw size={13} className="animate-spin" /> : <UploadCloud size={14} />}
+                          <span>{uploadingImage ? 'Uploading…' : 'Upload Saree Photo'}</span>
+                          <input type="file" accept="image/*" onChange={handleImageFileChange} disabled={uploadingImage} style={{ display: 'none' }} />
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Or paste online image URL…"
+                          value={productFormData.image}
+                          onChange={(e) => setProductFormData((prev) => ({ ...prev, image: e.target.value }))}
+                          style={{
+                            width: '100%',
+                            padding: '0.38rem 0.55rem',
+                            borderRadius: '6px',
+                            border: '1px solid #dce8ec',
+                            fontSize: '0.72rem',
+                            color: '#092330',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Essential Saree Details Card */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '10px',
+                      padding: '0.85rem',
+                      border: '1px solid #dce8ec',
+                      boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.65rem',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#d4af37' }}>
+                      2. Saree Specifications
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
+                        Saree Name *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Royal Crimson Kanjeevaram Silk Saree"
+                        value={productFormData.name}
+                        onChange={(e) => setProductFormData((prev) => ({ ...prev, name: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: '6px',
+                          border: '1px solid #dce8ec',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          color: '#092330',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
+                        Category *
+                      </label>
+                      <select
+                        value={productFormData.category}
+                        onChange={(e) => setProductFormData((prev) => ({ ...prev, category: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: '6px',
+                          border: '1px solid #dce8ec',
+                          fontSize: '0.8rem',
+                          color: '#092330',
+                          background: '#ffffff',
+                        }}
+                      >
+                        {Array.from(new Set(['Bridal & Heirloom Silks', 'Festive Kanjeevarams', 'Pastel Organza Sarees', 'Banarasi Silk Georgette', 'Party Wear Sarees', ...products.map((p) => p.category).filter(Boolean)])).map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
+                          Fabric
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Pure Silk"
+                          value={productFormData.fabric}
+                          onChange={(e) => setProductFormData((prev) => ({ ...prev, fabric: e.target.value }))}
+                          style={{ width: '100%', padding: '0.42rem 0.55rem', borderRadius: '6px', border: '1px solid #dce8ec', fontSize: '0.78rem', color: '#092330' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
+                          Color
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Crimson Red"
+                          value={productFormData.color}
+                          onChange={(e) => setProductFormData((prev) => ({ ...prev, color: e.target.value }))}
+                          style={{ width: '100%', padding: '0.42rem 0.55rem', borderRadius: '6px', border: '1px solid #dce8ec', fontSize: '0.78rem', color: '#092330' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
+                        Occasion & Border Style
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Bridal / Festive / Wedding Zari Border"
+                        value={productFormData.border}
+                        onChange={(e) => setProductFormData((prev) => ({ ...prev, border: e.target.value }))}
+                        style={{ width: '100%', padding: '0.42rem 0.55rem', borderRadius: '6px', border: '1px solid #dce8ec', fontSize: '0.78rem', color: '#092330' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Pricing, Inventory & Featured Switch */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '10px',
+                      padding: '0.85rem',
+                      border: '1px solid #dce8ec',
+                      boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.65rem',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#d4af37' }}>
+                      3. Pricing & Inventory
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
+                          Price (₹) *
+                        </label>
+                        <input
+                          type="number"
+                          value={productFormData.price}
+                          onChange={(e) => setProductFormData((prev) => ({ ...prev, price: Number(e.target.value) }))}
+                          style={{ width: '100%', padding: '0.45rem 0.55rem', borderRadius: '6px', border: '1.5px solid #d4af37', fontSize: '0.88rem', fontWeight: 700, color: '#092330' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
+                          Original Price (₹)
+                        </label>
+                        <input
+                          type="number"
+                          value={productFormData.originalPrice}
+                          onChange={(e) => setProductFormData((prev) => ({ ...prev, originalPrice: Number(e.target.value) }))}
+                          style={{ width: '100%', padding: '0.45rem 0.55rem', borderRadius: '6px', border: '1px solid #dce8ec', fontSize: '0.82rem', color: '#688c99' }}
+                        />
+                      </div>
+                    </div>
+
+                    {productFormData.originalPrice > productFormData.price && (
+                      <div
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.1)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          borderRadius: '6px',
+                          padding: '0.3rem 0.55rem',
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          color: '#047857',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                        }}
+                      >
+                        <span>Discount: ₹{(productFormData.originalPrice - productFormData.price).toLocaleString('en-IN')} off</span>
+                        <span>({Math.round(((productFormData.originalPrice - productFormData.price) / productFormData.originalPrice) * 100)}% savings)</span>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', alignItems: 'center' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
+                          Stock Count
+                        </label>
+                        <input
+                          type="number"
+                          value={productFormData.countInStock}
+                          onChange={(e) => setProductFormData((prev) => ({ ...prev, countInStock: Number(e.target.value) }))}
+                          style={{ width: '100%', padding: '0.42rem 0.55rem', borderRadius: '6px', border: '1px solid #dce8ec', fontSize: '0.8rem', color: '#092330' }}
+                        />
+                      </div>
+                      <div style={{ paddingTop: '0.85rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => setProductFormData((prev) => ({ ...prev, isFeatured: !prev.isFeatured }))}
+                          style={{
+                            width: '100%',
+                            padding: '0.45rem 0.5rem',
+                            borderRadius: '6px',
+                            border: productFormData.isFeatured ? '1px solid #d4af37' : '1px solid #dce8ec',
+                            background: productFormData.isFeatured ? '#092330' : '#f8fafb',
+                            color: productFormData.isFeatured ? '#d4af37' : '#688c99',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.3rem',
+                          }}
+                        >
+                          <Sparkles size={12} /> {productFormData.isFeatured ? '★ Featured' : '+ Feature'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. Description Card */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '10px',
+                      padding: '0.85rem',
+                      border: '1px solid #dce8ec',
+                      boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.65rem',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#d4af37' }}>
+                      4. Description & Heritage
+                    </div>
+                    <textarea
+                      rows={3}
+                      placeholder="Handcrafted saree description, zari craftsmanship, drape details…"
+                      value={productFormData.detail}
+                      onChange={(e) => setProductFormData((prev) => ({ ...prev, detail: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem 0.65rem',
+                        borderRadius: '6px',
+                        border: '1px solid #dce8ec',
+                        fontSize: '0.78rem',
+                        color: '#092330',
+                        lineHeight: 1.4,
+                      }}
+                    />
+                  </div>
+
+                  {/* Bottom Save Action Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleSaveProduct()}
+                    disabled={savingProduct || uploadingImage}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #092330 0%, #123747 100%)',
+                      color: '#d4af37',
+                      border: '1px solid #d4af37',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(9, 35, 48, 0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                    }}
+                  >
+                    {savingProduct ? <RefreshCw size={15} className="animate-spin" /> : <CheckCircle size={15} />}
+                    <span>{savingProduct ? 'Saving to Database…' : (editingProduct ? 'Update Saree Piece' : 'Publish Saree to Collection')}</span>
+                  </button>
+                </div>
+                ) : (
+                  /* FULL PAGE SAREE STUDIO (IN-PAGE VIEW - NO POPUPS) */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   {/* Studio Top Control Bar */}
                   <div
@@ -5252,8 +6944,219 @@ function AdminDashboardPage() {
                     </div>
                   </form>
                 </div>
+                )
               ) : (
-                /* COLLECTIONS GRID VIEW */
+                isMobile ? (
+                  /* MOBILE VIEW: Simple & Professional Collections List Screen */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {/* Top Control Bar */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '10px',
+                      padding: '0.85rem',
+                      border: '1px solid #dce8ec',
+                      boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                      <div>
+                        <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#d4af37' }}>
+                          Collections Studio
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '1.15rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 700, color: '#092330' }}>
+                          Catalog Sarees ({products.length})
+                        </h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingProduct(null);
+                          resetProductForm();
+                          setIsEditingProductView(true);
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          padding: '0.45rem 0.85rem',
+                          borderRadius: '6px',
+                          background: 'linear-gradient(135deg, #092330 0%, #123747 100%)',
+                          color: '#d4af37',
+                          border: '1px solid #d4af37',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(9, 35, 48, 0.15)',
+                        }}
+                      >
+                        <Plus size={14} /> Add Saree
+                      </button>
+                    </div>
+
+                    {/* Mobile Search */}
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#688c99' }} />
+                      <input
+                        type="text"
+                        placeholder="Search sarees by name or fabric…"
+                        value={productSearch}
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.45rem 0.65rem 0.45rem 1.85rem',
+                          borderRadius: '6px',
+                          border: '1px solid #dce8ec',
+                          background: '#f8fafb',
+                          fontSize: '0.78rem',
+                          color: '#092330',
+                        }}
+                      />
+                    </div>
+
+                    {/* Category Filter Pills on Mobile */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '0.35rem',
+                        overflowX: 'auto',
+                        whiteSpace: 'nowrap',
+                        paddingTop: '0.55rem',
+                        paddingBottom: '0.15rem',
+                      }}
+                    >
+                      {['All', ...Array.from(new Set(products.map((p) => p.category).filter(Boolean)))].map((cat) => {
+                        const isSelected = (productSearch.toLowerCase() === cat.toLowerCase()) || (cat === 'All' && !productSearch);
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              if (cat === 'All') setProductSearch('');
+                              else setProductSearch(cat);
+                            }}
+                            style={{
+                              padding: '0.25rem 0.6rem',
+                              borderRadius: '999px',
+                              border: isSelected ? '1px solid #d4af37' : '1px solid #dce8ec',
+                              background: isSelected ? '#092330' : '#ffffff',
+                              color: isSelected ? '#d4af37' : '#527482',
+                              fontSize: '0.68rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {cat}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Saree Grid: 2 CARDS PER ROW ON MOBILE */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.65rem' }}>
+                    {filteredProducts.map((p) => {
+                      const productId = p.id || p._id;
+                      return (
+                        <div
+                          key={productId}
+                          onClick={() => handleStartEditProduct(p)}
+                          style={{
+                            background: '#ffffff',
+                            borderRadius: '8px',
+                            border: '1px solid #dce8ec',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            boxShadow: '0 2px 6px rgba(9, 35, 48, 0.03)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div style={{ position: 'relative', width: '100%', aspectRatio: '3 / 4', background: '#f0f5f7' }}>
+                            <img
+                              src={p.image || ivorySaree}
+                              alt={p.name}
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = ivorySaree; }}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            <span style={{ position: 'absolute', top: '5px', left: '5px', background: 'rgba(9, 35, 48, 0.88)', color: '#ffffff', fontSize: '0.58rem', padding: '0.12rem 0.35rem', borderRadius: '4px', fontWeight: 600 }}>
+                              {p.category}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleToggleFeatured(p); }}
+                              style={{
+                                position: 'absolute',
+                                top: '5px',
+                                right: '5px',
+                                background: p.isFeatured ? '#d4af37' : 'rgba(255, 255, 255, 0.9)',
+                                color: p.isFeatured ? '#061821' : '#688c99',
+                                fontSize: '0.58rem',
+                                fontWeight: 700,
+                                padding: '0.12rem 0.35rem',
+                                borderRadius: '4px',
+                                border: 'none',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {p.isFeatured ? '★ Home' : '+ Feature'}
+                            </button>
+                            <span style={{ position: 'absolute', bottom: '5px', left: '5px', background: (p.countInStock || 0) > 0 ? 'rgba(16, 185, 129, 0.92)' : 'rgba(239, 68, 68, 0.92)', color: '#ffffff', fontSize: '0.58rem', fontWeight: 600, padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
+                              {(p.countInStock || 0) > 0 ? `Qty: ${p.countInStock}` : 'Out'}
+                            </span>
+                          </div>
+
+                          <div style={{ padding: '0.55rem 0.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                            <span style={{ fontSize: '0.62rem', color: '#688c99', textTransform: 'uppercase', marginBottom: '0.15rem' }}>
+                              {p.fabric || 'Pure Silk & Zari'}
+                            </span>
+                            <h4
+                              style={{
+                                margin: '0 0 0.25rem',
+                                fontSize: '0.88rem',
+                                fontFamily: 'Cormorant Garamond, serif',
+                                fontWeight: 700,
+                                color: '#092330',
+                                lineHeight: 1.2,
+                                minHeight: '2.1rem',
+                                maxHeight: '2.1rem',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {p.name}
+                            </h4>
+                            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#092330', marginBottom: '0.45rem' }}>
+                              ₹{(p.price || 0).toLocaleString('en-IN')}
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.3rem', marginTop: 'auto', paddingTop: '0.45rem', borderTop: '1px solid #edf4f7' }}>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleStartEditProduct(p); }}
+                                style={{ padding: '0.35rem', borderRadius: '5px', background: 'rgba(212, 175, 55, 0.1)', color: '#092330', border: '1px solid #d4af37', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem' }}
+                              >
+                                <Edit size={11} /> Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteProduct(productId); }}
+                                style={{ padding: '0.35rem', borderRadius: '5px', background: 'rgba(239, 68, 68, 0.08)', color: '#b91c1c', border: '1px solid rgba(239, 68, 68, 0.3)', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem' }}
+                              >
+                                <Trash2 size={11} /> Del
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                ) : (
+/* COLLECTIONS GRID VIEW */
                 <div>
                   {/* Header with Search and Add Saree button */}
                   <div
@@ -5538,23 +7441,7 @@ function AdminDashboardPage() {
                         }}
                       >
                         <button
-                          onClick={() => {
-                            setEditingProduct(p);
-                            setProductFormData({
-                              name: p.name || '',
-                              category: p.category || 'Bridal & Heirloom Silks',
-                              price: p.price || 0,
-                              originalPrice: p.originalPrice || 0,
-                              fabric: p.fabric || '',
-                              color: p.color || '',
-                              border: p.border || '',
-                              countInStock: p.countInStock || 5,
-                              isFeatured: Boolean(p.isFeatured),
-                              image: p.image || p.images?.[0] || '',
-                              detail: p.detail || p.description || '',
-                            });
-                            setIsEditingProductView(true);
-                          }}
+                          onClick={() => handleStartEditProduct(p)}
                           style={{
                             flex: 1,
                             padding: '0.45rem',
@@ -5601,11 +7488,11 @@ function AdminDashboardPage() {
               </div>
             )}
           </div>
-          )}
-        </div>
+        )
       )}
+    </div>
+  )}
 
-          {/* TAB 4: CUSTOMERS & STAFF (FULL CRUD) */}
           {activeTab === 'customers' && (
             <div>
               <div
@@ -6577,7 +8464,214 @@ function AdminDashboardPage() {
           )}
 
           {/* TAB 5: CUSTOMER INQUIRIES & CONCIERGE */}
+          {/* TAB 5: CUSTOMER INQUIRIES & CONCIERGE */}
           {activeTab === 'inquiries' && (
+            isMobile ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  {/* Top Header Card */}
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      borderRadius: '10px',
+                      padding: '0.85rem',
+                      border: '1px solid #dce8ec',
+                      borderTop: '3px solid #0e7490',
+                      boxShadow: '0 2px 8px rgba(9, 35, 48, 0.03)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', fontFamily: 'Cormorant Garamond, serif', fontWeight: 700, color: '#092330' }}>
+                        Customer Inquiries ({inquiries.length})
+                      </h3>
+                      <span style={{ fontSize: '0.68rem', background: 'rgba(14, 116, 144, 0.12)', color: '#0e7490', padding: '0.12rem 0.5rem', borderRadius: '999px', fontWeight: 700 }}>
+                        {inquiries.filter((i: any) => i.status === 'New').length} New
+                      </span>
+                    </div>
+                    <p style={{ margin: '0 0 0.65rem', fontSize: '0.74rem', color: '#688c99' }}>
+                      Customer drape inquiries and concierge requests.
+                    </p>
+
+                    {/* Search */}
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#688c99' }} />
+                      <input
+                        type="text"
+                        placeholder="Search by name, email, or drape interest…"
+                        value={inquirySearch}
+                        onChange={(e) => setInquirySearch(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.42rem 0.65rem 0.42rem 1.85rem',
+                          borderRadius: '6px',
+                          border: '1px solid #dce8ec',
+                          background: '#f8fafb',
+                          fontSize: '0.78rem',
+                          color: '#092330',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status Filters */}
+                  <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: '0.35rem' }}>
+                    {['All', 'New', 'In Progress', 'Resolved'].map((st) => {
+                      const active = inquiryFilter === st;
+                      const count = st === 'All' ? inquiries.length : inquiries.filter((i: any) => i.status === st).length;
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => setInquiryFilter(st)}
+                          style={{
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '999px',
+                            border: active ? '1px solid #0e7490' : '1px solid #dce8ec',
+                            background: active ? '#0e7490' : '#ffffff',
+                            color: active ? '#ffffff' : '#527482',
+                            fontSize: '0.74rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {st} ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Inquiry Cards (Single Column) */}
+                  {filteredInquiries.length === 0 ? (
+                    <div style={{ padding: '2rem 1rem', textAlign: 'center', background: '#ffffff', borderRadius: '10px', border: '1px solid #dce8ec' }}>
+                      <MessageSquare size={32} style={{ color: '#0e7490', margin: '0 auto 0.5rem' }} />
+                      <h4 style={{ margin: 0, color: '#092330', fontSize: '0.95rem' }}>No inquiries matching filter</h4>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                      {filteredInquiries.map((inq: any) => (
+                        <div
+                          key={inq._id}
+                          style={{
+                            background: '#ffffff',
+                            borderRadius: '10px',
+                            border: '1px solid #dce8ec',
+                            borderLeft: `3px solid ${inq.status === 'New' ? '#ef4444' : inq.status === 'In Progress' ? '#0e7490' : '#10b981'}`,
+                            padding: '0.85rem',
+                            boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.55rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#092330' }}>{inq.name}</div>
+                              <div style={{ fontSize: '0.7rem', color: '#688c99' }}>{inq.email} {inq.phone ? `· ${inq.phone}` : ''}</div>
+                            </div>
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 700,
+                                padding: '0.15rem 0.5rem',
+                                borderRadius: '999px',
+                                background: inq.status === 'New' ? 'rgba(239, 68, 68, 0.12)' : inq.status === 'In Progress' ? 'rgba(14, 116, 144, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                                color: inq.status === 'New' ? '#b91c1c' : inq.status === 'In Progress' ? '#0e7490' : '#047857',
+                              }}
+                            >
+                              ● {inq.status}
+                            </span>
+                          </div>
+
+                          <div style={{ background: '#f8fafb', borderRadius: '6px', padding: '0.55rem 0.65rem', border: '1px solid #e5eff2' }}>
+                            <div style={{ fontSize: '0.66rem', fontWeight: 700, color: '#d4af37', textTransform: 'uppercase', marginBottom: '0.15rem' }}>
+                              Interest: {inq.sareeInterest || 'General Drape Consultation'}
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.76rem', color: '#385764', fontStyle: 'italic', lineHeight: 1.35 }}>
+                              "{inq.message}"
+                            </p>
+                          </div>
+
+                          {/* Quick Action buttons */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem', paddingTop: '0.45rem', borderTop: '1px dashed #edf4f7' }}>
+                            <div style={{ display: 'flex', gap: '0.35rem' }}>
+                              {inq.phone && (
+                                <a
+                                  href={`https://wa.me/${inq.phone.replace(/[^0-9]/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    fontSize: '0.68rem',
+                                    padding: '0.2rem 0.5rem',
+                                    borderRadius: '4px',
+                                    background: 'rgba(34, 197, 94, 0.12)',
+                                    color: '#15803d',
+                                    fontWeight: 700,
+                                    textDecoration: 'none',
+                                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                                  }}
+                                >
+                                  WhatsApp
+                                </a>
+                              )}
+                              {inq.email && (
+                                <a
+                                  href={`mailto:${inq.email}`}
+                                  style={{
+                                    fontSize: '0.68rem',
+                                    padding: '0.2rem 0.5rem',
+                                    borderRadius: '4px',
+                                    background: 'rgba(9, 35, 48, 0.08)',
+                                    color: '#092330',
+                                    fontWeight: 600,
+                                    textDecoration: 'none',
+                                  }}
+                                >
+                                  Email
+                                </a>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <select
+                                value={inq.status}
+                                onChange={(e) => handleUpdateInquiryStatus(inq._id, e.target.value)}
+                                style={{
+                                  padding: '0.25rem 0.45rem',
+                                  borderRadius: '5px',
+                                  border: '1px solid #dce8ec',
+                                  background: '#ffffff',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  color: '#092330',
+                                }}
+                              >
+                                <option value="New">New</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Resolved">Resolved</option>
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteInquiry(inq._id)}
+                                title="Delete Inquiry"
+                                style={{
+                                  padding: '0.25rem 0.45rem',
+                                  borderRadius: '5px',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                                  background: 'rgba(239, 68, 68, 0.08)',
+                                  color: '#dc2626',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+            ) : (
             <div>
               {/* Header with live sync indicator */}
               <div
@@ -7394,9 +9488,9 @@ function AdminDashboardPage() {
                 </div>
               )}
             </div>
+            )
           )}
 
-          {/* TAB 6: SETTINGS (Brand & Site Configuration) */}
           {activeTab === 'settings' && (
             <div style={{ maxWidth: '800px' }}>
               <div
@@ -7846,7 +9940,196 @@ function AdminDashboardPage() {
           )}
 
           {/* TAB: ADMIN PROFILE & REMAINING MANAGEMENT MODULES (Mobile Hub) */}
+          {/* TAB: ADMIN PROFILE & REMAINING MANAGEMENT MODULES (Mobile Hub) */}
           {activeTab === 'profile' && (
+            isMobile ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {/* Executive Profile Card */}
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, #061821 0%, #0a2432 55%, #071922 100%)',
+                  borderRadius: '14px',
+                  padding: '1.25rem 1rem',
+                  border: '1px solid rgba(212, 175, 55, 0.4)',
+                  boxShadow: '0 8px 24px rgba(9, 35, 48, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.85rem',
+                }}
+              >
+                <div
+                  style={{
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #d4af37 0%, #aa820a 100%)',
+                    border: '2px solid #ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#061821',
+                    fontSize: '1.25rem',
+                    fontWeight: 800,
+                    boxShadow: '0 4px 12px rgba(212, 175, 55, 0.4)',
+                    flexShrink: 0,
+                  }}
+                >
+                  A
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '0.64rem', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#d4af37' }}>
+                      Administrator Suite
+                    </span>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+                  </div>
+                  <h2 style={{ margin: '0.1rem 0 0', fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', fontFamily: 'Cormorant Garamond, serif' }}>
+                    {activeUser?.name || 'Bamas Admin'}
+                  </h2>
+                  <p style={{ margin: '0.15rem 0 0', fontSize: '0.74rem', color: '#93b6c2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {activeUser?.email || 'admin@bamas.com'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Hub Navigation Touch Cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                {/* 1. Customers */}
+                <div
+                  onClick={() => { setActiveTab('customers'); setIsEditingProductView(false); }}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '10px',
+                    padding: '0.85rem',
+                    border: '1px solid #dce8ec',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(4, 120, 87, 0.1)', color: '#047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Users size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#092330' }}>Registered Customers</div>
+                      <div style={{ fontSize: '0.7rem', color: '#688c99' }}>{customers.length} customer accounts & permissions</div>
+                    </div>
+                  </div>
+                  <ArrowRight size={14} style={{ color: '#d4af37' }} />
+                </div>
+
+                {/* 2. Reviews */}
+                <div
+                  onClick={() => { setActiveTab('reviews'); setIsEditingProductView(false); }}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '10px',
+                    padding: '0.85rem',
+                    border: '1px solid #dce8ec',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(202, 138, 4, 0.12)', color: '#ca8a04', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Star size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#092330' }}>Customer Drape Reviews</div>
+                      <div style={{ fontSize: '0.7rem', color: '#688c99' }}>{reviews.length} ratings & patron drape photos</div>
+                    </div>
+                  </div>
+                  <ArrowRight size={14} style={{ color: '#d4af37' }} />
+                </div>
+
+                {/* 3. Settings */}
+                <div
+                  onClick={() => { setActiveTab('settings'); setIsEditingProductView(false); }}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '10px',
+                    padding: '0.85rem',
+                    border: '1px solid #dce8ec',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(212, 175, 55, 0.15)', color: '#997510', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Settings size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#092330' }}>Storefront Configuration</div>
+                      <div style={{ fontSize: '0.7rem', color: '#688c99' }}>Brand name, hero banner & contact numbers</div>
+                    </div>
+                  </div>
+                  <ArrowRight size={14} style={{ color: '#d4af37' }} />
+                </div>
+
+                {/* 4. Live Storefront */}
+                <a
+                  href="/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '10px',
+                    padding: '0.85rem',
+                    border: '1px solid #dce8ec',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    textDecoration: 'none',
+                    boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(14, 116, 144, 0.1)', color: '#0e7490', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <ExternalLink size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#092330' }}>View Public Storefront</div>
+                      <div style={{ fontSize: '0.7rem', color: '#688c99' }}>Open store in customer view</div>
+                    </div>
+                  </div>
+                  <ArrowRight size={14} style={{ color: '#d4af37' }} />
+                </a>
+              </div>
+
+              {/* Sign Out Button */}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: '#dc2626',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  fontWeight: 700,
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  marginTop: '0.5rem',
+                }}
+              >
+                <LogOut size={16} /> Sign Out of Administrator Suite
+              </button>
+            </div>
+            ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {/* Executive Admin Card */}
               <div
@@ -8232,11 +10515,11 @@ function AdminDashboardPage() {
                 </div>
               </div>
             </div>
+            )
           )}
         </main>
       </div>
 
-      {/* ADMIN MOBILE BOTTOM BAR (Mobile Viewport Only) */}
       {isMobile && (
         <nav
           className="admin-mobile-bottom-bar"
@@ -8589,6 +10872,97 @@ function AdminDashboardPage() {
           })()}
         </nav>
       )}
+
+      {/* Fullscreen Booking Saree Image Lightbox Modal */}
+      <Dialog open={!!fullscreenBookingImage} onOpenChange={(open) => !open && setFullscreenBookingImage(null)}>
+        <DialogContent
+          className="pdp-lightbox-dialog"
+          style={{
+            maxWidth: '92vw',
+            maxHeight: '92vh',
+            width: 'auto',
+            padding: '1rem',
+            background: 'rgba(9, 35, 48, 0.98)',
+            border: '1.5px solid #d4af37',
+            borderRadius: '16px',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          <DialogTitle className="sr-only">Booking Saree Drape Fullscreen Inspection</DialogTitle>
+          {fullscreenBookingImage && (
+            <div style={{ position: 'relative', width: '100%', textAlign: 'center' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem',
+                  marginBottom: '0.75rem',
+                  borderBottom: '1px solid rgba(212, 175, 55, 0.25)',
+                  paddingBottom: '0.5rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#d4af37', fontSize: '0.85rem', fontWeight: 700 }}>
+                  <Maximize2 size={16} />
+                  <span>Drape Fullscreen View</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFullscreenBookingImage(null)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: '999px',
+                    border: '1px solid rgba(212, 175, 55, 0.4)',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    color: '#ffffff',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <X size={14} /> Close
+                </button>
+              </div>
+
+              <div
+                style={{
+                  maxHeight: '76vh',
+                  maxWidth: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  borderRadius: '10px',
+                  background: '#041017',
+                  border: '1px solid rgba(212, 175, 55, 0.2)',
+                }}
+              >
+                <img
+                  src={fullscreenBookingImage}
+                  alt="Full resolution drape preview"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                  }}
+                  style={{
+                    maxHeight: '74vh',
+                    maxWidth: '100%',
+                    objectFit: 'contain',
+                    display: 'block',
+                    margin: '0 auto',
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Fullscreen Patron Photo Modal in Admin */}
       <Dialog open={!!previewReviewPhoto} onOpenChange={(open) => !open && setPreviewReviewPhoto(null)}>
