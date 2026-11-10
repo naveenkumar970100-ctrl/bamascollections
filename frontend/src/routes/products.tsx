@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Pieces } from '@/components/bamas/pieces';
 import { SareeDetailFullPage } from '@/components/bamas/saree-detail-full-page';
@@ -89,6 +89,7 @@ function Products() {
   const [selectedSaree, setSelectedSaree] = useState<any | null>(null);
   const [checkoutSaree, setCheckoutSaree] = useState<any | null>(null);
   const [category, setCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [allProducts, setAllProducts] = useState<any[]>(() => collection);
   const [products, setProducts] = useState<any[]>(() => collection.map(mapProductItem));
   const [isLive, setIsLive] = useState(false);
@@ -253,7 +254,22 @@ function Products() {
     }).length;
   };
 
-  const items = products;
+  const items = products.filter((p) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const name = (p.name || '').toLowerCase();
+    const desc = (p.detail || p.description || '').toLowerCase();
+    const fabric = (p.fabric || '').toLowerCase();
+    const color = (p.color || '').toLowerCase();
+    const cat = (p.category || '').toLowerCase();
+    return (
+      name.includes(q) ||
+      desc.includes(q) ||
+      fabric.includes(q) ||
+      color.includes(q) ||
+      cat.includes(q)
+    );
+  });
 
   if (checkoutSaree) {
     return (
@@ -296,6 +312,98 @@ function Products() {
         </p>
       </div>
       <section className="section-wrap">
+        {/* Luxury Collection Search Bar */}
+        <div style={{ maxWidth: '520px', margin: '0 auto 1.5rem', padding: '0 1rem' }}>
+          <div
+            style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              background: '#ffffff',
+              borderRadius: '9999px',
+              border: '1.5px solid rgba(212, 175, 55, 0.45)',
+              boxShadow: '0 4px 18px rgba(9, 35, 48, 0.05)',
+              padding: '0.45rem 1rem 0.45rem 1.15rem',
+              transition: 'all 0.25s ease',
+            }}
+          >
+            <Search size={18} style={{ color: '#d4af37', flexShrink: 0, marginRight: '0.65rem' }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search sarees by name, fabric, or color..."
+              style={{
+                width: '100%',
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                fontSize: '0.9rem',
+                color: '#092330',
+                fontFamily: 'inherit',
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'rgba(0, 0, 0, 0.06)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '22px',
+                  height: '22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  flexShrink: 0,
+                  marginLeft: '0.5rem',
+                  transition: 'background 0.2s',
+                }}
+                title="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {searchQuery.trim() && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                marginTop: '0.65rem',
+                fontSize: '0.82rem',
+                color: '#64748b',
+              }}
+            >
+              <span>
+                Found <strong style={{ color: '#092330' }}>{items.length}</strong> {items.length === 1 ? 'saree' : 'sarees'} matching &ldquo;<span style={{ color: '#d4af37', fontWeight: 600 }}>{searchQuery}</span>&rdquo;
+              </span>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#dc2626',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  fontWeight: 600,
+                  padding: 0,
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="catalog-toolbar" style={{ justifyContent: 'center', marginBottom: '1.5rem' }}>
           <div className="category-filter-rail" role="tablist" aria-label="Collection filters">
             {availableCategories.map((c) => {
@@ -353,7 +461,7 @@ function Products() {
                 color: 'var(--foreground)',
               }}
             >
-              No Sarees in this Selection
+              {searchQuery ? `No Sarees Found Matching "${searchQuery}"` : 'No Sarees in this Selection'}
             </h3>
             <p
               style={{
@@ -364,11 +472,35 @@ function Products() {
                 lineHeight: '1.6',
               }}
             >
-              All collections are dynamically populated from the database. When the administration team adds sarees to this category, they will instantly appear here.
+              {searchQuery
+                ? 'Try searching with a different color, fabric, or design name, or clear the search to view all available heirlooms.'
+                : 'All collections are dynamically populated from the database. When the administration team adds sarees to this category, they will instantly appear here.'}
             </p>
-            <a href="/admin" className="text-link" style={{ fontSize: '0.9rem' }}>
-              Open Admin Portal &rarr;
-            </a>
+            {searchQuery ? (
+              <Button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'linear-gradient(135deg, #092330 0%, #10384c 100%)',
+                  color: '#ffffff',
+                  border: '1px solid #d4af37',
+                  borderRadius: '8px',
+                  padding: '0.55rem 1.4rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <X size={15} />
+                <span>Clear Search & View All</span>
+              </Button>
+            ) : (
+              <a href="/admin" className="text-link" style={{ fontSize: '0.9rem' }}>
+                Open Admin Portal &rarr;
+              </a>
+            )}
           </div>
         )}
         <p className="catalog-note">

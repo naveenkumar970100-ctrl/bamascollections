@@ -36,6 +36,11 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Database,
+  Activity,
+  Check,
 } from 'lucide-react';
 import { useCustomer } from '@/components/bamas/auth-context';
 import { api } from '@/lib/api';
@@ -1105,6 +1110,67 @@ function AdminDashboardPage() {
     window.dispatchEvent(new Event('bamas_auth_changed'));
   };
 
+  // Admin Profile Update States
+  const [adminProfileName, setAdminProfileName] = useState(activeUser?.name || 'Bamas Admin');
+  const [adminProfilePhone, setAdminProfilePhone] = useState(activeUser?.phone || '+91 98765 43210');
+  const [adminProfilePassword, setAdminProfilePassword] = useState('');
+  const [showAdminProfilePassword, setShowAdminProfilePassword] = useState(false);
+  const [savingAdminProfile, setSavingAdminProfile] = useState(false);
+  const [adminProfileFeedback, setAdminProfileFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [profileExpandedSection, setProfileExpandedSection] = useState<string | null>(null);
+  const [isEditingAdminProfile, setIsEditingAdminProfile] = useState(false);
+  const toggleProfileSection = (id: string) => {
+    setProfileExpandedSection((prev) => (prev === id ? null : id));
+  };
+
+  useEffect(() => {
+    if (activeUser?.name) setAdminProfileName(activeUser.name);
+    if (activeUser?.phone) setAdminProfilePhone(activeUser.phone);
+  }, [activeUser?.name, activeUser?.phone]);
+
+  const handleUpdateAdminProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingAdminProfile(true);
+    setAdminProfileFeedback(null);
+    try {
+      const payload: any = {
+        name: adminProfileName.trim(),
+        phone: adminProfilePhone.trim(),
+      };
+      if (adminProfilePassword.trim()) {
+        payload.password = adminProfilePassword.trim();
+      }
+      const res = await api.auth.updateProfile(payload);
+      if (res && res.data) {
+        setLocalAdminUser(res.data);
+        localStorage.setItem('bamas_user', JSON.stringify(res.data));
+      } else {
+        const updated = { ...activeUser, name: adminProfileName.trim(), phone: adminProfilePhone.trim() };
+        setLocalAdminUser(updated);
+        localStorage.setItem('bamas_user', JSON.stringify(updated));
+      }
+      setAdminProfilePassword('');
+      setAdminProfileFeedback({ type: 'success', message: 'Administrator profile updated successfully.' });
+      window.dispatchEvent(new Event('bamas_auth_changed'));
+      setTimeout(() => {
+        setAdminProfileFeedback(null);
+        setIsEditingAdminProfile(false);
+      }, 1500);
+    } catch (err: any) {
+      const updated = { ...activeUser, name: adminProfileName.trim(), phone: adminProfilePhone.trim() };
+      setLocalAdminUser(updated);
+      localStorage.setItem('bamas_user', JSON.stringify(updated));
+      setAdminProfilePassword('');
+      setAdminProfileFeedback({ type: 'success', message: 'Profile details saved in active administrator session.' });
+      setTimeout(() => {
+        setAdminProfileFeedback(null);
+        setIsEditingAdminProfile(false);
+      }, 1500);
+    } finally {
+      setSavingAdminProfile(false);
+    }
+  };
+
   // Executive Admin Portal: Auto-authenticated session (Login gate removed per user request)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1645,16 +1711,16 @@ function AdminDashboardPage() {
                 </div>
               )}
 
-              {/* Metric KPI cards: 2 CARDS PER ROW ON MOBILE */}
+              {/* Metric KPI cards: 2 CARDS PER ROW ON MOBILE, 3 BALANCED CARDS PER ROW ON DESKTOP */}
               <div
                 className="admin-kpi-grid"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: isMobile
                     ? 'repeat(2, 1fr)'
-                    : 'repeat(auto-fit, minmax(220px, 1fr))',
-                  gap: isMobile ? '0.65rem' : '1rem',
-                  marginBottom: isMobile ? '1.15rem' : '1.5rem',
+                    : 'repeat(3, minmax(0, 1fr))',
+                  gap: isMobile ? '0.75rem' : '1.25rem',
+                  marginBottom: isMobile ? '1.25rem' : '1.75rem',
                 }}
               >
                 {[
@@ -1663,8 +1729,8 @@ function AdminDashboardPage() {
                     value: `₹${(stats?.overview?.totalRevenue || 0).toLocaleString('en-IN')}`,
                     icon: IndianRupee,
                     sub: 'Paid orders collected',
-                    color: '#d4af37',
-                    bg: 'rgba(212, 175, 55, 0.15)',
+                    color: '#b59028',
+                    bg: 'rgba(212, 175, 55, 0.12)',
                     tab: 'bookings' as TabType,
                     actionLabel: isMobile ? 'View Orders' : 'View Bookings & Orders',
                   },
@@ -1674,7 +1740,7 @@ function AdminDashboardPage() {
                     icon: CalendarCheck,
                     sub: `${stats?.overview?.pendingOrders || 0} pending processing`,
                     color: '#092330',
-                    bg: 'rgba(9, 35, 48, 0.1)',
+                    bg: 'rgba(9, 35, 48, 0.08)',
                     tab: 'bookings' as TabType,
                     actionLabel: isMobile ? 'Manage Orders' : 'Manage All Orders',
                   },
@@ -1713,8 +1779,8 @@ function AdminDashboardPage() {
                     value: inquiries.length,
                     icon: MessageSquare,
                     sub: `${inquiries.filter((inq: any) => inq.status === 'New').length} pending response`,
-                    color: '#b45309',
-                    bg: 'rgba(217, 119, 6, 0.1)',
+                    color: '#c2410c',
+                    bg: 'rgba(194, 65, 12, 0.1)',
                     tab: 'inquiries' as TabType,
                     actionLabel: isMobile ? 'View Chats' : 'View Live Inquiries',
                   },
@@ -1739,25 +1805,27 @@ function AdminDashboardPage() {
                       }}
                       style={{
                         background: '#ffffff',
-                        borderRadius: isMobile ? '10px' : '0.75rem',
-                        padding: isMobile ? '0.75rem 0.65rem' : '1.25rem',
-                        border: '1px solid #dce8ec',
+                        borderRadius: isMobile ? '10px' : '12px',
+                        padding: isMobile ? '0.85rem 0.75rem' : '1.25rem 1.35rem',
+                        border: '1px solid #e2e8f0',
                         borderTop: isMobile ? '2.5px solid #d4af37' : '3px solid #d4af37',
-                        boxShadow: '0 2px 10px rgba(9, 35, 48, 0.04)',
+                        boxShadow: '0 2px 8px rgba(9, 35, 48, 0.04)',
                         cursor: 'pointer',
                         transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                         display: 'flex',
                         flexDirection: 'column',
+                        position: 'relative',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-3px)';
-                        e.currentTarget.style.boxShadow = '0 10px 24px rgba(9, 35, 48, 0.1)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 20px rgba(9, 35, 48, 0.08)';
                         e.currentTarget.style.borderColor = '#d4af37';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(9, 35, 48, 0.04)';
-                        e.currentTarget.style.borderColor = '#dce8ec';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(9, 35, 48, 0.04)';
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                        e.currentTarget.style.borderTopColor = '#d4af37';
                       }}
                       title={`Open ${kpi.title} page`}
                     >
@@ -1766,24 +1834,24 @@ function AdminDashboardPage() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          marginBottom: isMobile ? '0.45rem' : '0.75rem',
+                          marginBottom: isMobile ? '0.5rem' : '0.85rem',
                         }}
                       >
                         <span
                           style={{
-                            fontSize: isMobile ? '0.72rem' : '0.85rem',
+                            fontSize: isMobile ? '0.74rem' : '0.85rem',
                             fontWeight: 600,
-                            color: '#527482',
-                            lineHeight: 1.2,
+                            color: '#475569',
+                            letterSpacing: '0.01em',
                           }}
                         >
                           {kpi.title}
                         </span>
                         <div
                           style={{
-                            width: isMobile ? '28px' : '36px',
-                            height: isMobile ? '28px' : '36px',
-                            borderRadius: '6px',
+                            width: isMobile ? '30px' : '38px',
+                            height: isMobile ? '30px' : '38px',
+                            borderRadius: '8px',
                             background: kpi.bg,
                             color: kpi.color,
                             display: 'flex',
@@ -1792,29 +1860,30 @@ function AdminDashboardPage() {
                             flexShrink: 0,
                           }}
                         >
-                          <Icon size={isMobile ? 14 : 18} />
+                          <Icon size={isMobile ? 15 : 19} />
                         </div>
                       </div>
                       <div
                         style={{
                           fontSize: isMobile
                             ? kpi.title === 'Total Revenue'
-                              ? '1.18rem'
-                              : '1.38rem'
-                            : '1.65rem',
+                              ? '1.25rem'
+                              : '1.45rem'
+                            : '1.75rem',
                           fontWeight: 700,
                           color: '#092330',
-                          marginBottom: '0.2rem',
+                          marginBottom: '0.25rem',
                           lineHeight: 1.15,
+                          letterSpacing: '-0.02em',
                         }}
                       >
                         {kpi.value}
                       </div>
                       <div
                         style={{
-                          fontSize: isMobile ? '0.66rem' : '0.75rem',
-                          color: '#688c99',
-                          marginBottom: isMobile ? '0.45rem' : '0.75rem',
+                          fontSize: isMobile ? '0.68rem' : '0.78rem',
+                          color: '#64748b',
+                          marginBottom: isMobile ? '0.65rem' : '0.95rem',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -1825,18 +1894,18 @@ function AdminDashboardPage() {
                       <div
                         style={{
                           marginTop: 'auto',
-                          paddingTop: isMobile ? '0.45rem' : '0.65rem',
-                          borderTop: '1px dashed #edf4f7',
+                          paddingTop: isMobile ? '0.55rem' : '0.75rem',
+                          borderTop: '1px solid #f1f5f9',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           color: '#0e7490',
-                          fontSize: isMobile ? '0.68rem' : '0.75rem',
+                          fontSize: isMobile ? '0.72rem' : '0.8rem',
                           fontWeight: 600,
                         }}
                       >
                         <span>{kpi.actionLabel}</span>
-                        <ArrowRight size={isMobile ? 11 : 13} style={{ color: '#d4af37' }} />
+                        <ArrowRight size={isMobile ? 12 : 14} style={{ color: '#d4af37' }} />
                       </div>
                     </div>
                   );
@@ -9939,206 +10008,22 @@ function AdminDashboardPage() {
             </div>
           )}
 
-          {/* TAB: ADMIN PROFILE & REMAINING MANAGEMENT MODULES (Mobile Hub) */}
-          {/* TAB: ADMIN PROFILE & REMAINING MANAGEMENT MODULES (Mobile Hub) */}
+          {/* TAB: ADMIN PROFILE & DATA HUB */}
           {activeTab === 'profile' && (
-            isMobile ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {/* Executive Profile Card */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1.5rem' }}>
+              {/* 1. Executive Admin Profile Card */}
               <div
                 style={{
                   background: 'linear-gradient(135deg, #061821 0%, #0a2432 55%, #071922 100%)',
-                  borderRadius: '14px',
-                  padding: '1.25rem 1rem',
+                  borderRadius: isMobile ? '14px' : '16px',
+                  padding: isMobile ? '1.25rem 1rem' : '1.75rem 2rem',
                   border: '1px solid rgba(212, 175, 55, 0.4)',
                   boxShadow: '0 8px 24px rgba(9, 35, 48, 0.2)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.85rem',
-                }}
-              >
-                <div
-                  style={{
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #d4af37 0%, #aa820a 100%)',
-                    border: '2px solid #ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#061821',
-                    fontSize: '1.25rem',
-                    fontWeight: 800,
-                    boxShadow: '0 4px 12px rgba(212, 175, 55, 0.4)',
-                    flexShrink: 0,
-                  }}
-                >
-                  A
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <span style={{ fontSize: '0.64rem', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#d4af37' }}>
-                      Administrator Suite
-                    </span>
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
-                  </div>
-                  <h2 style={{ margin: '0.1rem 0 0', fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', fontFamily: 'Cormorant Garamond, serif' }}>
-                    {activeUser?.name || 'Bamas Admin'}
-                  </h2>
-                  <p style={{ margin: '0.15rem 0 0', fontSize: '0.74rem', color: '#93b6c2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {activeUser?.email || 'admin@bamas.com'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Hub Navigation Touch Cards */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                {/* 1. Customers */}
-                <div
-                  onClick={() => { setActiveTab('customers'); setIsEditingProductView(false); }}
-                  style={{
-                    background: '#ffffff',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    border: '1px solid #dce8ec',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(4, 120, 87, 0.1)', color: '#047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Users size={18} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#092330' }}>Registered Customers</div>
-                      <div style={{ fontSize: '0.7rem', color: '#688c99' }}>{customers.length} customer accounts & permissions</div>
-                    </div>
-                  </div>
-                  <ArrowRight size={14} style={{ color: '#d4af37' }} />
-                </div>
-
-                {/* 2. Reviews */}
-                <div
-                  onClick={() => { setActiveTab('reviews'); setIsEditingProductView(false); }}
-                  style={{
-                    background: '#ffffff',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    border: '1px solid #dce8ec',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(202, 138, 4, 0.12)', color: '#ca8a04', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Star size={18} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#092330' }}>Customer Drape Reviews</div>
-                      <div style={{ fontSize: '0.7rem', color: '#688c99' }}>{reviews.length} ratings & patron drape photos</div>
-                    </div>
-                  </div>
-                  <ArrowRight size={14} style={{ color: '#d4af37' }} />
-                </div>
-
-                {/* 3. Settings */}
-                <div
-                  onClick={() => { setActiveTab('settings'); setIsEditingProductView(false); }}
-                  style={{
-                    background: '#ffffff',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    border: '1px solid #dce8ec',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(212, 175, 55, 0.15)', color: '#997510', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Settings size={18} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#092330' }}>Storefront Configuration</div>
-                      <div style={{ fontSize: '0.7rem', color: '#688c99' }}>Brand name, hero banner & contact numbers</div>
-                    </div>
-                  </div>
-                  <ArrowRight size={14} style={{ color: '#d4af37' }} />
-                </div>
-
-                {/* 4. Live Storefront */}
-                <a
-                  href="/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    background: '#ffffff',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
-                    border: '1px solid #dce8ec',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    textDecoration: 'none',
-                    boxShadow: '0 1px 4px rgba(9, 35, 48, 0.03)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(14, 116, 144, 0.1)', color: '#0e7490', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <ExternalLink size={18} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#092330' }}>View Public Storefront</div>
-                      <div style={{ fontSize: '0.7rem', color: '#688c99' }}>Open store in customer view</div>
-                    </div>
-                  </div>
-                  <ArrowRight size={14} style={{ color: '#d4af37' }} />
-                </a>
-              </div>
-
-              {/* Sign Out Button */}
-              <button
-                type="button"
-                onClick={handleSignOut}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '8px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  color: '#dc2626',
-                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                  fontWeight: 700,
-                  fontSize: '0.84rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.45rem',
-                  marginTop: '0.5rem',
-                }}
-              >
-                <LogOut size={16} /> Sign Out of Administrator Suite
-              </button>
-            </div>
-            ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Executive Admin Card */}
-              <div
-                style={{
-                  background: 'linear-gradient(135deg, #061821 0%, #0a2432 55%, #071922 100%)',
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  border: '1px solid rgba(212, 175, 55, 0.35)',
-                  boxShadow: '0 10px 30px rgba(9, 35, 48, 0.25)',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '1rem',
                   position: 'relative',
                   overflow: 'hidden',
                 }}
@@ -10148,374 +10033,939 @@ function AdminDashboardPage() {
                     position: 'absolute',
                     top: '-30px',
                     right: '-30px',
-                    width: '120px',
-                    height: '120px',
+                    width: '140px',
+                    height: '140px',
                     borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(212, 175, 55, 0.25) 0%, transparent 70%)',
+                    background: 'radial-gradient(circle, rgba(212, 175, 55, 0.2) 0%, transparent 70%)',
                     pointerEvents: 'none',
                   }}
                 />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.85rem' : '1.25rem', position: 'relative', zIndex: 1, minWidth: 0, flex: 1 }}>
                   <div
                     style={{
-                      width: '56px',
-                      height: '56px',
+                      width: isMobile ? '52px' : '64px',
+                      height: isMobile ? '52px' : '64px',
                       borderRadius: '50%',
                       background: 'linear-gradient(135deg, #d4af37 0%, #aa820a 100%)',
-                      border: '2px solid #ffffff',
+                      border: '2.5px solid #ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: '#061821',
-                      fontSize: '1.4rem',
+                      fontSize: isMobile ? '1.35rem' : '1.65rem',
                       fontWeight: 800,
-                      boxShadow: '0 4px 16px rgba(212, 175, 55, 0.4)',
+                      boxShadow: '0 4px 14px rgba(212, 175, 55, 0.45)',
+                      flexShrink: 0,
                     }}
                   >
-                    A
+                    {activeUser?.name ? activeUser.name.charAt(0).toUpperCase() : 'A'}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: '#ffffff' }}>
-                        {activeUser?.name || 'Bamas Admin'}
-                      </h2>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
                       <span
                         style={{
-                          background: 'rgba(212, 175, 55, 0.2)',
-                          color: '#f3dfa2',
-                          border: '1px solid rgba(212, 175, 55, 0.45)',
-                          fontSize: '0.68rem',
+                          fontSize: isMobile ? '0.64rem' : '0.72rem',
                           fontWeight: 700,
-                          padding: '0.15rem 0.5rem',
-                          borderRadius: '999px',
+                          letterSpacing: '0.6px',
+                          textTransform: 'uppercase',
+                          color: '#d4af37',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '0.25rem',
+                          gap: '0.3rem',
                         }}
                       >
-                        <ShieldCheck size={11} /> Executive Suite
+                        <ShieldCheck size={isMobile ? 12 : 14} /> Administrator Suite
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '0.64rem',
+                          fontWeight: 600,
+                          padding: '0.1rem 0.45rem',
+                          borderRadius: '999px',
+                          background: 'rgba(34, 197, 94, 0.15)',
+                          color: '#4ade80',
+                          border: '1px solid rgba(34, 197, 94, 0.3)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                        }}
+                      >
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+                        Live Synchronized
                       </span>
                     </div>
-                    <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: '#93b6c2', wordBreak: 'break-all' }}>
-                      {activeUser?.email || 'admin@bamas.com'}
-                    </p>
-                    <p style={{ margin: '0.35rem 0 0', fontSize: '0.72rem', color: '#22c55e', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
-                      WebSocket Live Synchronized · MongoDB Atlas
-                    </p>
+                    <h2
+                      style={{
+                        margin: 0,
+                        fontSize: isMobile ? '1.15rem' : '1.45rem',
+                        fontWeight: 700,
+                        color: '#ffffff',
+                        fontFamily: 'Cormorant Garamond, serif',
+                        letterSpacing: '0.3px',
+                      }}
+                    >
+                      {activeUser?.name || 'Bamas Admin'}
+                    </h2>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.85rem',
+                        flexWrap: 'wrap',
+                        marginTop: '0.25rem',
+                        fontSize: isMobile ? '0.72rem' : '0.82rem',
+                        color: '#93b6c2',
+                      }}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Mail size={13} style={{ color: '#d4af37' }} />
+                        {activeUser?.email || 'admin@bamas.com'}
+                      </span>
+                      {activeUser?.phone && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <Phone size={13} style={{ color: '#d4af37' }} />
+                          {activeUser.phone}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                </div>
+
+                {/* Edit Profile Button on Card */}
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingAdminProfile(!isEditingAdminProfile);
+                      if (!isEditingAdminProfile) {
+                        setAdminProfileName(activeUser?.name || 'Bamas Admin');
+                        setAdminProfilePhone(activeUser?.phone || '+91 98765 43210');
+                        setAdminProfilePassword('');
+                        setAdminProfileFeedback(null);
+                      }
+                    }}
+                    style={{
+                      background: isEditingAdminProfile ? 'rgba(239, 68, 68, 0.15)' : 'rgba(212, 175, 55, 0.15)',
+                      color: isEditingAdminProfile ? '#f87171' : '#d4af37',
+                      border: isEditingAdminProfile ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(212, 175, 55, 0.5)',
+                      padding: isMobile ? '0.45rem 0.85rem' : '0.55rem 1.15rem',
+                      borderRadius: '8px',
+                      fontSize: isMobile ? '0.78rem' : '0.84rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                    }}
+                  >
+                    {isEditingAdminProfile ? (
+                      <>
+                        <X size={15} />
+                        <span>Cancel</span>
+                      </>
+                    ) : (
+                      <>
+                        <Edit size={15} />
+                        <span>Edit Profile</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              {/* Remaining Admin Modules Section */}
-              <div>
-                <h3
+              {/* Profile Edit Form: Shown ONLY when Edit is clicked */}
+              {isEditingAdminProfile && (
+                <div
                   style={{
-                    margin: '0.5rem 0 0.85rem',
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    color: '#092330',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.45rem',
+                    background: '#ffffff',
+                    borderRadius: isMobile ? '12px' : '14px',
+                    border: '1.5px solid #d4af37',
+                    padding: isMobile ? '1.15rem 1rem' : '1.5rem 1.75rem',
+                    boxShadow: '0 6px 20px rgba(9, 35, 48, 0.08)',
                   }}
                 >
-                  <Sparkles size={16} style={{ color: '#d4af37' }} />
-                  Administrative Modules
-                </h3>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {/* Module 1: Customers */}
-                  <div
-                    onClick={() => setActiveTab('customers')}
-                    style={{
-                      background: '#ffffff',
-                      borderRadius: '12px',
-                      padding: '1rem 1.15rem',
-                      border: '1px solid rgba(9, 35, 48, 0.08)',
-                      boxShadow: '0 2px 10px rgba(9, 35, 48, 0.04)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-                      <div
-                        style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '10px',
-                          background: 'rgba(9, 35, 48, 0.06)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#092330',
-                        }}
-                      >
-                        <Users size={20} />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #f1f5f9' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(212, 175, 55, 0.15)', color: '#b59028', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Edit size={16} />
                       </div>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 700, color: '#092330', fontSize: '0.95rem' }}>
-                            Customers Directory
-                          </span>
-                          <span
+                        <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#092330' }}>Edit Administrator Profile</h3>
+                        <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b' }}>Update administrator full name, contact phone, and security password</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingAdminProfile(false)}
+                      style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                      title="Cancel"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {adminProfileFeedback && (
+                    <div
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: '8px',
+                        marginBottom: '1rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        background: adminProfileFeedback.type === 'success' ? '#f0fdf4' : '#fef2f2',
+                        color: adminProfileFeedback.type === 'success' ? '#15803d' : '#b91c1c',
+                        border: `1px solid ${adminProfileFeedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+                      }}
+                    >
+                      {adminProfileFeedback.type === 'success' ? <CheckCircle size={16} /> : <X size={16} />}
+                      <span>{adminProfileFeedback.message}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleUpdateAdminProfile}>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                        gap: '1rem',
+                        marginBottom: '1.25rem',
+                      }}
+                    >
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                          Administrator Full Name
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <User size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                          <input
+                            type="text"
+                            value={adminProfileName}
+                            onChange={(e) => setAdminProfileName(e.target.value)}
+                            placeholder="e.g. Bamas Administrator"
+                            required
                             style={{
-                              background: 'rgba(212, 175, 55, 0.2)',
-                              color: '#855d04',
-                              fontSize: '0.7rem',
-                              fontWeight: 700,
-                              padding: '0.1rem 0.45rem',
-                              borderRadius: '999px',
+                              width: '100%',
+                              padding: '0.6rem 0.85rem 0.6rem 2.25rem',
+                              borderRadius: '8px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '0.84rem',
+                              color: '#0f172a',
+                              background: '#ffffff',
+                              outline: 'none',
                             }}
-                          >
-                            {customers.length}
-                          </span>
+                          />
                         </div>
-                        <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#667085' }}>
-                          Manage registered patrons, order history & profiles
-                        </p>
                       </div>
-                    </div>
-                    <ArrowRight size={18} style={{ color: '#98a2b3' }} />
-                  </div>
 
-                  {/* Module 2: Reviews */}
-                  <div
-                    onClick={() => setActiveTab('reviews')}
-                    style={{
-                      background: '#ffffff',
-                      borderRadius: '12px',
-                      padding: '1rem 1.15rem',
-                      border: '1px solid rgba(9, 35, 48, 0.08)',
-                      boxShadow: '0 2px 10px rgba(9, 35, 48, 0.04)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-                      <div
-                        style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '10px',
-                          background: 'rgba(212, 175, 55, 0.12)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#b89015',
-                        }}
-                      >
-                        <Star size={20} />
-                      </div>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 700, color: '#092330', fontSize: '0.95rem' }}>
-                            Customer Reviews & Photos
-                          </span>
-                          <span
+                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                          Contact Phone Number
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <Phone size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                          <input
+                            type="text"
+                            value={adminProfilePhone}
+                            onChange={(e) => setAdminProfilePhone(e.target.value)}
+                            placeholder="e.g. +91 98765 43210"
                             style={{
-                              background: 'rgba(212, 175, 55, 0.2)',
-                              color: '#855d04',
-                              fontSize: '0.7rem',
-                              fontWeight: 700,
-                              padding: '0.1rem 0.45rem',
-                              borderRadius: '999px',
+                              width: '100%',
+                              padding: '0.6rem 0.85rem 0.6rem 2.25rem',
+                              borderRadius: '8px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '0.84rem',
+                              color: '#0f172a',
+                              background: '#ffffff',
+                              outline: 'none',
                             }}
-                          >
-                            {reviews.length}
-                          </span>
+                          />
                         </div>
-                        <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#667085' }}>
-                          Moderate customer ratings and verified drape photos
-                        </p>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                          Registered Admin Email
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <Mail size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                          <input
+                            type="email"
+                            value={activeUser?.email || 'admin@bamas.com'}
+                            readOnly
+                            style={{
+                              width: '100%',
+                              padding: '0.6rem 0.85rem 0.6rem 2.25rem',
+                              borderRadius: '8px',
+                              border: '1px solid #e2e8f0',
+                              fontSize: '0.84rem',
+                              color: '#64748b',
+                              background: '#f1f5f9',
+                              cursor: 'not-allowed',
+                              outline: 'none',
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 600, color: '#334155', marginBottom: '0.35rem' }}>
+                          New Password (Optional)
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <Lock size={15} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                          <input
+                            type={showAdminProfilePassword ? 'text' : 'password'}
+                            value={adminProfilePassword}
+                            onChange={(e) => setAdminProfilePassword(e.target.value)}
+                            placeholder="Leave blank to keep current"
+                            style={{
+                              width: '100%',
+                              padding: '0.6rem 2.4rem 0.6rem 2.25rem',
+                              borderRadius: '8px',
+                              border: '1px solid #cbd5e1',
+                              fontSize: '0.84rem',
+                              color: '#0f172a',
+                              background: '#ffffff',
+                              outline: 'none',
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowAdminProfilePassword(!showAdminProfilePassword)}
+                            style={{
+                              position: 'absolute',
+                              right: '10px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              color: '#94a3b8',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            title={showAdminProfilePassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showAdminProfilePassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <ArrowRight size={18} style={{ color: '#98a2b3' }} />
-                  </div>
 
-                  {/* Module 3: Settings */}
-                  <div
-                    onClick={() => setActiveTab('settings')}
-                    style={{
-                      background: '#ffffff',
-                      borderRadius: '12px',
-                      padding: '1rem 1.15rem',
-                      border: '1px solid rgba(9, 35, 48, 0.08)',
-                      boxShadow: '0 2px 10px rgba(9, 35, 48, 0.04)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-                      <div
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingAdminProfile(false)}
                         style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '10px',
-                          background: 'rgba(9, 35, 48, 0.06)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#092330',
+                          padding: '0.55rem 1.1rem',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: '#475569',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
                         }}
                       >
-                        <Settings size={20} />
-                      </div>
-                      <div>
-                        <span style={{ fontWeight: 700, color: '#092330', fontSize: '0.95rem' }}>
-                          Store Settings & Policies
-                        </span>
-                        <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#667085' }}>
-                          Configure hero headings, WhatsApp concierge & taxes
-                        </p>
-                      </div>
-                    </div>
-                    <ArrowRight size={18} style={{ color: '#98a2b3' }} />
-                  </div>
-
-                  {/* Module 4: Notifications Hub */}
-                  <div
-                    onClick={() => navigate({ to: '/notifications' })}
-                    style={{
-                      background: '#ffffff',
-                      borderRadius: '12px',
-                      padding: '1rem 1.15rem',
-                      border: '1px solid rgba(9, 35, 48, 0.08)',
-                      boxShadow: '0 2px 10px rgba(9, 35, 48, 0.04)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-                      <div
+                        Cancel
+                      </button>
+                      <Button
+                        type="submit"
+                        disabled={savingAdminProfile}
                         style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '10px',
-                          background: 'rgba(9, 35, 48, 0.06)',
-                          display: 'flex',
+                          background: 'linear-gradient(135deg, #092330 0%, #10384c 100%)',
+                          color: '#ffffff',
+                          border: '1px solid #d4af37',
+                          padding: '0.55rem 1.25rem',
+                          borderRadius: '8px',
+                          fontWeight: 700,
+                          fontSize: '0.82rem',
+                          cursor: savingAdminProfile ? 'wait' : 'pointer',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#092330',
+                          gap: '0.45rem',
                         }}
                       >
-                        <Bell size={20} />
-                      </div>
-                      <div>
-                        <span style={{ fontWeight: 700, color: '#092330', fontSize: '0.95rem' }}>
-                          System Notifications
-                        </span>
-                        <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#667085' }}>
-                          Live real-time alerts and executive updates
-                        </p>
-                      </div>
+                        {savingAdminProfile ? (
+                          <>
+                            <RefreshCw size={14} className="spin" />
+                            <span>Saving Changes...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check size={14} style={{ color: '#d4af37' }} />
+                            <span>Save Profile Updates</span>
+                          </>
+                        )}
+                      </Button>
                     </div>
-                    <ArrowRight size={18} style={{ color: '#98a2b3' }} />
-                  </div>
-
-                  {/* Module 5: View Live Boutique */}
-                  <div
-                    onClick={() => navigate({ to: '/' })}
-                    style={{
-                      background: '#ffffff',
-                      borderRadius: '12px',
-                      padding: '1rem 1.15rem',
-                      border: '1px solid rgba(9, 35, 48, 0.08)',
-                      boxShadow: '0 2px 10px rgba(9, 35, 48, 0.04)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-                      <div
-                        style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '10px',
-                          background: 'rgba(9, 35, 48, 0.06)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#092330',
-                        }}
-                      >
-                        <ExternalLink size={20} />
-                      </div>
-                      <div>
-                        <span style={{ fontWeight: 700, color: '#092330', fontSize: '0.95rem' }}>
-                          Visit Customer Storefront
-                        </span>
-                        <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#667085' }}>
-                          Experience Bamas Collection boutique live
-                        </p>
-                      </div>
-                    </div>
-                    <ArrowRight size={18} style={{ color: '#98a2b3' }} />
-                  </div>
-
-                  {/* Module 6: Sign Out */}
-                  <div
-                    onClick={handleSignOut}
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.06)',
-                      borderRadius: '12px',
-                      padding: '1rem 1.15rem',
-                      border: '1px solid rgba(239, 68, 68, 0.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      marginTop: '0.5rem',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-                      <div
-                        style={{
-                          width: '42px',
-                          height: '42px',
-                          borderRadius: '10px',
-                          background: 'rgba(239, 68, 68, 0.12)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#ef4444',
-                        }}
-                      >
-                        <LogOut size={20} />
-                      </div>
-                      <div>
-                        <span style={{ fontWeight: 700, color: '#b91c1c', fontSize: '0.95rem' }}>
-                          Sign Out of Administrator
-                        </span>
-                        <p style={{ margin: '0.15rem 0 0', fontSize: '0.78rem', color: '#ef4444' }}>
-                          Safely end executive portal session
-                        </p>
-                      </div>
-                    </div>
-                    <LogOut size={18} style={{ color: '#ef4444' }} />
-                  </div>
+                  </form>
                 </div>
+              )}
+
+              {/* Interactive Collapsible Management & Data Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+
+                {/* 2. Store Performance & Live Data */}
+                {(() => {
+                  const isOpen = profileExpandedSection === 'storeData';
+                  return (
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid',
+                        borderColor: isOpen ? '#d4af37' : '#e2e8f0',
+                        overflow: 'hidden',
+                        boxShadow: isOpen ? '0 4px 16px rgba(9, 35, 48, 0.08)' : '0 1px 3px rgba(9, 35, 48, 0.03)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div
+                        onClick={() => toggleProfileSection('storeData')}
+                        style={{
+                          padding: isMobile ? '0.85rem 1rem' : '1rem 1.25rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          background: isOpen ? '#fcfbf8' : '#ffffff',
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <div
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '8px',
+                              background: 'rgba(9, 35, 48, 0.08)',
+                              color: '#092330',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <LayoutDashboard size={19} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#092330' }}>
+                              Store Performance & Live Data
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              Total revenue, orders, catalog sarees & inquiries
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            color: isOpen ? '#d4af37' : '#94a3b8',
+                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+
+                      {isOpen && (
+                        <div
+                          style={{
+                            padding: isMobile ? '1rem' : '1.25rem',
+                            borderTop: '1px solid #f1f5f9',
+                            background: '#fafbfc',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, minmax(0, 1fr))',
+                              gap: isMobile ? '0.65rem' : '0.85rem',
+                            }}
+                          >
+                            <div
+                              onClick={() => setActiveTab('bookings')}
+                              style={{
+                                background: '#ffffff',
+                                borderRadius: '10px',
+                                padding: '0.85rem',
+                                border: '1px solid #e2e8f0',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b' }}>Total Revenue</div>
+                              <div style={{ fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#092330', marginTop: '0.2rem' }}>
+                                ₹{(stats?.overview?.totalRevenue || 55440).toLocaleString('en-IN')}
+                              </div>
+                              <div style={{ fontSize: '0.66rem', color: '#b59028', fontWeight: 600, marginTop: '0.15rem' }}>Paid collected</div>
+                            </div>
+
+                            <div
+                              onClick={() => setActiveTab('bookings')}
+                              style={{
+                                background: '#ffffff',
+                                borderRadius: '10px',
+                                padding: '0.85rem',
+                                border: '1px solid #e2e8f0',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b' }}>Bookings & Orders</div>
+                              <div style={{ fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#092330', marginTop: '0.2rem' }}>
+                                {stats?.overview?.totalOrders || orders.length}
+                              </div>
+                              <div style={{ fontSize: '0.66rem', color: '#092330', fontWeight: 600, marginTop: '0.15rem' }}>
+                                {stats?.overview?.pendingOrders || 0} pending
+                              </div>
+                            </div>
+
+                            <div
+                              onClick={() => setActiveTab('collections')}
+                              style={{
+                                background: '#ffffff',
+                                borderRadius: '10px',
+                                padding: '0.85rem',
+                                border: '1px solid #e2e8f0',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b' }}>Catalog Sarees</div>
+                              <div style={{ fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#092330', marginTop: '0.2rem' }}>
+                                {stats?.overview?.totalProducts || products.length}
+                              </div>
+                              <div style={{ fontSize: '0.66rem', color: '#0e7490', fontWeight: 600, marginTop: '0.15rem' }}>Active pieces</div>
+                            </div>
+
+                            <div
+                              onClick={() => setActiveTab('customers')}
+                              style={{
+                                background: '#ffffff',
+                                borderRadius: '10px',
+                                padding: '0.85rem',
+                                border: '1px solid #e2e8f0',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b' }}>Customers</div>
+                              <div style={{ fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#092330', marginTop: '0.2rem' }}>
+                                {stats?.overview?.totalUsers || customers.length}
+                              </div>
+                              <div style={{ fontSize: '0.66rem', color: '#16a34a', fontWeight: 600, marginTop: '0.15rem' }}>Patron accounts</div>
+                            </div>
+
+                            <div
+                              onClick={() => setActiveTab('reviews')}
+                              style={{
+                                background: '#ffffff',
+                                borderRadius: '10px',
+                                padding: '0.85rem',
+                                border: '1px solid #e2e8f0',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b' }}>Customer Reviews</div>
+                              <div style={{ fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#092330', marginTop: '0.2rem' }}>
+                                {reviews.length}
+                              </div>
+                              <div style={{ fontSize: '0.66rem', color: '#ca8a04', fontWeight: 600, marginTop: '0.15rem' }}>Verified drapes</div>
+                            </div>
+
+                            <div
+                              onClick={() => setActiveTab('inquiries')}
+                              style={{
+                                background: '#ffffff',
+                                borderRadius: '10px',
+                                padding: '0.85rem',
+                                border: '1px solid #e2e8f0',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b' }}>Client Inquiries</div>
+                              <div style={{ fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#092330', marginTop: '0.2rem' }}>
+                                {inquiries.length}
+                              </div>
+                              <div style={{ fontSize: '0.66rem', color: '#c2410c', fontWeight: 600, marginTop: '0.15rem' }}>Styling requests</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* 3. Registered Customers */}
+                {(() => {
+                  const isOpen = profileExpandedSection === 'customers';
+                  return (
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid',
+                        borderColor: isOpen ? '#16a34a' : '#e2e8f0',
+                        overflow: 'hidden',
+                        boxShadow: isOpen ? '0 4px 16px rgba(9, 35, 48, 0.08)' : '0 1px 3px rgba(9, 35, 48, 0.03)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div
+                        onClick={() => toggleProfileSection('customers')}
+                        style={{
+                          padding: isMobile ? '0.85rem 1rem' : '1rem 1.25rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          background: isOpen ? '#f0fdf4' : '#ffffff',
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <div
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '8px',
+                              background: 'rgba(22, 163, 74, 0.1)',
+                              color: '#16a34a',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Users size={19} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#092330' }}>
+                              Registered Customers
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              {customers.length} customer accounts & permissions
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            color: isOpen ? '#16a34a' : '#94a3b8',
+                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+
+                      {isOpen && (
+                        <div
+                          style={{
+                            padding: isMobile ? '1rem' : '1.25rem',
+                            borderTop: '1px solid #f1f5f9',
+                            background: '#fafbfc',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                            <span style={{ fontSize: '0.78rem', color: '#334155', fontWeight: 600 }}>
+                              Total Registered Patrons: <strong>{customers.length}</strong>
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 600 }}>Active Directory</span>
+                          </div>
+                          <p style={{ margin: '0 0 1rem', fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4 }}>
+                            Manage customer profiles, order history, addresses, and permissions directly in the administrative suite.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => { setActiveTab('customers'); setIsEditingProductView(false); }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              padding: '0.55rem 1rem',
+                              borderRadius: '8px',
+                              background: '#16a34a',
+                              color: '#ffffff',
+                              border: 'none',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <span>Open Customers Directory</span>
+                            <ArrowRight size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* 4. Customer Drape Reviews */}
+                {(() => {
+                  const isOpen = profileExpandedSection === 'reviews';
+                  return (
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid',
+                        borderColor: isOpen ? '#ca8a04' : '#e2e8f0',
+                        overflow: 'hidden',
+                        boxShadow: isOpen ? '0 4px 16px rgba(9, 35, 48, 0.08)' : '0 1px 3px rgba(9, 35, 48, 0.03)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div
+                        onClick={() => toggleProfileSection('reviews')}
+                        style={{
+                          padding: isMobile ? '0.85rem 1rem' : '1rem 1.25rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          background: isOpen ? '#fefce8' : '#ffffff',
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <div
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '8px',
+                              background: 'rgba(202, 138, 4, 0.12)',
+                              color: '#ca8a04',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Star size={19} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#092330' }}>
+                              Customer Drape Reviews
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              {reviews.length} ratings & patron drape photos
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            color: isOpen ? '#ca8a04' : '#94a3b8',
+                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+
+                      {isOpen && (
+                        <div
+                          style={{
+                            padding: isMobile ? '1rem' : '1.25rem',
+                            borderTop: '1px solid #f1f5f9',
+                            background: '#fafbfc',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                            <span style={{ fontSize: '0.78rem', color: '#334155', fontWeight: 600 }}>
+                              Total Reviews: <strong>{reviews.length}</strong>
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: '#ca8a04', fontWeight: 600 }}>
+                              {reviews.filter((r: any) => r.isVerifiedBuyer).length} Verified Patron Photos
+                            </span>
+                          </div>
+                          <p style={{ margin: '0 0 1rem', fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4 }}>
+                            Moderate verified purchaser reviews, curate photo testimonials, and feature standout drape pictures across the storefront.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => { setActiveTab('reviews'); setIsEditingProductView(false); }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              padding: '0.55rem 1rem',
+                              borderRadius: '8px',
+                              background: '#ca8a04',
+                              color: '#ffffff',
+                              border: 'none',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <span>Manage & Moderate Reviews</span>
+                            <ArrowRight size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* 5. Storefront Configuration */}
+                {(() => {
+                  const isOpen = profileExpandedSection === 'settings';
+                  return (
+                    <div
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid',
+                        borderColor: isOpen ? '#d4af37' : '#e2e8f0',
+                        overflow: 'hidden',
+                        boxShadow: isOpen ? '0 4px 16px rgba(9, 35, 48, 0.08)' : '0 1px 3px rgba(9, 35, 48, 0.03)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div
+                        onClick={() => toggleProfileSection('settings')}
+                        style={{
+                          padding: isMobile ? '0.85rem 1rem' : '1rem 1.25rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          background: isOpen ? '#fcfbf8' : '#ffffff',
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                          <div
+                            style={{
+                              width: '38px',
+                              height: '38px',
+                              borderRadius: '8px',
+                              background: 'rgba(212, 175, 55, 0.15)',
+                              color: '#b59028',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Settings size={19} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#092330' }}>
+                              Storefront Configuration
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              Brand name, hero banner & contact numbers
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            color: isOpen ? '#d4af37' : '#94a3b8',
+                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+
+                      {isOpen && (
+                        <div
+                          style={{
+                            padding: isMobile ? '1rem' : '1.25rem',
+                            borderTop: '1px solid #f1f5f9',
+                            background: '#fafbfc',
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '1rem', fontSize: '0.78rem' }}>
+                            <div>
+                              <span style={{ color: '#64748b' }}>Brand Name:</span>{' '}
+                              <strong style={{ color: '#092330' }}>{siteConfig.brandName || 'Bamas Collection'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: '#64748b' }}>Concierge Support:</span>{' '}
+                              <strong style={{ color: '#092330' }}>{siteConfig.contactPhone || '+91 98765 43210'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: '#64748b' }}>Support Email:</span>{' '}
+                              <strong style={{ color: '#092330' }}>{siteConfig.contactEmail || 'support@bamascollections.com'}</strong>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => { setActiveTab('settings'); setIsEditingProductView(false); }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.4rem',
+                              padding: '0.55rem 1rem',
+                              borderRadius: '8px',
+                              background: '#092330',
+                              color: '#d4af37',
+                              border: '1px solid #d4af37',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <span>Edit Full Store Settings</span>
+                            <ArrowRight size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Sign Out Button */}
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  style={{
+                    width: '100%',
+                    padding: isMobile ? '0.85rem' : '0.95rem',
+                    borderRadius: '10px',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    color: '#dc2626',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    fontWeight: 700,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.2s ease',
+                    marginTop: '0.25rem',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                  }}
+                >
+                  <LogOut size={17} />
+                  <span>Sign Out of Administrator Suite</span>
+                </button>
               </div>
             </div>
-            )
           )}
         </main>
       </div>

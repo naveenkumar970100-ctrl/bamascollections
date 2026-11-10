@@ -49,6 +49,7 @@ import {
 import { useCustomer } from './auth-context';
 import { api } from '@/lib/api';
 import { cart } from '@/lib/cart';
+import bamasLogo from '@/assets/bamas-logo.jpg';
 import hero from '@/assets/saree-hero.jpg';
 import rose from '@/assets/rose-saree.jpg';
 import ivory from '@/assets/ivory-saree.jpg';
@@ -86,9 +87,20 @@ function getSareeImage(p: any) {
 
 const image = ivory;
 
-export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
+export function AuthForm({
+  mode,
+  inProfileCard = false,
+}: {
+  mode: 'login' | 'register' | 'reset';
+  inProfileCard?: boolean;
+}) {
   const { user, ready } = useCustomer();
   const navigate = useNavigate();
+
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'reset'>(mode);
+  useEffect(() => {
+    setAuthMode(mode);
+  }, [mode]);
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -110,14 +122,14 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
   const confirmVal = validateConfirmPassword(password, confirmPassword);
 
   useEffect(() => {
-    if (mode === 'reset') {
+    if (authMode === 'reset') {
       setRecovery(new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery');
     }
-  }, [mode]);
+  }, [authMode]);
 
   useEffect(() => {
     let active = true;
-    if (!user || mode === 'reset') return;
+    if (!user || authMode === 'reset') return;
     if (user.name) {
       setName(user.name);
     } else if (user.id) {
@@ -144,7 +156,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
     setAuthTouched({ name: true, identifier: true, password: true, confirmPassword: true });
 
     try {
-      if (mode === 'register' && !forgot) {
+      if (authMode === 'register' && !forgot) {
         if (!nameVal.valid) throw new Error(nameVal.error);
         if (!idVal.valid) throw new Error(idVal.error);
         if (!passVal.valid) throw new Error(passVal.error);
@@ -152,12 +164,12 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
       } else if (forgot) {
         const emailCheck = validateEmail(identifier, true);
         if (!emailCheck.valid) throw new Error(emailCheck.error);
-      } else if (mode === 'login') {
+      } else if (authMode === 'login') {
         if (!idVal.valid) throw new Error(idVal.error);
         if (!password) throw new Error('Please enter your account password.');
       }
 
-      if (mode === 'reset') {
+      if (authMode === 'reset') {
         if (!recovery) throw new Error('Please open the password recovery link from your email.');
         const { error } = await supabase.auth.updateUser({ password });
         if (error) throw error;
@@ -187,7 +199,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
         });
         if (error) throw error;
         setMessage('Check your email for a password reset link.');
-      } else if (mode === 'register') {
+      } else if (authMode === 'register') {
         // Register in MERN Express + MongoDB Atlas backend
         const cleanIdentifier = identifier.trim();
         if (!name.trim()) {
@@ -223,7 +235,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
           if (res.data?.role === 'admin') {
             setTimeout(() => navigate({ to: '/admin' }), 700);
           } else {
-            setTimeout(() => navigate({ to: '/products' }), 700);
+            if (window.location.pathname !== '/profile') {
+              setTimeout(() => navigate({ to: '/profile' }), 700);
+            }
           }
         } catch (apiErr: any) {
           // Try Supabase as backup if identifier is email
@@ -238,8 +252,13 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
                 },
               });
               if (error) throw error;
-              if (data.session) await navigate({ to: '/login' });
-              else setMessage('Check your email to confirm your account before signing in.');
+              if (data.session) {
+                if (window.location.pathname !== '/profile') {
+                  await navigate({ to: '/profile' });
+                }
+              } else {
+                setMessage('Check your email to confirm your account before signing in.');
+              }
             } catch {
               throw apiErr;
             }
@@ -270,7 +289,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
             setTimeout(() => navigate({ to: '/admin' }), 600);
           } else {
             setMessage('Welcome back! Signed in successfully.');
-            setTimeout(() => navigate({ to: '/products' }), 600);
+            if (window.location.pathname !== '/profile') {
+              setTimeout(() => navigate({ to: '/profile' }), 600);
+            }
           }
         } catch (apiErr: any) {
           // Fallback to Supabase if identifier is email
@@ -283,7 +304,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
               if (error) throw error;
               setMessage('Welcome back. You are signed in.');
               window.dispatchEvent(new Event('bamas_auth_changed'));
-              setTimeout(() => navigate({ to: '/products' }), 600);
+              if (window.location.pathname !== '/profile') {
+                setTimeout(() => navigate({ to: '/profile' }), 600);
+              }
             } catch {
               throw apiErr;
             }
@@ -308,7 +331,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
     navigate({ to: '/login' });
   }
 
-  const account = Boolean(user) && mode !== 'reset';
+  const account = Boolean(user) && authMode !== 'reset';
   const isAdmin = user?.role === 'admin';
 
   // Patron Dashboard Tabs
@@ -1594,63 +1617,207 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
   }
 
   return (
-    <main className="auth-ref-page">
-      <div className="auth-ref-grid">
-        {/* Left Column: Visual Artwork matching reference */}
-        <div className="auth-ref-visual">
-          <div className="auth-ref-image-frame">
+    <main
+      className="auth-redesigned-page"
+      style={{
+        width: '100%',
+        minHeight: inProfileCard ? 'auto' : 'calc(100vh - 80px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: inProfileCard ? '0' : '2.5rem 1rem calc(80px + env(safe-area-inset-bottom, 16px))',
+        background: '#ffffff',
+        boxSizing: 'border-box',
+        fontFamily: 'Manrope, sans-serif',
+      }}
+    >
+      <style>{`
+        .bamas-ref-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          max-width: 960px;
+          margin: 0 auto;
+          gap: 2.25rem;
+          padding: 1.5rem 1rem;
+          box-sizing: border-box;
+        }
+        @media (min-width: 768px) {
+          .bamas-ref-container {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 5rem;
+            padding: 3rem 2rem;
+          }
+        }
+        .bamas-ref-logo-badge {
+          width: 140px;
+          height: 140px;
+          border-radius: 50%;
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+          border: 2px solid #eef2f6;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #ffffff;
+        }
+        @media (min-width: 768px) {
+          .bamas-ref-logo-badge {
+            width: 220px;
+            height: 220px;
+          }
+        }
+        .bamas-ref-input {
+          width: 100%;
+          height: 48px;
+          background: #f0f4f9;
+          border: 1px solid #d0dbe7;
+          border-radius: 10px;
+          padding: 0 1rem;
+          font-size: 0.95rem;
+          color: #0f172a;
+          outline: none;
+          box-sizing: border-box;
+          transition: all 0.2s ease;
+          font-family: inherit;
+        }
+        .bamas-ref-input:focus {
+          background: #ffffff !important;
+          border-color: #1e6b38 !important;
+          box-shadow: 0 0 0 3px rgba(30, 107, 56, 0.15) !important;
+        }
+      `}</style>
+
+      <div className="bamas-ref-container">
+        {/* Left Column: Brand Emblem & Tracking Subtitle */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div className="bamas-ref-logo-badge">
             <img
-              src={image}
-              alt="Bamas Collection Heritage Saree"
+              src={bamasLogo}
+              alt="Bamas Collection"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={(e) => {
+                e.currentTarget.src = hero;
+              }}
             />
           </div>
+          <p
+            style={{
+              margin: '1.25rem 0 0',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              letterSpacing: '0.18em',
+              color: '#1e6b38',
+              textTransform: 'uppercase',
+              textAlign: 'center',
+            }}
+          >
+            BAMAS COLLECTION
+          </p>
         </div>
 
-        {/* Right Column: Clean Form matching reference */}
-        <div className="auth-ref-form-wrap">
-          <h1 className="auth-ref-title">
-            {mode === 'reset'
-              ? 'Set new password'
+        {/* Right Column: Clean Form Layout */}
+        <div style={{ width: '100%', maxWidth: '420px', boxSizing: 'border-box' }}>
+          <h1
+            style={{
+              margin: '0 0 0.45rem',
+              fontSize: '2.15rem',
+              fontWeight: 700,
+              color: '#0f1e36',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+            }}
+          >
+            {authMode === 'reset'
+              ? 'Set New Password'
               : forgot
-              ? 'Reset password'
-              : mode === 'register'
-              ? 'Create account'
+              ? 'Forgot Password'
+              : authMode === 'register'
+              ? 'Create an account'
               : 'Welcome back'}
           </h1>
-          <p className="auth-ref-subtitle">
-            {forgot
-              ? 'Enter your email address to receive password reset instructions.'
-              : mode === 'reset'
+
+          <p
+            style={{
+              margin: '0 0 1.75rem',
+              fontSize: '0.95rem',
+              color: '#64748b',
+              lineHeight: 1.5,
+            }}
+          >
+            {authMode === 'reset'
               ? 'Choose a secure new password for your customer account.'
-              : mode === 'register'
-              ? 'Join to access your orders, bookings, and customer profile.'
+              : forgot
+              ? 'Enter your registered email to receive password reset instructions.'
+              : authMode === 'register'
+              ? 'Sign up to manage your orders, bookings, and customer profile.'
               : 'Sign in to access your orders, bookings, and customer profile.'}
           </p>
 
           {error && (
-            <div role="alert" className="auth-ref-feedback error">
+            <div
+              role="alert"
+              style={{
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#b91c1c',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginBottom: '1.25rem',
+              }}
+            >
+              <X size={16} style={{ flexShrink: 0 }} />
               <span>{error}</span>
             </div>
           )}
 
           {message && (
-            <div role="status" className="auth-ref-feedback success">
+            <div
+              role="status"
+              style={{
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                color: '#15803d',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginBottom: '1.25rem',
+              }}
+            >
               <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
               <span>{message}</span>
             </div>
           )}
 
           <form onSubmit={submit}>
-            <div className="auth-ref-fields">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
               {/* Full Name for Register Mode */}
-              {mode === 'register' && !forgot && (
-                <div className="auth-ref-field">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="auth-ref-label">Full name</label>
-                    {authTouched.name && nameVal.valid && (
-                      <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>✓ Valid</span>
-                    )}
-                  </div>
+              {authMode === 'register' && !forgot && (
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      color: '#334155',
+                      marginBottom: '0.45rem',
+                    }}
+                  >
+                    Full name
+                  </label>
                   <input
                     required
                     type="text"
@@ -1662,34 +1829,30 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
                     }}
                     autoComplete="name"
                     placeholder="Enter your full name"
-                    maxLength={100}
-                    className="auth-ref-input"
-                    style={{
-                      borderColor: authTouched.name ? (!nameVal.valid ? '#ef4444' : '#10b981') : undefined,
-                      boxShadow: authTouched.name && !nameVal.valid ? '0 0 0 1px #ef4444' : undefined,
-                    }}
+                    className="bamas-ref-input"
                   />
                   {authTouched.name && !nameVal.valid && (
-                    <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '3px', display: 'block' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '4px', display: 'block' }}>
                       {nameVal.error}
                     </span>
                   )}
                 </div>
               )}
 
-              {/* Single Unified Input for Email or Mobile Number */}
-              {mode !== 'reset' && (
-                <div className="auth-ref-field">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="auth-ref-label">
-                      {forgot ? 'Email address' : 'Email or mobile number'}
-                    </label>
-                    {authTouched.identifier && idVal.valid && (
-                      <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>
-                        {idVal.isEmail ? '✓ Valid Email' : '✓ Valid 10-Digit Mobile'}
-                      </span>
-                    )}
-                  </div>
+              {/* Email or Mobile Number Input */}
+              {authMode !== 'reset' && (
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      color: '#334155',
+                      marginBottom: '0.45rem',
+                    }}
+                  >
+                    {forgot ? 'Registered email address' : 'Email or mobile number'}
+                  </label>
                   <input
                     required
                     type={forgot ? 'email' : 'text'}
@@ -1699,51 +1862,33 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
                       setIdentifier(e.target.value);
                       if (!authTouched.identifier) setAuthTouched((p) => ({ ...p, identifier: true }));
                     }}
-                    autoComplete={mode === 'login' ? 'username' : 'email'}
-                    placeholder={
-                      forgot
-                        ? 'Enter email address'
-                        : 'Enter email or 10-digit mobile'
-                    }
-                    className="auth-ref-input"
-                    style={{
-                      borderColor: authTouched.identifier ? (!idVal.valid ? '#ef4444' : '#10b981') : undefined,
-                      boxShadow: authTouched.identifier && !idVal.valid ? '0 0 0 1px #ef4444' : undefined,
-                    }}
+                    autoComplete={authMode === 'login' ? 'username' : 'email'}
+                    placeholder={forgot ? 'admin@gmail.com' : 'admin@gmail.com'}
+                    className="bamas-ref-input"
                   />
                   {authTouched.identifier && !idVal.valid && (
-                    <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '3px', display: 'block' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '4px', display: 'block' }}>
                       {idVal.error}
                     </span>
                   )}
                 </div>
               )}
 
-              {/* Password field */}
+              {/* Password Input with Eye Toggle */}
               {!forgot && (
-                <div className="auth-ref-field">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="auth-ref-label">
-                      {mode === 'reset' ? 'New password' : 'Password'}
-                    </label>
-                    {password && (
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          color:
-                            passVal.strength === 'strong'
-                              ? '#10b981'
-                              : passVal.strength === 'fair'
-                              ? '#f59e0b'
-                              : '#ef4444',
-                        }}
-                      >
-                        Strength: {passVal.strength.toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="auth-ref-input-wrap">
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      color: '#334155',
+                      marginBottom: '0.45rem',
+                    }}
+                  >
+                    {authMode === 'reset' ? 'New Password' : 'Password'}
+                  </label>
+                  <div style={{ position: 'relative', width: '100%' }}>
                     <input
                       required
                       type={show ? 'text' : 'password'}
@@ -1754,46 +1899,57 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
                         if (!authTouched.password) setAuthTouched((p) => ({ ...p, password: true }));
                       }}
                       minLength={6}
-                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                      placeholder="Password (min 6 characters)"
-                      className="auth-ref-input"
-                      style={{
-                        paddingRight: '45px',
-                        borderColor: authTouched.password && password ? (!passVal.valid ? '#ef4444' : '#10b981') : undefined,
-                        boxShadow: authTouched.password && password && !passVal.valid ? '0 0 0 1px #ef4444' : undefined,
-                      }}
+                      autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+                      placeholder="••••••••"
+                      className="bamas-ref-input"
+                      style={{ paddingRight: '2.8rem' }}
                     />
                     <button
                       type="button"
-                      className="auth-ref-password-toggle"
                       aria-label={show ? 'Hide password' : 'Show password'}
                       onClick={() => setShow(!show)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
                       {show ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                   {authTouched.password && !passVal.valid && (
-                    <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '3px', display: 'block' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '4px', display: 'block' }}>
                       {passVal.error}
                     </span>
                   )}
                 </div>
               )}
 
-              {/* Confirm Password field for Register mode */}
-              {mode === 'register' && !forgot && (
-                <div className="auth-ref-field">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="auth-ref-label" htmlFor="confirm-password">
-                      Confirm Password
-                    </label>
-                    {confirmPassword && confirmVal.valid && (
-                      <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>✓ Passwords Match</span>
-                    )}
-                  </div>
-                  <div className="auth-ref-input-wrap">
+              {/* Confirm Password for Register Mode */}
+              {authMode === 'register' && !forgot && (
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      color: '#334155',
+                      marginBottom: '0.45rem',
+                    }}
+                  >
+                    Confirm password
+                  </label>
+                  <div style={{ position: 'relative', width: '100%' }}>
                     <input
-                      id="confirm-password"
                       required
                       type={showConfirm ? 'text' : 'password'}
                       value={confirmPassword}
@@ -1804,25 +1960,34 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
                       }}
                       minLength={6}
                       autoComplete="new-password"
-                      placeholder="Confirm password"
-                      className="auth-ref-input"
-                      style={{
-                        paddingRight: '45px',
-                        borderColor: authTouched.confirmPassword && confirmPassword ? (!confirmVal.valid ? '#ef4444' : '#10b981') : undefined,
-                        boxShadow: authTouched.confirmPassword && confirmPassword && !confirmVal.valid ? '0 0 0 1px #ef4444' : undefined,
-                      }}
+                      placeholder="••••••••"
+                      className="bamas-ref-input"
+                      style={{ paddingRight: '2.8rem' }}
                     />
                     <button
                       type="button"
-                      className="auth-ref-password-toggle"
                       aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
                       onClick={() => setShowConfirm(!showConfirm)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
                       {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                   {authTouched.confirmPassword && confirmPassword && !confirmVal.valid && (
-                    <span style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '3px', display: 'block' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '4px', display: 'block' }}>
                       {confirmVal.error}
                     </span>
                   )}
@@ -1830,59 +1995,125 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
               )}
             </div>
 
-            {/* Submit Button */}
+            {/* Prominent Green Submit Button (Ref image exact color #1e6b38) */}
             <button
               type="submit"
-              disabled={busy || !ready || (mode === 'reset' && !recovery)}
-              className="auth-ref-submit-btn"
+              disabled={busy || !ready || (authMode === 'reset' && !recovery)}
+              style={{
+                width: '100%',
+                height: '48px',
+                borderRadius: '10px',
+                background: '#1e6b38',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: '1rem',
+                fontWeight: 600,
+                cursor: busy ? 'wait' : 'pointer',
+                boxShadow: '0 4px 14px rgba(30, 107, 56, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                marginTop: '1.35rem',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!busy) e.currentTarget.style.background = '#17582e';
+              }}
+              onMouseLeave={(e) => {
+                if (!busy) e.currentTarget.style.background = '#1e6b38';
+              }}
             >
               {busy ? (
-                <LoaderCircle className="spin" size={18} />
+                <>
+                  <LoaderCircle size={18} className="animate-spin" />
+                  <span>Processing...</span>
+                </>
+              ) : authMode === 'reset' ? (
+                'Update Password'
               ) : forgot ? (
-                'Send reset link'
-              ) : mode === 'register' ? (
-                'Create account'
-              ) : mode === 'reset' ? (
-                'Update password'
+                'Send Reset Link'
+              ) : authMode === 'register' ? (
+                'Create Account'
               ) : (
                 'Sign in'
               )}
             </button>
           </form>
 
-
-
-          {/* Links matching reference */}
-          <div className="auth-ref-links">
-            {mode === 'login' && !forgot && (
+          {/* Links: Forgot Password & Register/Login Switcher */}
+          <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
+            {authMode === 'login' && !forgot && (
               <button
                 type="button"
-                className="auth-ref-forgot-btn"
                 onClick={() => {
                   setForgot(true);
                   setError('');
                   setMessage('');
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#1e3a8a',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'block',
+                  margin: '0 auto 0.75rem',
                 }}
               >
                 Forgot password?
               </button>
             )}
 
-            {mode !== 'reset' && !forgot && (
-              <p className="auth-ref-switch-text">
-                {mode === 'login' ? (
+            {authMode !== 'reset' && !forgot && (
+              <p style={{ margin: 0, fontSize: '0.9rem', color: '#64748b' }}>
+                {authMode === 'login' ? (
                   <>
                     New customer?{' '}
-                    <Link to="/register" className="auth-ref-switch-link">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('register');
+                        setError('');
+                        setMessage('');
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#1e6b38',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        padding: 0,
+                      }}
+                    >
                       Register here
-                    </Link>
+                    </button>
                   </>
                 ) : (
                   <>
                     Already have an account?{' '}
-                    <Link to="/login" className="auth-ref-switch-link">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('login');
+                        setError('');
+                        setMessage('');
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#1e6b38',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        padding: 0,
+                      }}
+                    >
                       Sign in here
-                    </Link>
+                    </button>
                   </>
                 )}
               </p>
@@ -1891,26 +2122,45 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' | 'reset' }) {
             {forgot && (
               <button
                 type="button"
-                className="auth-ref-forgot-btn"
                 onClick={() => {
                   setForgot(false);
                   setError('');
                   setMessage('');
                 }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#1e6b38',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  padding: 0,
+                }}
               >
-                Back to sign in
+                &larr; Back to sign in
               </button>
             )}
 
-            {mode === 'reset' && (
-              <Link to="/login" className="auth-ref-switch-link">
-                Back to sign in
-              </Link>
+            {authMode === 'reset' && (
+              <button
+                type="button"
+                onClick={() => setAuthMode('login')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#1e6b38',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  padding: 0,
+                }}
+              >
+                &larr; Back to sign in
+              </button>
             )}
           </div>
         </div>
       </div>
-
     </main>
   );
 }

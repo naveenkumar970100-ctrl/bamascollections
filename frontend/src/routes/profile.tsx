@@ -26,6 +26,7 @@ import { api } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ConciergeChat } from '@/components/bamas/concierge-chat';
+import { AuthForm } from '@/components/bamas/auth-form';
 
 export const Route = createFileRoute('/profile')({
   head: () =>
@@ -120,11 +121,12 @@ function ProfilePage() {
       className="profile-page-container"
       style={{
         minHeight: '100vh',
-        background: '#f8fafb',
-        padding: '1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 16px))',
+        background: user ? '#f8fafb' : '#ffffff',
+        padding: user ? '1.25rem 1rem calc(80px + env(safe-area-inset-bottom, 16px))' : '1.5rem 1rem calc(80px + env(safe-area-inset-bottom, 16px))',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: user ? 'flex-start' : 'center',
         fontFamily: 'Manrope, sans-serif',
       }}
     >
@@ -132,11 +134,11 @@ function ProfilePage() {
       <div
         style={{
           width: '100%',
-          maxWidth: '460px',
-          background: '#ffffff',
-          borderRadius: '18px',
-          boxShadow: '0 12px 40px rgba(9, 35, 48, 0.1)',
-          border: '1px solid rgba(212, 175, 55, 0.35)',
+          maxWidth: user ? '460px' : '980px',
+          background: user ? '#ffffff' : 'transparent',
+          borderRadius: user ? '18px' : '0',
+          boxShadow: user ? '0 12px 40px rgba(9, 35, 48, 0.1)' : 'none',
+          border: user ? '1px solid rgba(212, 175, 55, 0.35)' : 'none',
           overflow: 'hidden',
           animation: 'fadeIn 0.2s ease-out',
         }}
@@ -700,170 +702,8 @@ function ProfilePage() {
             </div>
           </div>
         ) : (
-          /* Guest Patron Card (Not Logged In) */
-          <div>
-            <div
-              style={{
-                background: 'linear-gradient(135deg, #061821 0%, #0d2a38 100%)',
-                padding: '1.75rem 1.25rem',
-                color: '#ffffff',
-                textAlign: 'center',
-              }}
-            >
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: 'rgba(212, 175, 55, 0.15)',
-                  border: '1.5px solid rgba(212, 175, 55, 0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 0.75rem',
-                  color: '#d4af37',
-                }}
-              >
-                <User size={26} />
-              </div>
-
-              <span
-                style={{
-                  fontSize: '0.7rem',
-                  color: '#d4af37',
-                  fontWeight: 700,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  display: 'block',
-                  marginBottom: '0.25rem',
-                }}
-              >
-                👑 BAMAS VALUED GUEST
-              </span>
-
-              <h2
-                style={{
-                  margin: '0 0 0.5rem',
-                  fontSize: '1.35rem',
-                  fontFamily: 'Cormorant Garamond, serif',
-                  color: '#ffffff',
-                }}
-              >
-                Welcome to Bamas Collection
-              </h2>
-
-              <p style={{ margin: '0 0 1.25rem', fontSize: '0.8rem', color: '#94a3b8' }}>
-                Sign in to manage your saree bookings, track deliveries, and access patron privileges.
-              </p>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <Link
-                  to="/login"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: '#d4af37',
-                    color: '#092330',
-                    padding: '0.65rem',
-                    borderRadius: '8px',
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                  }}
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    color: '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    padding: '0.65rem',
-                    borderRadius: '8px',
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                  }}
-                >
-                  Register
-                </Link>
-              </div>
-            </div>
-
-            <div style={{ padding: '0.75rem' }}>
-              <Link
-                to="/cart"
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.75rem 0.85rem',
-                  borderRadius: '8px',
-                  background: 'transparent',
-                  textDecoration: 'none',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  color: '#092330',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <ShoppingBag size={17} color="#d4af37" />
-                  <span>Silk Bag Checkout</span>
-                </div>
-                <span
-                  style={{
-                    fontSize: '0.76rem',
-                    fontWeight: 800,
-                    background: '#f1f5f9',
-                    padding: '2px 9px',
-                    borderRadius: '999px',
-                    color: '#092330',
-                  }}
-                >
-                  {cartCount}
-                </span>
-              </Link>
-
-              <div
-                onClick={handleCopyCoupon}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '0.65rem 0.85rem',
-                  borderRadius: '8px',
-                  background: '#fffdf7',
-                  border: '1px dashed #d4af37',
-                  margin: '0.45rem 0',
-                  cursor: 'pointer',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                  <Sparkles size={15} color="#d4af37" />
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#092330' }}>
-                    BAMAS10 (10% Off)
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontSize: '0.74rem',
-                    color: copiedCoupon ? '#059669' : '#b45309',
-                    fontWeight: 700,
-                  }}
-                >
-                  {copiedCoupon ? '✓ Copied!' : 'Click to Copy'}
-                </span>
-              </div>
-            </div>
-          </div>
+          /* Redesigned Login & Register Card when logged out */
+          <AuthForm mode="login" inProfileCard={true} />
         )}
       </div>
 
