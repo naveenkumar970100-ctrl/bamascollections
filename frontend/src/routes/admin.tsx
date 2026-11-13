@@ -41,6 +41,7 @@ import {
   Database,
   Activity,
   Check,
+  CreditCard,
 } from 'lucide-react';
 import { useCustomer } from '@/components/bamas/auth-context';
 import { api } from '@/lib/api';
@@ -49,6 +50,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { pageHead } from '@/lib/page-head';
 import { NotificationBell } from '@/components/bamas/notification-bell';
+import { AdminPaymentsView, PaymentItem, PaymentMethodItem } from '@/components/bamas/admin-payments-view';
 import { collection } from '@/lib/collection';
 import { validateName, validateEmail, validatePhone, validatePrice, validateRequired } from '@/lib/validation';
 import bamasLogo from '@/assets/bamas-logo.jpg';
@@ -81,7 +83,7 @@ export const Route = createFileRoute('/admin')({
   component: AdminDashboardPage,
 });
 
-type TabType = 'overview' | 'bookings' | 'collections' | 'customers' | 'reviews' | 'inquiries' | 'settings' | 'profile';
+type TabType = 'overview' | 'bookings' | 'payments' | 'collections' | 'customers' | 'reviews' | 'inquiries' | 'settings' | 'profile';
 
 function AdminDashboardPage() {
   const { user, ready } = useCustomer();
@@ -142,6 +144,19 @@ function AdminDashboardPage() {
   const [reviewFilter, setReviewFilter] = useState('All');
   const [reviewSearch, setReviewSearch] = useState('');
   const [previewReviewPhoto, setPreviewReviewPhoto] = useState<string | null>(null);
+
+  // Live Payments & UPI / QR Gateways State
+  const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [paymentStats, setPaymentStats] = useState<any>({
+    totalRevenue: 0,
+    todayRevenue: 0,
+    totalPayments: 0,
+    completedCount: 0,
+    pendingCount: 0,
+    refundedCount: 0,
+  });
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>([]);
+  const [activePaymentMethod, setActivePaymentMethod] = useState<PaymentMethodItem | null>(null);
   const [siteConfig, setSiteConfig] = useState<any>({
     brandName: 'Bamas Collection',
     tagline: 'Timeless Sarees. Modern You.',
@@ -302,7 +317,7 @@ function AdminDashboardPage() {
   const fetchAllData = async () => {
     try {
       setRefreshing(true);
-      const [statsRes, ordersRes, inquiriesRes, productsRes, usersRes, configRes, reviewsRes] = await Promise.all([
+      const [statsRes, ordersRes, inquiriesRes, productsRes, usersRes, configRes, reviewsRes, paymentsRes, methodsRes, activeMethodRes] = await Promise.all([
         api.admin.getStats().catch(() => ({ data: null })),
         api.admin.getOrders().catch(() => ({ data: [] })),
         api.admin.getInquiries().catch(() => ({ data: [] })),
@@ -310,6 +325,9 @@ function AdminDashboardPage() {
         api.admin.getUsers().catch(() => ({ data: [] })),
         api.siteConfig.get().catch(() => ({ data: null })),
         api.admin.getReviews().catch(() => ({ data: [] })),
+        api.payments.getAll().catch(() => ({ data: { payments: [], stats: null } })),
+        api.payments.getMethods().catch(() => ({ data: [] })),
+        api.payments.getActiveMethod().catch(() => ({ data: null })),
       ]);
 
       if (statsRes.data) setStats(statsRes.data);
@@ -323,6 +341,12 @@ function AdminDashboardPage() {
       if (usersRes.data) setCustomers(usersRes.data);
       if (configRes.data) setSiteConfig(configRes.data);
       if (reviewsRes.data) setReviews(reviewsRes.data);
+      if (paymentsRes.data?.payments) {
+        setPayments(paymentsRes.data.payments);
+        if (paymentsRes.data.stats) setPaymentStats(paymentsRes.data.stats);
+      }
+      if (methodsRes.data) setPaymentMethods(methodsRes.data);
+      if (activeMethodRes.data) setActivePaymentMethod(activeMethodRes.data);
     } catch (err: any) {
       console.error('Failed to load admin data:', err);
     } finally {
@@ -412,6 +436,51 @@ function AdminDashboardPage() {
       }).catch(() => {});
     };
 
+    // Real-Time Payments & UPI Sync
+    const handleRealtimePaymentNew = (e: any) => {
+      const pay = e.detail;
+      if (pay) {
+        setPayments((prev) => [pay, ...prev.filter((p) => p._id !== pay._id && p.transactionId !== pay.transactionId)]);
+        setPaymentStats((prev: any) => ({
+          ...prev,
+          totalRevenue: prev.totalRevenue + (pay.status === 'Completed' ? Number(pay.amount || 0) : 0),
+          todayRevenue: prev.todayRevenue + (pay.status === 'Completed' ? Number(pay.amount || 0) : 0),
+          totalPayments: (prev.totalPayments || 0) + 1,
+          completedCount: prev.completedCount + (pay.status === 'Completed' ? 1 : 0),
+          pendingCount: prev.pendingCount + (pay.status === 'Pending' ? 1 : 0),
+        }));
+        showNotification(`💳 Payment Received: ₹${Number(pay.amount || 0).toLocaleString('en-IN')} from ${pay.customerName || 'Patron'}!`);
+      }
+    };
+
+    const handleRealtimePaymentUpdated = (e: any) => {
+      const pay = e.detail;
+      if (pay) {
+        setPayments((prev) => prev.map((p) => (p._id === pay._id || p.transactionId === pay.transactionId ? { ...p, ...pay } : p)));
+      }
+    };
+
+    const handleRealtimePaymentDeleted = (e: any) => {
+      const { id } = e.detail || {};
+      if (id) {
+        setPayments((prev) => prev.filter((p) => p._id !== id));
+      }
+    };
+
+    const handleRealtimePaymentConfig = (e: any) => {
+      const method = e.detail;
+      if (method) {
+        setActivePaymentMethod(method);
+        setPaymentMethods((prev) =>
+          prev.map((m) => ({
+            ...m,
+            isActive: m._id === method._id,
+          }))
+        );
+        showNotification(`⚡ Live UPI Gateway Switched to: ${method.upiId}`);
+      }
+    };
+
     window.addEventListener('bamas_order_created', handleRealtimeOrderCreated);
     window.addEventListener('bamas_order_updated', handleRealtimeOrderUpdated);
     window.addEventListener('bamas_order_deleted', handleRealtimeOrderDeleted);
@@ -421,6 +490,10 @@ function AdminDashboardPage() {
     window.addEventListener('bamas_notification_received', handleRealtimeNotification);
     window.addEventListener('bamas_review_created', handleRealtimeReview);
     window.addEventListener('bamas_review_deleted', handleRealtimeReview);
+    window.addEventListener('bamas_payment_new', handleRealtimePaymentNew);
+    window.addEventListener('bamas_payment_updated', handleRealtimePaymentUpdated);
+    window.addEventListener('bamas_payment_deleted', handleRealtimePaymentDeleted);
+    window.addEventListener('bamas_payment_config_updated', handleRealtimePaymentConfig);
 
     const interval = setInterval(fetchAllData, 25000);
 
@@ -434,6 +507,10 @@ function AdminDashboardPage() {
       window.removeEventListener('bamas_notification_received', handleRealtimeNotification);
       window.removeEventListener('bamas_review_created', handleRealtimeReview);
       window.removeEventListener('bamas_review_deleted', handleRealtimeReview);
+      window.removeEventListener('bamas_payment_new', handleRealtimePaymentNew);
+      window.removeEventListener('bamas_payment_updated', handleRealtimePaymentUpdated);
+      window.removeEventListener('bamas_payment_deleted', handleRealtimePaymentDeleted);
+      window.removeEventListener('bamas_payment_config_updated', handleRealtimePaymentConfig);
       clearInterval(interval);
     };
   }, []);
@@ -1380,6 +1457,12 @@ function AdminDashboardPage() {
           {[
             { id: 'overview', label: 'Overview', icon: LayoutDashboard },
             { id: 'bookings', label: 'Bookings & Orders', icon: CalendarCheck, badge: orders.length },
+            {
+              id: 'payments',
+              label: 'Payments & UPI',
+              icon: CreditCard,
+              badge: payments.filter((p: any) => p.status === 'Pending').length || (payments.length > 0 ? payments.length : undefined),
+            },
             { id: 'collections', label: 'Collections', icon: ShoppingBag, badge: products.length },
             { id: 'customers', label: 'Customers', icon: Users, badge: customers.length },
             { id: 'reviews', label: 'Customer Reviews', icon: Star, badge: reviews.length },
@@ -1615,6 +1698,8 @@ function AdminDashboardPage() {
             >
               {activeTab === 'bookings'
                 ? 'Bookings & Orders'
+                : activeTab === 'payments'
+                ? 'Payments & UPI Gateways'
                 : activeTab === 'reviews'
                 ? 'Customer Reviews & Patron Photos'
                 : activeTab === 'inquiries'
@@ -1726,13 +1811,13 @@ function AdminDashboardPage() {
                 {[
                   {
                     title: 'Total Revenue',
-                    value: `₹${(stats?.overview?.totalRevenue || 0).toLocaleString('en-IN')}`,
+                    value: `₹${(paymentStats.totalRevenue || stats?.overview?.totalRevenue || 0).toLocaleString('en-IN')}`,
                     icon: IndianRupee,
                     sub: 'Paid orders collected',
                     color: '#b59028',
                     bg: 'rgba(212, 175, 55, 0.12)',
-                    tab: 'bookings' as TabType,
-                    actionLabel: isMobile ? 'View Orders' : 'View Bookings & Orders',
+                    tab: 'payments' as TabType,
+                    actionLabel: isMobile ? 'View Payments' : 'View Payments & UPI',
                   },
                   {
                     title: isMobile ? 'Orders & Bookings' : 'Orders & Bookings',
@@ -4472,6 +4557,25 @@ function AdminDashboardPage() {
                 </>
               )}
             </div>
+          )}
+
+          {/* TAB: PAYMENTS & UPI GATEWAYS */}
+          {activeTab === 'payments' && (
+            <AdminPaymentsView
+              payments={payments}
+              setPayments={setPayments}
+              paymentStats={paymentStats}
+              setPaymentStats={setPaymentStats}
+              paymentMethods={paymentMethods}
+              setPaymentMethods={setPaymentMethods}
+              activePaymentMethod={activePaymentMethod}
+              setActivePaymentMethod={setActivePaymentMethod}
+              refreshing={refreshing}
+              onRefresh={fetchAllData}
+              isMobile={isMobile}
+              showNotification={showNotification}
+              orders={orders}
+            />
           )}
 
           {activeTab === 'collections' && (
@@ -10601,6 +10705,60 @@ function AdminDashboardPage() {
                     </div>
                   );
                 })()}
+
+                {/* Payments & Live UPI Gateways */}
+                <div
+                  onClick={() => setActiveTab('payments')}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '12px',
+                    border: '1.5px solid rgba(212, 175, 55, 0.4)',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(9, 35, 48, 0.04)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <div
+                    style={{
+                      padding: isMobile ? '0.85rem 1rem' : '1rem 1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: '#fffdf7',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <div
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '8px',
+                          background: 'rgba(212, 175, 55, 0.2)',
+                          color: '#aa820a',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <CreditCard size={19} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#092330', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          Payments & UPI Gateways
+                          <span style={{ fontSize: '0.62rem', background: '#d1fae5', color: '#047857', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                            LIVE
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          Manage real-time QR code, UPI IDs & transaction audit ledger
+                        </div>
+                      </div>
+                    </div>
+                    <ArrowRight size={16} color="#d4af37" />
+                  </div>
+                </div>
 
                 {/* 3. Registered Customers */}
                 {(() => {

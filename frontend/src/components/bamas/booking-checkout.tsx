@@ -10,6 +10,9 @@ import {
   QrCode,
   MapPin,
   Sparkles,
+  Copy,
+  Check,
+  Radio,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomer } from './auth-context';
@@ -55,7 +58,40 @@ export function BookingCheckout({
   const [paymentMethod, setPaymentMethod] = useState<
     'UPI / QR Code' | 'Cards & NetBanking' | 'Cash on Delivery'
   >('UPI / QR Code');
-  const [upiId] = useState('bamas@okhdfcbank');
+
+  // Real-Time Active UPI Gateway (Synced with Admin Dashboard via WebSocket)
+  const [activeGateway, setActiveGateway] = useState<any>({
+    upiId: 'bamas@okhdfcbank',
+    payeeName: 'Bamas Collections Atelier',
+    bankName: 'HDFC Bank',
+    qrCodeUrl: '',
+    description: 'Scan and pay using any UPI app (Google Pay, PhonePe, Paytm, BHIM)',
+  });
+  const [copiedUpi, setCopiedUpi] = useState(false);
+
+  useEffect(() => {
+    // Initial fetch of active UPI & QR code from MongoDB
+    api.payments.getActiveMethod()
+      .then((res) => {
+        if (res.data) {
+          setActiveGateway(res.data);
+        }
+      })
+      .catch((err) => console.warn('Could not load active UPI config:', err));
+
+    // Listen for live updates emitted when Admin modifies or switches the active UPI / QR gateway
+    const handleLivePaymentConfig = (e: any) => {
+      if (e.detail) {
+        console.log('⚡ [Checkout]: Live payment gateway updated via WebSocket ->', e.detail.upiId);
+        setActiveGateway(e.detail);
+      }
+    };
+
+    window.addEventListener('bamas_payment_config_updated', handleLivePaymentConfig);
+    return () => {
+      window.removeEventListener('bamas_payment_config_updated', handleLivePaymentConfig);
+    };
+  }, []);
 
   // Simulation & order completion state
   const [paymentState, setPaymentState] = useState<'idle' | 'processing' | 'success'>('idle');
@@ -123,7 +159,7 @@ export function BookingCheckout({
       const paymentResult = {
         id: 'DEMO_' + Math.random().toString(36).substring(2, 9).toUpperCase(),
         status: 'COMPLETED',
-        method: paymentMethod === 'UPI / QR Code' ? `UPI (${upiId})` : paymentMethod,
+        method: paymentMethod === 'UPI / QR Code' ? `UPI (${activeGateway?.upiId || 'bamas@okhdfcbank'})` : paymentMethod,
         amount: totalPrice,
         paidAt: new Date().toISOString(),
       };
@@ -711,25 +747,152 @@ export function BookingCheckout({
             <div
               style={{
                 background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '6px',
-                padding: '0.5rem 0.75rem',
+                border: '1.5px solid #e2edf0',
+                borderRadius: '8px',
+                padding: '0.75rem',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '0.5rem',
+                flexDirection: 'column',
+                gap: '0.65rem',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <QrCode size={18} color="#092330" />
-                <div>
-                  <span style={{ fontSize: '0.62rem', color: '#64748b', display: 'block' }}>UPI ID / VPA</span>
-                  <strong style={{ fontSize: '0.78rem', color: '#092330' }}>bamas@okhdfcbank</strong>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#092330', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Live UPI & QR Payment Gateway
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.62rem',
+                    color: '#047857',
+                    background: '#d1fae5',
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+                  Realtime Synced
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                {/* QR Code Container */}
+                <div
+                  style={{
+                    width: '74px',
+                    height: '74px',
+                    background: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                  }}
+                >
+                  {activeGateway?.qrCodeUrl ? (
+                    <img
+                      src={activeGateway.qrCodeUrl}
+                      alt="UPI QR Code"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }}
+                    />
+                  ) : (
+                    <svg width="60" height="60" viewBox="0 0 100 100">
+                      <rect x="0" y="0" width="30" height="30" fill="#092330" />
+                      <rect x="5" y="5" width="20" height="20" fill="#ffffff" />
+                      <rect x="10" y="10" width="10" height="10" fill="#092330" />
+                      <rect x="70" y="0" width="30" height="30" fill="#092330" />
+                      <rect x="75" y="5" width="20" height="20" fill="#ffffff" />
+                      <rect x="80" y="10" width="10" height="10" fill="#092330" />
+                      <rect x="0" y="70" width="30" height="30" fill="#092330" />
+                      <rect x="5" y="75" width="20" height="20" fill="#ffffff" />
+                      <rect x="10" y="80" width="10" height="10" fill="#092330" />
+                      <rect x="40" y="10" width="15" height="15" fill="#d4af37" />
+                      <rect x="40" y="40" width="20" height="20" fill="#092330" />
+                      <rect x="45" y="45" width="10" height="10" fill="#d4af37" />
+                      <rect x="70" y="45" width="15" height="15" fill="#092330" />
+                      <rect x="40" y="70" width="15" height="15" fill="#092330" />
+                      <rect x="65" y="75" width="25" height="15" fill="#d4af37" />
+                    </svg>
+                  )}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                    <span style={{ fontSize: '0.62rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                      Pay to VPA / UPI ID
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (activeGateway?.upiId) {
+                          navigator.clipboard.writeText(activeGateway.upiId);
+                          setCopiedUpi(true);
+                          setTimeout(() => setCopiedUpi(false), 2000);
+                        }
+                      }}
+                      style={{
+                        background: copiedUpi ? '#d1fae5' : '#f1f5f9',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '4px',
+                        padding: '1px 6px',
+                        fontSize: '0.65rem',
+                        fontWeight: 600,
+                        color: copiedUpi ? '#065f46' : '#092330',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                      }}
+                    >
+                      {copiedUpi ? <Check size={11} /> : <Copy size={11} />}
+                      {copiedUpi ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+
+                  <strong
+                    style={{
+                      fontSize: '0.86rem',
+                      color: '#092330',
+                      fontFamily: 'monospace',
+                      letterSpacing: '0.3px',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {activeGateway?.upiId || 'bamas@okhdfcbank'}
+                  </strong>
+
+                  <div style={{ fontSize: '0.68rem', color: '#475569' }}>
+                    <strong>{activeGateway?.payeeName || 'Bamas Collections Atelier'}</strong>
+                    {activeGateway?.bankName && (
+                      <span style={{ color: '#64748b' }}> · {activeGateway.bankName}</span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <span style={{ fontSize: '0.68rem', color: '#10b981', fontWeight: 600 }}>
-                ✓ 1-Click Simulation
-              </span>
+
+              <div
+                style={{
+                  background: 'rgba(212, 175, 55, 0.1)',
+                  border: '1px dashed rgba(212, 175, 55, 0.4)',
+                  borderRadius: '5px',
+                  padding: '4px 8px',
+                  fontSize: '0.68rem',
+                  color: '#715100',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span>{activeGateway?.description || 'Scan via Google Pay, PhonePe, Paytm, or BHIM'}</span>
+                <span style={{ fontWeight: 700, color: '#092330' }}>₹{totalPrice.toLocaleString('en-IN')}</span>
+              </div>
             </div>
           )}
 

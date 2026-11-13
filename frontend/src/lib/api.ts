@@ -327,6 +327,79 @@ export const api = {
     },
   },
 
+  // Payment transactions and UPI / QR configuration (CRUD & Realtime)
+  payments: {
+    async getActiveMethod() {
+      return apiRequest('/payments/active-method', { method: 'GET' });
+    },
+    async getMethods() {
+      return apiRequest('/payments/methods', { method: 'GET' });
+    },
+    async createMethod(payload: {
+      title?: string;
+      upiId: string;
+      payeeName?: string;
+      bankName?: string;
+      qrCodeUrl?: string;
+      description?: string;
+      isActive?: boolean;
+    }) {
+      return apiRequest('/payments/methods', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    async updateMethod(
+      id: string,
+      payload: {
+        title?: string;
+        upiId?: string;
+        payeeName?: string;
+        bankName?: string;
+        qrCodeUrl?: string;
+        description?: string;
+        isActive?: boolean;
+      }
+    ) {
+      return apiRequest(`/payments/methods/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    },
+    async setActiveMethod(id: string) {
+      return apiRequest(`/payments/methods/${id}/activate`, {
+        method: 'PUT',
+      });
+    },
+    async deleteMethod(id: string) {
+      return apiRequest(`/payments/methods/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    async getAll(params: { status?: string; keyword?: string; method?: string } = {}) {
+      const query = new URLSearchParams();
+      if (params.status && params.status !== 'All') query.set('status', params.status);
+      if (params.keyword) query.set('keyword', params.keyword);
+      if (params.method && params.method !== 'All') query.set('method', params.method);
+      const qs = query.toString();
+      return apiRequest(`/payments${qs ? `?${qs}` : ''}`, { method: 'GET' });
+    },
+    async getById(id: string) {
+      return apiRequest(`/payments/${id}`, { method: 'GET' });
+    },
+    async updateStatus(id: string, payload: { status: string; notes?: string }) {
+      return apiRequest(`/payments/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    },
+    async delete(id: string) {
+      return apiRequest(`/payments/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
   // Real-time Notification endpoints (Admin <-> Customer)
   notifications: {
     async getAll() {

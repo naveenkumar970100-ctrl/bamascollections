@@ -80,6 +80,7 @@ import siteConfigRoutes from './routes/siteConfigRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -98,6 +99,7 @@ app.use('/api/site-config', siteConfigRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Serve production frontend bundle if built
 if (fs.existsSync(frontendDist)) {

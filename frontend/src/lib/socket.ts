@@ -114,6 +114,32 @@ export function getSocket(): Socket {
       console.log('👗 [WebSocket]: Product deleted ->', data);
       window.dispatchEvent(new CustomEvent('bamas_product_deleted', { detail: data }));
     });
+
+    // 💳 Real-time Payments & UPI Gateway Sync
+    socket.on('payment_method:updated', (method) => {
+      console.log('💳 [WebSocket]: Active UPI Gateway updated ->', method?.upiId);
+      window.dispatchEvent(new CustomEvent('bamas_payment_config_updated', { detail: method }));
+    });
+
+    socket.on('payment_config:updated', (method) => {
+      console.log('💳 [WebSocket]: Payment config updated ->', method?.upiId);
+      window.dispatchEvent(new CustomEvent('bamas_payment_config_updated', { detail: method }));
+    });
+
+    socket.on('payment:new', (payment) => {
+      console.log('💳 [WebSocket]: New Payment recorded ->', payment?.transactionId, 'Amount: ₹', payment?.amount);
+      window.dispatchEvent(new CustomEvent('bamas_payment_new', { detail: payment }));
+    });
+
+    socket.on('payment:updated', (payment) => {
+      console.log('💳 [WebSocket]: Payment updated ->', payment?.transactionId, 'Status:', payment?.status);
+      window.dispatchEvent(new CustomEvent('bamas_payment_updated', { detail: payment }));
+    });
+
+    socket.on('payment:deleted', (data) => {
+      console.log('💳 [WebSocket]: Payment deleted ->', data?.id);
+      window.dispatchEvent(new CustomEvent('bamas_payment_deleted', { detail: data }));
+    });
   }
 
   return socket;

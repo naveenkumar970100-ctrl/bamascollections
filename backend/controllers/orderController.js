@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
+import Payment from '../models/Payment.js';
 import { renderSuccess, renderError, renderProductView } from '../views/responseView.js';
 import { dispatchNotification } from './notificationController.js';
 import { emitToAdmins, emitToUser, emitBroadcast } from '../config/socket.js';
@@ -155,6 +156,40 @@ export const createOrder = async (req, res, next) => {
       emitToUser(userId, 'order:new', savedOrder);
     }
 
+    // Auto-record payment transaction and emit real-time payment event
+    try {
+      const txnId =
+        (paymentResult && paymentResult.id) ||
+        `ORD_${savedOrder._id.toString().slice(-8).toUpperCase()}`;
+
+      const methodStr = paymentMethod || 'UPI / QR Code';
+      let upiId = '';
+      if (methodStr.includes('(') && methodStr.includes('@')) {
+        const match = methodStr.match(/\((.*?)\)/);
+        if (match && match[1]) upiId = match[1];
+      }
+
+      const payment = await Payment.create({
+        order: savedOrder._id,
+        user: userId || null,
+        transactionId: txnId,
+        amount: totalPrice,
+        paymentMethod: methodStr,
+        upiId: upiId || (methodStr.toLowerCase().includes('upi') ? 'bamas@okhdfcbank' : ''),
+        status: orderPaid ? 'Completed' : 'Pending',
+        customerName: normShipping.fullName,
+        customerEmail,
+        customerPhone: normShipping.phone,
+        verifiedByAdmin: orderPaid,
+        paidAt: orderPaid ? new Date() : null,
+        rawDetails: paymentResult || {},
+      });
+
+      emitToAdmins('payment:new', payment);
+    } catch (payErr) {
+      console.warn('Payment record note:', payErr.message);
+    }
+
     return renderSuccess(res, 201, 'Order placed successfully', savedOrder);
   } catch (error) {
     next(error);
@@ -247,6 +282,26 @@ export const updateOrderStatus = async (req, res, next) => {
     }
 
     const updatedOrder = await order.save();
+
+    // Sync corresponding payment status
+    if (isPaid !== undefined) {
+      try {
+        const updatedPay = await Payment.findOneAndUpdate(
+          { order: order._id },
+          {
+            status: isPaid ? 'Completed' : 'Pending',
+            verifiedByAdmin: isPaid,
+            ...(isPaid ? { paidAt: new Date() } : {}),
+          },
+          { new: true }
+        );
+        if (updatedPay) {
+          emitToAdmins('payment:updated', updatedPay);
+        }
+      } catch (pErr) {
+        console.warn('Payment status sync notice:', pErr.message);
+      }
+    }
 
     // Real-time notification from Admin to Customer
     if (order.user) {

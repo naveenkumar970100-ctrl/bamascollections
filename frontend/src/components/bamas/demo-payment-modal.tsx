@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   X,
   CheckCircle2,
@@ -10,9 +10,12 @@ import {
   Sparkles,
   Smartphone,
   ShieldCheck,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { validateUpi } from '@/lib/validation';
+import { api } from '@/lib/api';
 
 export interface PaymentSuccessResult {
   id: string;
@@ -54,6 +57,46 @@ export function DemoPaymentModal({
   const [upiId, setUpiId] = useState('bamas@okhdfcbank');
   const [upiTouched, setUpiTouched] = useState(false);
   const upiVal = validateUpi(upiId);
+
+  // Real-Time Active UPI & QR Gateway
+  const [activeGateway, setActiveGateway] = useState<any>({
+    upiId: 'bamas@okhdfcbank',
+    payeeName: 'Bamas Collections Atelier',
+    bankName: 'HDFC Bank',
+    qrCodeUrl: '',
+    description: 'Scan using any UPI App (Google Pay, PhonePe, Paytm, BHIM)',
+  });
+  const [copiedUpi, setCopiedUpi] = useState(false);
+
+  useEffect(() => {
+    // Fetch live active gateway
+    api.payments.getActiveMethod()
+      .then((res) => {
+        if (res.data) {
+          setActiveGateway(res.data);
+          if (res.data.upiId) {
+            setUpiId(res.data.upiId);
+          }
+        }
+      })
+      .catch((err) => console.warn('Payment modal gateway notice:', err));
+
+    // Listen to real-time updates from Admin Dashboard
+    const handleConfigUpdated = (e: any) => {
+      if (e.detail) {
+        console.log('⚡ [Payment Modal]: Real-time gateway updated ->', e.detail.upiId);
+        setActiveGateway(e.detail);
+        if (e.detail.upiId) {
+          setUpiId(e.detail.upiId);
+        }
+      }
+    };
+
+    window.addEventListener('bamas_payment_config_updated', handleConfigUpdated);
+    return () => {
+      window.removeEventListener('bamas_payment_config_updated', handleConfigUpdated);
+    };
+  }, []);
 
   // Simulation status: idle | processing | success
   const [state, setState] = useState<'idle' | 'processing' | 'success'>('idle');
@@ -424,46 +467,86 @@ export function DemoPaymentModal({
               <div
                 style={{
                   background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '6px',
-                  padding: '0.5rem 0.75rem',
+                  border: '1.5px solid #e2edf0',
+                  borderRadius: '8px',
+                  padding: '0.65rem 0.75rem',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  flexDirection: 'column',
                   gap: '0.5rem',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#092330', textTransform: 'uppercase' }}>
+                      Atelier UPI & QR
+                    </span>
+                    <span style={{ fontSize: '0.6rem', color: '#047857', background: '#d1fae5', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                      Live Synced
+                    </span>
+                  </div>
+                  {activeGateway?.upiId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpiId(activeGateway.upiId);
+                        setUpiTouched(true);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#d4af37',
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      Use Atelier UPI
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                   <div
                     style={{
-                      width: '38px',
-                      height: '38px',
+                      width: '54px',
+                      height: '54px',
                       background: '#ffffff',
                       border: '1px solid #cbd5e1',
-                      borderRadius: '4px',
+                      borderRadius: '6px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
+                      overflow: 'hidden',
+                      padding: '2px',
                     }}
                   >
-                    <svg width="30" height="30" viewBox="0 0 100 100">
-                      <rect x="0" y="0" width="30" height="30" fill="#092330" />
-                      <rect x="5" y="5" width="20" height="20" fill="#ffffff" />
-                      <rect x="10" y="10" width="10" height="10" fill="#092330" />
-                      <rect x="70" y="0" width="30" height="30" fill="#092330" />
-                      <rect x="75" y="5" width="20" height="20" fill="#ffffff" />
-                      <rect x="80" y="10" width="10" height="10" fill="#092330" />
-                      <rect x="0" y="70" width="30" height="30" fill="#092330" />
-                      <rect x="5" y="75" width="20" height="20" fill="#ffffff" />
-                      <rect x="10" y="80" width="10" height="10" fill="#092330" />
-                      <rect x="40" y="10" width="15" height="15" fill="#d4af37" />
-                      <rect x="40" y="40" width="20" height="20" fill="#092330" />
-                      <rect x="45" y="45" width="10" height="10" fill="#d4af37" />
-                      <rect x="70" y="45" width="15" height="15" fill="#092330" />
-                      <rect x="40" y="70" width="15" height="15" fill="#092330" />
-                      <rect x="65" y="75" width="25" height="15" fill="#d4af37" />
-                    </svg>
+                    {activeGateway?.qrCodeUrl ? (
+                      <img
+                        src={activeGateway.qrCodeUrl}
+                        alt="Atelier QR"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      />
+                    ) : (
+                      <svg width="46" height="46" viewBox="0 0 100 100">
+                        <rect x="0" y="0" width="30" height="30" fill="#092330" />
+                        <rect x="5" y="5" width="20" height="20" fill="#ffffff" />
+                        <rect x="10" y="10" width="10" height="10" fill="#092330" />
+                        <rect x="70" y="0" width="30" height="30" fill="#092330" />
+                        <rect x="75" y="5" width="20" height="20" fill="#ffffff" />
+                        <rect x="80" y="10" width="10" height="10" fill="#092330" />
+                        <rect x="0" y="70" width="30" height="30" fill="#092330" />
+                        <rect x="5" y="75" width="20" height="20" fill="#ffffff" />
+                        <rect x="10" y="80" width="10" height="10" fill="#092330" />
+                        <rect x="40" y="10" width="15" height="15" fill="#d4af37" />
+                        <rect x="40" y="40" width="20" height="20" fill="#092330" />
+                        <rect x="45" y="45" width="10" height="10" fill="#d4af37" />
+                        <rect x="70" y="45" width="15" height="15" fill="#092330" />
+                        <rect x="40" y="70" width="15" height="15" fill="#092330" />
+                        <rect x="65" y="75" width="25" height="15" fill="#d4af37" />
+                      </svg>
+                    )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -485,7 +568,7 @@ export function DemoPaymentModal({
                       placeholder="username@bank"
                       style={{
                         width: '100%',
-                        padding: '3px 6px',
+                        padding: '4px 6px',
                         borderRadius: '4px',
                         border: upiTouched
                           ? (!upiVal.valid ? '1.5px solid #ef4444' : '1.5px solid #10b981')
@@ -498,11 +581,33 @@ export function DemoPaymentModal({
                         background: '#ffffff',
                       }}
                     />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.62rem', color: '#64748b' }}>
+                        {activeGateway?.payeeName || 'Bamas Collections Atelier'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (activeGateway?.upiId) {
+                            navigator.clipboard.writeText(activeGateway.upiId);
+                            setCopiedUpi(true);
+                            setTimeout(() => setCopiedUpi(false), 1500);
+                          }
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: copiedUpi ? '#10b981' : '#64748b',
+                          fontSize: '0.62rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {copiedUpi ? '✓ Copied' : 'Copy'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 600, flexShrink: 0 }}>
-                  ✓ 1-Click Simulation
-                </span>
               </div>
             )}
 
