@@ -160,6 +160,14 @@ function RootComponent() {
   });
   const [ready, setReady] = useState(() => typeof window !== 'undefined' && !!localStorage.getItem('bamas_user'));
 
+  // Globally hide right-side browser scrollbar while preserving full scrollability
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.scrollbarWidth = 'none';
+      document.body.style.scrollbarWidth = 'none';
+    }
+  }, []);
+
   useEffect(() => {
     let active = true;
 
