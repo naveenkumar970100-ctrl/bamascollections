@@ -17,6 +17,7 @@ import {
   Camera,
   UploadCloud,
   Image as ImageIcon,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomer } from './auth-context';
@@ -134,15 +135,17 @@ export function BookingCheckout({
   const [error, setError] = useState('');
   const [completedOrder, setCompletedOrder] = useState<any | null>(null);
 
-  // Payment confirmation & optional screenshot proof state
+  // Payment confirmation & mandatory screenshot proof state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string>('');
+  const [confirmModalError, setConfirmModalError] = useState<string>('');
   const [utrNumber, setUtrNumber] = useState<string>('');
   const [uploadingProof, setUploadingProof] = useState(false);
   const proofFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleScreenshotChange = (file: File | null) => {
+    setConfirmModalError('');
     if (!file) {
       setScreenshotFile(null);
       setScreenshotPreview('');
@@ -249,9 +252,15 @@ export function BookingCheckout({
       return;
     }
 
+    if (!screenshotFile && !screenshotPreview) {
+      setConfirmModalError('⚠️ Payment screenshot is mandatory. Please upload a screenshot of your completed UPI transaction before confirming.');
+      return;
+    }
+
     setPaymentState('processing');
     setBusy(true);
     setError('');
+    setConfirmModalError('');
 
     try {
       let finalScreenshotUrl = '';
@@ -1232,6 +1241,7 @@ export function BookingCheckout({
                   }
                   return;
                 }
+                setConfirmModalError('');
                 setShowConfirmModal(true);
               }}
               style={{
@@ -1643,30 +1653,51 @@ export function BookingCheckout({
                 </div>
               </div>
 
-              {/* Screenshot Upload (Optional) */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {/* Screenshot Upload (Mandatory) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#092330', display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <Camera size={15} color="#d4af37" />
                     Payment Screenshot Proof
+                    <span style={{ color: '#dc2626' }}>*</span>
                   </label>
                   <span
                     style={{
                       fontSize: '0.65rem',
                       fontWeight: 700,
-                      background: '#ecfdf5',
-                      color: '#059669',
-                      padding: '1px 7px',
+                      background: '#fef2f2',
+                      color: '#dc2626',
+                      padding: '2px 8px',
                       borderRadius: '999px',
-                      border: '1px solid #a7f3d0',
+                      border: '1px solid #fecaca',
                     }}
                   >
-                    Optional
+                    * Mandatory
                   </span>
                 </div>
                 <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b', lineHeight: 1.35 }}>
-                  Attach a screenshot of the transaction from Google Pay, PhonePe, Paytm, or BHIM. This is optional, but allows our atelier to verify and accept your order faster.
+                  Attach a screenshot of the completed UPI transaction from Google Pay, PhonePe, Paytm, or BHIM. <strong style={{ color: '#dc2626' }}>This is required</strong> to verify and accept your handloom order.
                 </p>
+
+                {confirmModalError && (
+                  <div
+                    style={{
+                      background: '#fef2f2',
+                      border: '1px solid #fca5a5',
+                      borderRadius: '8px',
+                      padding: '0.55rem 0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      color: '#b91c1c',
+                      fontSize: '0.74rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <AlertCircle size={15} color="#dc2626" style={{ flexShrink: 0 }} />
+                    <span>{confirmModalError}</span>
+                  </div>
+                )}
 
                 <input
                   type="file"
@@ -1703,7 +1734,7 @@ export function BookingCheckout({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#065f46', fontSize: '0.78rem', fontWeight: 700 }}>
                         <CheckCircle2 size={13} color="#10b981" />
-                        <span>Screenshot Attached</span>
+                        <span>Screenshot Attached (Verified)</span>
                       </div>
                       <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {screenshotFile?.name || 'payment_proof.jpg'}
@@ -1726,7 +1757,7 @@ export function BookingCheckout({
                         cursor: 'pointer',
                       }}
                     >
-                      Remove
+                      Change
                     </button>
                   </div>
                 ) : (
@@ -1734,8 +1765,8 @@ export function BookingCheckout({
                     type="button"
                     onClick={() => proofFileInputRef.current?.click()}
                     style={{
-                      background: '#fafbfd',
-                      border: '1.5px dashed #cbd5e1',
+                      background: confirmModalError ? '#fff5f5' : '#fafbfd',
+                      border: confirmModalError ? '1.5px dashed #ef4444' : '1.5px dashed #cbd5e1',
                       borderRadius: '10px',
                       padding: '0.9rem',
                       display: 'flex',
@@ -1748,26 +1779,26 @@ export function BookingCheckout({
                       width: '100%',
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#d4af37')}
-                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#cbd5e1')}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = confirmModalError ? '#ef4444' : '#cbd5e1')}
                   >
                     <div
                       style={{
                         width: '36px',
                         height: '36px',
                         borderRadius: '50%',
-                        background: 'rgba(212, 175, 55, 0.12)',
+                        background: confirmModalError ? 'rgba(239, 68, 68, 0.12)' : 'rgba(212, 175, 55, 0.12)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#d4af37',
+                        color: confirmModalError ? '#dc2626' : '#d4af37',
                       }}
                     >
                       <Camera size={18} />
                     </div>
                     <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#092330' }}>
-                      Click to Upload Screenshot (Optional)
+                      Click to Upload Screenshot <span style={{ color: '#dc2626' }}>* (Mandatory)</span>
                     </span>
-                    <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                    <span style={{ fontSize: '0.68rem', color: confirmModalError ? '#dc2626' : '#64748b', fontWeight: confirmModalError ? 600 : 400 }}>
                       JPG, PNG, WebP from photo library or camera
                     </span>
                   </button>
@@ -1843,12 +1874,18 @@ export function BookingCheckout({
               <button
                 type="button"
                 disabled={busy || uploadingProof}
-                onClick={handleDirectPay}
+                onClick={() => {
+                  if (!screenshotFile && !screenshotPreview) {
+                    setConfirmModalError('⚠️ Payment screenshot is mandatory. Please upload a screenshot of your transaction before confirming.');
+                    return;
+                  }
+                  handleDirectPay();
+                }}
                 style={{
                   flex: '2',
                   padding: '0.65rem 1rem',
                   borderRadius: '8px',
-                  border: busy || uploadingProof ? '1px solid #cbd5e1' : '1.5px solid #b89320',
+                  border: busy || uploadingProof ? '1px solid #cbd5e1' : (!screenshotFile && !screenshotPreview ? '1.5px solid #d4af37' : '1.5px solid #b89320'),
                   background: busy || uploadingProof
                     ? '#e2e8f0'
                     : 'linear-gradient(135deg, #d4af37 0%, #b89320 100%)',
@@ -1862,6 +1899,7 @@ export function BookingCheckout({
                   justifyContent: 'center',
                   gap: '0.45rem',
                   transition: 'all 0.15s ease',
+                  opacity: (!screenshotFile && !screenshotPreview) ? 0.85 : 1,
                 }}
               >
                 {busy || uploadingProof ? (

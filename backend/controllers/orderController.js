@@ -90,6 +90,10 @@ export const createOrder = async (req, res, next) => {
       (paymentResult && (paymentResult.screenshotUrl || paymentResult.paymentProofUrl)) ||
       '';
 
+    if (!paymentProof) {
+      return renderError(res, 400, 'Payment screenshot proof is mandatory. Please attach a screenshot of your payment to confirm your order.');
+    }
+
     const paidTimestamp = paymentResult?.paidAt ? new Date(paymentResult.paidAt) : (orderPaid ? new Date() : null);
 
     const order = new Order({
