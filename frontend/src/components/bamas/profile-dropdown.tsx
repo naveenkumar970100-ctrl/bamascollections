@@ -29,12 +29,17 @@ export function ProfileDropdown() {
   const queryClient = useQueryClient();
 
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [cartCount, setCartCount] = useState(() => cart.getItems().reduce((acc, it) => acc + (it.quantity || 1), 0));
   const [copiedCoupon, setCopiedCoupon] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch orders when dropdown opens or user changes
   const fetchOrders = async () => {
@@ -115,8 +120,9 @@ export function ProfileDropdown() {
     setTimeout(() => setCopiedCoupon(false), 2000);
   };
 
-  const initial = ((user?.name || user?.email || 'U').charAt(0) || 'U').toUpperCase();
-  const isAdmin = user?.role === 'admin';
+  const activeUser = mounted ? user : null;
+  const initial = ((activeUser?.name || activeUser?.email || 'U').charAt(0) || 'U').toUpperCase();
+  const isAdmin = activeUser?.role === 'admin';
 
   return (
     <div ref={containerRef} style={{ position: 'relative', display: 'inline-block' }}>
@@ -125,24 +131,24 @@ export function ProfileDropdown() {
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        aria-label={user ? `Profile for ${user.name || user.email}` : 'Log in to account'}
-        title={user ? `${user.name || 'Patron'} • View Bookings & Profile` : 'Sign In'}
+        aria-label={activeUser ? `Profile for ${activeUser.name || activeUser.email}` : 'Log in to account'}
+        title={activeUser ? `${activeUser.name || 'Patron'} • View Bookings & Profile` : 'Sign In'}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
           background: open ? 'rgba(212, 175, 55, 0.15)' : 'transparent',
-          border: user ? '1.5px solid rgba(212, 175, 55, 0.6)' : '1px solid transparent',
+          border: activeUser ? '1.5px solid rgba(212, 175, 55, 0.6)' : '1px solid transparent',
           borderRadius: '50%',
           width: '36px',
           height: '36px',
           cursor: 'pointer',
           color: '#092330',
           transition: 'all 0.15s ease',
-          boxShadow: user ? '0 1px 6px rgba(212, 175, 55, 0.25)' : 'none',
+          boxShadow: activeUser ? '0 1px 6px rgba(212, 175, 55, 0.25)' : 'none',
         }}
       >
-        {user ? (
+        {activeUser ? (
           <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#092330' }}>
             {initial}
           </span>

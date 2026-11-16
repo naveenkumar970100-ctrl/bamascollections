@@ -16,6 +16,7 @@ import { CustomerContext } from "@/components/bamas/auth-context";
 import { SiteHeader, SiteFooter } from "@/components/bamas/shell";
 import { MobileBottomBar } from "@/components/bamas/mobile-bottom-bar";
 import { Button } from "@/components/ui/button";
+import { getSocket } from "@/lib/socket";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -268,6 +269,15 @@ function RootComponent() {
       }
     };
     window.addEventListener("bamas_auth_changed", handleAuthChange);
+
+    // Initialize real-time WebSocket connection across whole patron app
+    if (typeof window !== "undefined") {
+      try {
+        getSocket();
+      } catch (e) {
+        console.warn('[Socket Init Notice]:', e);
+      }
+    }
 
     return () => {
       active = false;

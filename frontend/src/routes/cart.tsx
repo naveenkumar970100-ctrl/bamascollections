@@ -400,7 +400,7 @@ function CartPage() {
         >
           {/* LEFT: SAREES LIST ONLY */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {items.map((item) => {
+            {items.map((item, idx) => {
               const itemPrice = Number(item.price) || 0;
               const isItemOutOfStock =
                 itemPrice <= 0 ||
@@ -409,7 +409,7 @@ function CartPage() {
 
               return (
                 <div
-                  key={item.id}
+                  key={item.id || item._id || item.slug || `cart-item-${idx}`}
                   style={{
                     background: '#ffffff',
                     borderRadius: '1rem',

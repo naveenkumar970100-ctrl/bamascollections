@@ -90,6 +90,17 @@ export const getProductByIdOrSlug = async (req, res, next) => {
     }
 
     if (!product) {
+      const clean = idOrSlug.toLowerCase().trim();
+      const namePattern = clean.replace(/-/g, ' ');
+      product = await Product.findOne({
+        $or: [
+          { slug: clean },
+          { name: { $regex: new RegExp(namePattern, 'i') } },
+        ],
+      });
+    }
+
+    if (!product) {
       return renderError(res, 404, 'Saree piece not found in collection');
     }
 

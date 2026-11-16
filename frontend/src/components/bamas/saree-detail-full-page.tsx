@@ -229,26 +229,6 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Dedicated Booking & Payment Checkout
-  if (checkoutOpen) {
-    return (
-      <BookingCheckout
-        saree={{ ...currentSaree, image: selectedImage || currentSaree.image }}
-        quantity={quantity}
-        onBack={() => setCheckoutOpen(false)}
-      />
-    );
-  }
-
-  const viewLabels = [
-    'Main Drape',
-    'Pallu & Weave',
-    'Border Detail',
-    'Pleats Fall',
-    'Fabric Close-up',
-    'Blouse Piece',
-  ];
-
   // Active photo index in gallery
   const activeImg = selectedImage || saree.image;
   const currentImageIndex = Math.max(0, galleryImages.indexOf(activeImg));
@@ -285,6 +265,26 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [zoomOpen, currentImageIndex, galleryImages]);
+
+  // Dedicated Booking & Payment Checkout
+  if (checkoutOpen) {
+    return (
+      <BookingCheckout
+        saree={{ ...currentSaree, image: selectedImage || currentSaree.image }}
+        quantity={quantity}
+        onBack={() => setCheckoutOpen(false)}
+      />
+    );
+  }
+
+  const viewLabels = [
+    'Main Drape',
+    'Pallu & Weave',
+    'Border Detail',
+    'Pleats Fall',
+    'Fabric Close-up',
+    'Blouse Piece',
+  ];
 
   return (
     <div className="pdp-container reveal">

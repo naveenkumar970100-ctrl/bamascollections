@@ -71,6 +71,7 @@ export function MobileBottomBar() {
     >
       {/* 1. Home */}
       <Link
+        key="mobile-nav-home"
         to="/"
         style={{
           display: 'flex',
@@ -104,6 +105,7 @@ export function MobileBottomBar() {
 
       {/* 2. Collections */}
       <Link
+        key="mobile-nav-collections"
         to="/products"
         style={{
           display: 'flex',
@@ -137,6 +139,7 @@ export function MobileBottomBar() {
 
       {/* 3. Support */}
       <Link
+        key="mobile-nav-support"
         to="/contact"
         style={{
           display: 'flex',
@@ -170,6 +173,7 @@ export function MobileBottomBar() {
 
       {/* 4. Profile (Houses Bookings, Order History, Notifications, and Account) */}
       <Link
+        key="mobile-nav-profile"
         to="/profile"
         style={{
           display: 'flex',

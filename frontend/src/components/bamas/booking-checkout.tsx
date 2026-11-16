@@ -13,11 +13,16 @@ import {
   Copy,
   Check,
   Radio,
+  Maximize2,
+  Smartphone,
+  X,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomer } from './auth-context';
 import { api } from '@/lib/api';
 import { cart } from '@/lib/cart';
+import { getSocket } from '@/lib/socket';
 
 interface BookingCheckoutProps {
   saree?: any;
@@ -68,27 +73,59 @@ export function BookingCheckout({
     description: 'Scan and pay using any UPI app (Google Pay, PhonePe, Paytm, BHIM)',
   });
   const [copiedUpi, setCopiedUpi] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
 
   useEffect(() => {
-    // Initial fetch of active UPI & QR code from MongoDB
-    api.payments.getActiveMethod()
-      .then((res) => {
-        if (res.data) {
-          setActiveGateway(res.data);
-        }
-      })
-      .catch((err) => console.warn('Could not load active UPI config:', err));
+    // 1. Ensure WebSocket connection is live for customer checkout
+    let socket: any = null;
+    try {
+      socket = getSocket();
+    } catch {}
 
-    // Listen for live updates emitted when Admin modifies or switches the active UPI / QR gateway
+    // 2. Fetch active UPI & QR code from MongoDB Atlas
+    const fetchActiveGateway = () => {
+      api.payments.getActiveMethod()
+        .then((res) => {
+          if (res?.data) {
+            setActiveGateway(res.data);
+          }
+        })
+        .catch((err) => console.warn('Could not load active UPI config:', err));
+    };
+
+    fetchActiveGateway();
+
+    // 3. 3-second live sync poll to guarantee customer and admin stay 100% in sync
+    const pollInterval = setInterval(fetchActiveGateway, 3000);
+
+    // 4. Listen for live updates emitted when Admin modifies or switches the active UPI / QR gateway
     const handleLivePaymentConfig = (e: any) => {
-      if (e.detail) {
+      if (e?.detail) {
         console.log('⚡ [Checkout]: Live payment gateway updated via WebSocket ->', e.detail.upiId);
         setActiveGateway(e.detail);
       }
     };
 
+    // Direct socket event listeners
+    const handleSocketConfig = (method: any) => {
+      if (method) {
+        console.log('⚡ [Checkout Socket Direct]: Live payment method updated ->', method.upiId);
+        setActiveGateway(method);
+      }
+    };
+
+    if (socket) {
+      socket.on('payment_method:updated', handleSocketConfig);
+      socket.on('payment_config:updated', handleSocketConfig);
+    }
+
     window.addEventListener('bamas_payment_config_updated', handleLivePaymentConfig);
     return () => {
+      clearInterval(pollInterval);
+      if (socket) {
+        socket.off('payment_method:updated', handleSocketConfig);
+        socket.off('payment_config:updated', handleSocketConfig);
+      }
       window.removeEventListener('bamas_payment_config_updated', handleLivePaymentConfig);
     };
   }, []);
@@ -140,6 +177,18 @@ export function BookingCheckout({
       : primaryItem.name;
   const primaryImage = primaryItem.image;
   const totalQty = activeItems.reduce((acc, it) => acc + (it.quantity || 1), 0);
+
+  // Dynamic UPI URL & Realtime QR Code Generation (Using Admin's active configuration)
+  const upiId = activeGateway?.upiId || 'bamas@okhdfcbank';
+  const payeeName = activeGateway?.payeeName || 'Bamas Collections Atelier';
+  const bankName = activeGateway?.bankName || 'HDFC Bank';
+  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${totalPrice}&cu=INR&tn=${encodeURIComponent(`Bamas Saree Booking - ${primaryName}`)}`;
+
+  // If Admin uploaded custom QR, use it; otherwise generate a genuine scannable UPI QR for exact amount
+  const liveQrCodeUrl =
+    activeGateway?.qrCodeUrl && activeGateway.qrCodeUrl.trim().length > 0
+      ? activeGateway.qrCodeUrl
+      : `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=${encodeURIComponent(upiIntentUrl)}`;
 
   // 1-Click Direct Demo Payment Handler
   async function handleDirectPay() {
@@ -289,7 +338,7 @@ export function BookingCheckout({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
             {activeItems.map((item, idx) => (
-              <div key={item.id || idx} className="booking-receipt-item-row" style={{ margin: 0 }}>
+              <div key={item.id || item._id || item.slug || `receipt-item-${idx}`} className="booking-receipt-item-row" style={{ margin: 0 }}>
                 <img src={item.image} alt={item.name} className="receipt-item-photo" />
                 <div className="receipt-item-info">
                   <h4>{item.name}</h4>
@@ -794,47 +843,56 @@ export function BookingCheckout({
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                {/* QR Code Container */}
+                {/* QR Code Container (Click to view full screen QR) */}
                 <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setQrModalOpen(true)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setQrModalOpen(true); }}
+                  title="Click to view & scan full screen QR Code"
                   style={{
-                    width: '74px',
-                    height: '74px',
+                    width: '82px',
+                    height: '82px',
                     background: '#ffffff',
-                    border: '1.5px solid #cbd5e1',
+                    border: '1.5px solid rgba(212, 175, 55, 0.55)',
                     borderRadius: '8px',
                     padding: '4px',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                    boxShadow: '0 2px 8px rgba(212, 175, 55, 0.18)',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  {activeGateway?.qrCodeUrl ? (
-                    <img
-                      src={activeGateway.qrCodeUrl}
-                      alt="UPI QR Code"
-                      style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }}
-                    />
-                  ) : (
-                    <svg width="60" height="60" viewBox="0 0 100 100">
-                      <rect x="0" y="0" width="30" height="30" fill="#092330" />
-                      <rect x="5" y="5" width="20" height="20" fill="#ffffff" />
-                      <rect x="10" y="10" width="10" height="10" fill="#092330" />
-                      <rect x="70" y="0" width="30" height="30" fill="#092330" />
-                      <rect x="75" y="5" width="20" height="20" fill="#ffffff" />
-                      <rect x="80" y="10" width="10" height="10" fill="#092330" />
-                      <rect x="0" y="70" width="30" height="30" fill="#092330" />
-                      <rect x="5" y="75" width="20" height="20" fill="#ffffff" />
-                      <rect x="10" y="80" width="10" height="10" fill="#092330" />
-                      <rect x="40" y="10" width="15" height="15" fill="#d4af37" />
-                      <rect x="40" y="40" width="20" height="20" fill="#092330" />
-                      <rect x="45" y="45" width="10" height="10" fill="#d4af37" />
-                      <rect x="70" y="45" width="15" height="15" fill="#092330" />
-                      <rect x="40" y="70" width="15" height="15" fill="#092330" />
-                      <rect x="65" y="75" width="25" height="15" fill="#d4af37" />
-                    </svg>
-                  )}
+                  <img
+                    src={liveQrCodeUrl}
+                    alt="UPI QR Code"
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '-6px',
+                      background: '#092330',
+                      color: '#d4af37',
+                      fontSize: '0.54rem',
+                      fontWeight: 700,
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      border: '1px solid #d4af37',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    }}
+                  >
+                    <Maximize2 size={8} />
+                    <span>Zoom</span>
+                  </div>
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -844,7 +902,8 @@ export function BookingCheckout({
                     </span>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (activeGateway?.upiId) {
                           navigator.clipboard.writeText(activeGateway.upiId);
                           setCopiedUpi(true);
@@ -871,14 +930,20 @@ export function BookingCheckout({
                   </div>
 
                   <strong
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setQrModalOpen(true)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setQrModalOpen(true); }}
+                    title="Click to view & scan full screen QR Code"
                     style={{
-                      fontSize: '0.86rem',
+                      fontSize: '0.88rem',
                       color: '#092330',
                       fontFamily: 'monospace',
                       letterSpacing: '0.3px',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
+                      cursor: 'pointer',
                     }}
                   >
                     {activeGateway?.upiId || 'bamas@okhdfcbank'}
@@ -892,6 +957,33 @@ export function BookingCheckout({
                   </div>
                 </div>
               </div>
+
+              {/* Clickable Full QR trigger button */}
+              <button
+                type="button"
+                onClick={() => setQrModalOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%)',
+                  border: '1.5px solid rgba(212, 175, 55, 0.5)',
+                  borderRadius: '7px',
+                  padding: '0.45rem 0.75rem',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  color: '#092330',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  cursor: 'pointer',
+                  width: '100%',
+                  boxShadow: '0 2px 6px rgba(212, 175, 55, 0.1)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <QrCode size={14} color="#d4af37" />
+                <span>Click to View & Scan Full QR Code (₹{totalPrice.toLocaleString('en-IN')})</span>
+                <Maximize2 size={12} color="#64748b" />
+              </button>
 
               <div
                 style={{
@@ -1059,6 +1151,238 @@ export function BookingCheckout({
           </div>
         </div>
       </div>
+
+      {/* Realtime Scan & Pay Full Screen QR Modal */}
+      {qrModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(6, 24, 33, 0.82)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            padding: '1rem',
+          }}
+          onClick={() => setQrModalOpen(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              maxWidth: '390px',
+              width: '100%',
+              padding: '1.75rem 1.5rem',
+              boxShadow: '0 24px 60px rgba(9, 35, 48, 0.35)',
+              border: '2px solid rgba(212, 175, 55, 0.55)',
+              position: 'relative',
+              textAlign: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setQrModalOpen(false)}
+              aria-label="Close QR Modal"
+              style={{
+                position: 'absolute',
+                top: '14px',
+                right: '14px',
+                background: 'rgba(0, 0, 0, 0.05)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#64748b',
+                transition: 'background 0.2s',
+              }}
+            >
+              <X size={18} />
+            </button>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', marginBottom: '0.25rem' }}>
+              <Sparkles size={17} color="#d4af37" />
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#092330', fontFamily: 'Cormorant Garamond, serif' }}>
+                Scan & Pay with UPI
+              </h3>
+            </div>
+
+            <p style={{ margin: '0 0 0.85rem', fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>
+              Scan using any UPI App (Google Pay, PhonePe, Paytm, BHIM, or Banking App)
+            </p>
+
+            {/* Realtime Synced Badge */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: '#dcfce7',
+                color: '#166534',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                padding: '3px 10px',
+                borderRadius: '9999px',
+                marginBottom: '1rem',
+                border: '1px solid #bbf7d0',
+              }}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+              <span>Realtime Admin Gateway Synced</span>
+            </div>
+
+            {/* High-Res QR Code Card */}
+            <div
+              style={{
+                background: '#ffffff',
+                border: '2px solid rgba(212, 175, 55, 0.7)',
+                borderRadius: '16px',
+                padding: '14px',
+                display: 'inline-block',
+                boxShadow: '0 8px 24px rgba(212, 175, 55, 0.22)',
+                marginBottom: '1rem',
+              }}
+            >
+              <img
+                src={liveQrCodeUrl}
+                alt="Active UPI QR Code"
+                style={{
+                  width: '210px',
+                  height: '210px',
+                  objectFit: 'contain',
+                  display: 'block',
+                  margin: '0 auto',
+                  borderRadius: '8px',
+                }}
+              />
+            </div>
+
+            {/* Total Payable Amount */}
+            <div
+              style={{
+                background: '#f8fafc',
+                border: '1.5px solid #e2edf0',
+                borderRadius: '10px',
+                padding: '0.65rem',
+                marginBottom: '0.9rem',
+              }}
+            >
+              <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+                Total Payable Amount
+              </span>
+              <strong style={{ fontSize: '1.45rem', fontWeight: 800, color: '#092330' }}>
+                ₹{totalPrice.toLocaleString('en-IN')}
+              </strong>
+            </div>
+
+            {/* Payee Info & VPA */}
+            <div
+              style={{
+                textAlign: 'left',
+                background: 'rgba(9, 35, 48, 0.03)',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '0.75rem',
+                marginBottom: '1rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>
+                  Merchant UPI ID
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeGateway?.upiId) {
+                      navigator.clipboard.writeText(activeGateway.upiId);
+                      setCopiedUpi(true);
+                      setTimeout(() => setCopiedUpi(false), 2000);
+                    }
+                  }}
+                  style={{
+                    background: copiedUpi ? '#d1fae5' : '#ffffff',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    fontSize: '0.68rem',
+                    fontWeight: 600,
+                    color: copiedUpi ? '#065f46' : '#092330',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  {copiedUpi ? <Check size={11} /> : <Copy size={11} />}
+                  {copiedUpi ? 'Copied!' : 'Copy UPI'}
+                </button>
+              </div>
+
+              <strong style={{ fontSize: '0.9rem', color: '#092330', fontFamily: 'monospace', display: 'block' }}>
+                {activeGateway?.upiId || 'bamas@okhdfcbank'}
+              </strong>
+
+              <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '3px' }}>
+                <strong>{activeGateway?.payeeName || 'Bamas Collections Atelier'}</strong>
+                {activeGateway?.bankName && <span> · {activeGateway.bankName}</span>}
+              </div>
+            </div>
+
+            {/* Direct Mobile UPI Intent Button */}
+            <a
+              href={upiIntentUrl}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                background: 'linear-gradient(135deg, #092330 0%, #15394b 100%)',
+                color: '#d4af37',
+                padding: '0.65rem',
+                borderRadius: '8px',
+                fontWeight: 700,
+                fontSize: '0.84rem',
+                textDecoration: 'none',
+                border: '1.5px solid #d4af37',
+                marginBottom: '0.65rem',
+                boxShadow: '0 4px 12px rgba(9, 35, 48, 0.15)',
+              }}
+            >
+              <Smartphone size={16} />
+              <span>Pay via Installed UPI App</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => setQrModalOpen(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#64748b',
+                fontSize: '0.76rem',
+                cursor: 'pointer',
+                padding: '0.25rem',
+                textDecoration: 'underline',
+              }}
+            >
+              Close QR Window
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

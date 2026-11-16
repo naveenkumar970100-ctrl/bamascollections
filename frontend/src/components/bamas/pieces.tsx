@@ -158,7 +158,7 @@ export function Pieces({
           const isOutOfStock = priceNum <= 0 || countInStock <= 0 || p.inStock === false;
 
           return (
-            <article className={`piece reveal delay-${i}`} key={p.id || i}>
+            <article className={`piece reveal delay-${i}`} key={p._id || p.slug || p.id || `piece-${i}`}>
               <button
                 className="piece-photo"
                 aria-label={`View full details of ${p.name}`}

@@ -586,8 +586,8 @@ export function NotificationBell({ isAdmin = false }: { isAdmin?: boolean }) {
                   </p>
                 </div>
               ) : (
-                filteredNotifications.map((n) => {
-                  const id = n.id || n._id;
+                filteredNotifications.map((n, idx) => {
+                  const id = n.id || n._id || `notif-${idx}`;
                   const isRead = !!n.isRead;
                   return (
                     <div

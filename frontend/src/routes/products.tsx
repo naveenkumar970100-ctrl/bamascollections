@@ -419,12 +419,12 @@ function Products() {
 
         <div className="catalog-toolbar" style={{ justifyContent: 'center', marginBottom: '1.5rem' }}>
           <div className="category-filter-rail" role="tablist" aria-label="Collection filters">
-            {availableCategories.map((c) => {
+            {availableCategories.map((c, cIdx) => {
               const isActive = category === c;
               const count = getCategoryCount(c);
               return (
                 <button
-                  key={c}
+                  key={`prod-cat-${c || cIdx}`}
                   type="button"
                   role="tab"
                   aria-selected={isActive}

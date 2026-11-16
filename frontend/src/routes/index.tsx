@@ -277,7 +277,7 @@ function Home() {
         {/* Dynamic Collection Category Filter with Side Scroller */}
         <div style={{ margin: '0.75rem 0 1.5rem', width: '100%', overflow: 'hidden' }}>
           <div className="category-filter-rail" role="tablist" aria-label="Curated Categories">
-            {homeCategories.map((cat) => {
+            {homeCategories.map((cat, catIdx) => {
               const isSelected = activeCategory === cat;
               const count =
                 cat === 'All'
@@ -290,7 +290,7 @@ function Home() {
 
               return (
                 <button
-                  key={cat}
+                  key={`home-cat-${cat || catIdx}`}
                   type="button"
                   role="tab"
                   aria-selected={isSelected}

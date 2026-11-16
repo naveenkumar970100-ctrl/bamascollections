@@ -1325,9 +1325,12 @@ export function AdminPaymentsView({
                         boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
                       }}
                     >
-                      {method.qrCodeUrl ? (
+                      {method.qrCodeUrl || method.upiId ? (
                         <img
-                          src={method.qrCodeUrl}
+                          src={
+                            method.qrCodeUrl ||
+                            `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=6&data=${encodeURIComponent(`upi://pay?pa=${encodeURIComponent(method.upiId)}&pn=${encodeURIComponent(method.payeeName || 'Bamas Collections Atelier')}&cu=INR`)}`
+                          }
                           alt="UPI QR Code"
                           style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }}
                         />
@@ -1637,7 +1640,7 @@ export function AdminPaymentsView({
               </div>
 
               {/* QR Preview if present */}
-              {upiForm.qrCodeUrl && (
+              {upiForm.qrCodeUrl ? (
                 <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                   <img
                     src={upiForm.qrCodeUrl}
@@ -1653,7 +1656,7 @@ export function AdminPaymentsView({
                   />
                   <div>
                     <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 600, display: 'block' }}>
-                      ✓ QR Code Image Ready
+                      ✓ Custom QR Code Image Ready
                     </span>
                     <button
                       type="button"
@@ -1668,11 +1671,34 @@ export function AdminPaymentsView({
                         textDecoration: 'underline',
                       }}
                     >
-                      Remove image
+                      Remove image (use auto-generated UPI QR)
                     </button>
                   </div>
                 </div>
-              )}
+              ) : upiForm.upiId && upiForm.upiId.includes('@') ? (
+                <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.65rem', background: '#f8fafc', padding: '0.45rem 0.65rem', borderRadius: '6px', border: '1px dashed #cbd5e1' }}>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=4&data=${encodeURIComponent(`upi://pay?pa=${encodeURIComponent(upiForm.upiId)}&pn=${encodeURIComponent(upiForm.payeeName || 'Bamas Collections Atelier')}&cu=INR`)}`}
+                    alt="Auto-Generated UPI QR Code"
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      objectFit: 'contain',
+                      borderRadius: '4px',
+                      background: '#fff',
+                      border: '1px solid #cbd5e1',
+                    }}
+                  />
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: '#092330', fontWeight: 700, display: 'block' }}>
+                      ⚡ Auto-Generated Dynamic UPI QR
+                    </span>
+                    <span style={{ fontSize: '0.66rem', color: '#64748b' }}>
+                      Scannable with Google Pay, PhonePe, Paytm & BHIM. You can also upload a custom QR image.
+                    </span>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {/* Description / Instructions */}
