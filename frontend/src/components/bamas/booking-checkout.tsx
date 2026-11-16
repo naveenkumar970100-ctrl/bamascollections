@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomer } from './auth-context';
+import { BookingAuthModal } from './booking-auth-modal';
 import { api } from '@/lib/api';
 import { cart } from '@/lib/cart';
 
@@ -98,6 +99,7 @@ export function BookingCheckout({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [completedOrder, setCompletedOrder] = useState<any | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Sync user details if patron signs in
   useEffect(() => {
@@ -143,6 +145,13 @@ export function BookingCheckout({
 
   // 1-Click Direct Demo Payment Handler
   async function handleDirectPay() {
+    const currentUser = user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
+    if (!currentUser) {
+      setError('Authentication required: You must sign in to confirm and book this handloom saree order.');
+      setAuthModalOpen(true);
+      return;
+    }
+
     if (hasOutOfStockItems || totalPrice <= 0) {
       setError('Out of stock or ₹0 cost items cannot be booked. You can keep them in your cart.');
       return;
@@ -925,7 +934,51 @@ export function BookingCheckout({
           )}
 
           {/* Action Button & In-Place Animated State */}
-          {paymentState === 'processing' ? (
+          {!user && (typeof window === 'undefined' || !api.auth.getCurrentUser()) ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', width: '100%', marginTop: '0.2rem' }}>
+              <div
+                style={{
+                  background: 'rgba(212, 175, 55, 0.12)',
+                  border: '1px solid rgba(212, 175, 55, 0.4)',
+                  borderRadius: '7px',
+                  padding: '0.55rem 0.75rem',
+                  fontSize: '0.74rem',
+                  color: '#d4af37',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                }}
+              >
+                <Lock size={14} color="#d4af37" style={{ flexShrink: 0 }} />
+                <span>Sign in required: You must be logged in to confirm and book this saree.</span>
+              </div>
+
+              <Button
+                type="button"
+                className="booking-pay-btn"
+                onClick={() => setAuthModalOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #092330 0%, #15394b 100%)',
+                  color: '#d4af37',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  height: '44px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  border: '1.5px solid #d4af37',
+                  boxShadow: '0 4px 14px rgba(212, 175, 55, 0.25)',
+                  width: '100%',
+                  cursor: 'pointer',
+                }}
+              >
+                <Lock size={15} color="#d4af37" />
+                <span>Sign In to Book Saree (₹{totalPrice.toLocaleString('en-IN')})</span>
+              </Button>
+            </div>
+          ) : paymentState === 'processing' ? (
             <div style={{ padding: '0.85rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <LoaderCircle className="spin" size={24} style={{ color: '#d4af37', margin: '0 auto 0.35rem' }} />
               <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#092330', display: 'block' }}>
@@ -987,6 +1040,16 @@ export function BookingCheckout({
           </div>
         </div>
       </div>
+
+      <BookingAuthModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        saree={primaryItem}
+        quantity={totalQty}
+        onSuccess={() => {
+          setError('');
+        }}
+      />
     </main>
   );
 }

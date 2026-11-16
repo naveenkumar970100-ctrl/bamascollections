@@ -7,7 +7,9 @@ import { cart } from '@/lib/cart';
 import { validateName, validateEmail, validatePhone, validateRequired } from '@/lib/validation';
 import { CartDrawer } from './cart-drawer';
 import { BookingCheckout } from './booking-checkout';
+import { BookingAuthModal } from './booking-auth-modal';
 import { SareeDetailFullPage } from './saree-detail-full-page';
+import { useCustomer } from './auth-context';
 
 export function Pieces({
   items,
@@ -31,6 +33,9 @@ export function Pieces({
   const [addedId, setAddedId] = useState<string | null>(null);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [directBuySaree, setDirectBuySaree] = useState<any | null>(null);
+  const { user } = useCustomer();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [pendingAuthSaree, setPendingAuthSaree] = useState<any | null>(null);
 
   // Real-time validation checks for inquiry
   const nameValidation = validateName(name, 'Your name');
@@ -66,6 +71,23 @@ export function Pieces({
   }
 
   function handleBuyNow(p: any) {
+    const currentUser = user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
+    if (!currentUser) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(
+          'bamas_pending_booking',
+          JSON.stringify({
+            saree: p,
+            quantity: 1,
+            origin: window.location.pathname,
+          })
+        );
+      }
+      setPendingAuthSaree(p);
+      setAuthModalOpen(true);
+      return;
+    }
+
     if (onBuyNow) {
       onBuyNow(p);
     } else {
@@ -226,7 +248,7 @@ export function Pieces({
                   title={isOutOfStock ? `${p.name} is Out of Stock - Cannot Book` : `Buy ${p.name} now`}
                 >
                   <Zap size={15} />
-                  <span>{isOutOfStock ? 'Cannot Book' : 'Buy Now'}</span>
+                  <span>{isOutOfStock ? 'Cannot Book' : 'Book Now'}</span>
                 </button>
               </div>
             </article>
@@ -422,6 +444,24 @@ export function Pieces({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Booking Authentication Modal */}
+      <BookingAuthModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        saree={pendingAuthSaree}
+        quantity={1}
+        onSuccess={() => {
+          if (pendingAuthSaree) {
+            if (onBuyNow) {
+              onBuyNow(pendingAuthSaree);
+            } else {
+              setDirectBuySaree(pendingAuthSaree);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }
+        }}
+      />
 
       {/* Cart Drawer */}
       <CartDrawer

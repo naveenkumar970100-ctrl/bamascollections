@@ -94,9 +94,22 @@ function Products() {
   const [products, setProducts] = useState<any[]>(() => collection.map(mapProductItem));
   const [isLive, setIsLive] = useState(false);
 
-  // Check if a saree was selected from home or another page
+  // Check if a saree was selected from home or auto-checkout resumed after login
   useEffect(() => {
     try {
+      const autoCheckoutStr = sessionStorage.getItem('bamas_auto_checkout_saree');
+      if (autoCheckoutStr) {
+        const autoCheckout = JSON.parse(autoCheckoutStr);
+        sessionStorage.removeItem('bamas_auto_checkout_saree');
+        if (autoCheckout.saree) {
+          const mapped = mapProductItem(autoCheckout.saree);
+          setSelectedSaree(mapped);
+          setCheckoutSaree(mapped);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      }
+
       const saved = sessionStorage.getItem('bamas_selected_saree');
       if (saved) {
         setSelectedSaree(JSON.parse(saved));

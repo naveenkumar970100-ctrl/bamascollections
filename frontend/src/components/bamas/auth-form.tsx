@@ -115,6 +115,60 @@ export function AuthForm({
   const [recovery, setRecovery] = useState(false);
   const [authTouched, setAuthTouched] = useState<Record<string, boolean>>({});
 
+  // Pending booking information if navigated from "Book Now"
+  const [pendingBookingInfo] = useState<any | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('bamas_pending_booking');
+        return stored ? JSON.parse(stored) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const handlePostAuthSuccess = (userData: any) => {
+    window.dispatchEvent(new Event('bamas_auth_changed'));
+
+    if (userData?.role === 'admin') {
+      setMessage('Welcome, Administrator! Redirecting to Admin Dashboard...');
+      setTimeout(() => navigate({ to: '/admin' }), 600);
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      const pendingBookingStr = sessionStorage.getItem('bamas_pending_booking');
+      if (pendingBookingStr) {
+        try {
+          const pending = JSON.parse(pendingBookingStr);
+          sessionStorage.removeItem('bamas_pending_booking');
+          sessionStorage.setItem('bamas_auto_checkout_saree', JSON.stringify(pending));
+          setMessage('Signed in successfully! Returning to complete your saree booking...');
+          setTimeout(() => {
+            navigate({ to: (pending.origin || '/products') as any });
+          }, 600);
+          return;
+        } catch {}
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectUrl = urlParams.get('redirect');
+      if (redirectUrl) {
+        setMessage('Signed in successfully! Redirecting back...');
+        setTimeout(() => {
+          navigate({ to: redirectUrl as any });
+        }, 600);
+        return;
+      }
+    }
+
+    setMessage('Welcome back! Signed in successfully.');
+    if (window.location.pathname !== '/profile') {
+      setTimeout(() => navigate({ to: '/profile' }), 600);
+    }
+  };
+
   // Real-time validation checks
   const nameVal = validateName(name, 'Full name');
   const idVal = validateIdentifier(identifier);
@@ -231,14 +285,7 @@ export function AuthForm({
         try {
           const res = await api.auth.register(regPayload);
           setMessage('Account successfully created! Welcome to Bamas Collection.');
-          window.dispatchEvent(new Event('bamas_auth_changed'));
-          if (res.data?.role === 'admin') {
-            setTimeout(() => navigate({ to: '/admin' }), 700);
-          } else {
-            if (window.location.pathname !== '/profile') {
-              setTimeout(() => navigate({ to: '/profile' }), 700);
-            }
-          }
+          handlePostAuthSuccess(res.data);
         } catch (apiErr: any) {
           // Try Supabase as backup if identifier is email
           if (isEmail) {
@@ -253,9 +300,7 @@ export function AuthForm({
               });
               if (error) throw error;
               if (data.session) {
-                if (window.location.pathname !== '/profile') {
-                  await navigate({ to: '/profile' });
-                }
+                handlePostAuthSuccess({ email: cleanIdentifier, role: 'customer' });
               } else {
                 setMessage('Check your email to confirm your account before signing in.');
               }
@@ -282,17 +327,7 @@ export function AuthForm({
             password,
           });
 
-          window.dispatchEvent(new Event('bamas_auth_changed'));
-
-          if (res.data?.role === 'admin') {
-            setMessage('Welcome, Administrator! Redirecting to Admin Dashboard...');
-            setTimeout(() => navigate({ to: '/admin' }), 600);
-          } else {
-            setMessage('Welcome back! Signed in successfully.');
-            if (window.location.pathname !== '/profile') {
-              setTimeout(() => navigate({ to: '/profile' }), 600);
-            }
-          }
+          handlePostAuthSuccess(res.data);
         } catch (apiErr: any) {
           // Fallback to Supabase if identifier is email
           if (cleanIdentifier.includes('@')) {
@@ -302,11 +337,7 @@ export function AuthForm({
                 password,
               });
               if (error) throw error;
-              setMessage('Welcome back. You are signed in.');
-              window.dispatchEvent(new Event('bamas_auth_changed'));
-              if (window.location.pathname !== '/profile') {
-                setTimeout(() => navigate({ to: '/profile' }), 600);
-              }
+              handlePostAuthSuccess({ email: cleanIdentifier, role: 'customer' });
             } catch {
               throw apiErr;
             }
@@ -1799,6 +1830,36 @@ export function AuthForm({
             >
               <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
               <span>{message}</span>
+            </div>
+          )}
+
+          {/* Saree Booking Pending Notice */}
+          {pendingBookingInfo?.saree && (
+            <div
+              style={{
+                background: 'rgba(212, 175, 55, 0.12)',
+                border: '1.5px solid rgba(212, 175, 55, 0.45)',
+                borderRadius: '10px',
+                padding: '0.8rem 1rem',
+                fontSize: '0.84rem',
+                color: '#715100',
+                marginBottom: '1.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                boxShadow: '0 2px 8px rgba(212, 175, 55, 0.15)',
+              }}
+            >
+              <Sparkles size={20} color="#d4af37" style={{ flexShrink: 0 }} />
+              <div>
+                <strong style={{ color: '#092330', display: 'block', fontSize: '0.88rem' }}>
+                  Reserve Your Saree
+                </strong>
+                <span>
+                  Please sign in or register to complete your reservation for{' '}
+                  <strong style={{ color: '#092330' }}>{pendingBookingInfo.saree.name}</strong>.
+                </span>
+              </div>
             </div>
           )}
 

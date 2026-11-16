@@ -25,6 +25,7 @@ import { cart } from '@/lib/cart';
 import { api } from '@/lib/api';
 import { useCustomer } from './auth-context';
 import { BookingCheckout } from './booking-checkout';
+import { BookingAuthModal } from './booking-auth-modal';
 import { CartDrawer } from './cart-drawer';
 
 interface SareeDetailFullPageProps {
@@ -39,6 +40,7 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
   const [addedNotice, setAddedNotice] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'care' | 'shipping'>('details');
   const [zoomOpen, setZoomOpen] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState(false);
@@ -185,9 +187,44 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
     window.location.href = '/cart';
   }
 
+  // Auto-resume booking checkout if patron signed in from login screen
+  useEffect(() => {
+    try {
+      const autoCheckoutStr = sessionStorage.getItem('bamas_auto_checkout_saree');
+      if (autoCheckoutStr) {
+        const autoCheckout = JSON.parse(autoCheckoutStr);
+        if (
+          autoCheckout.saree &&
+          (autoCheckout.saree.id === currentSaree.id ||
+            autoCheckout.saree._id === currentSaree._id ||
+            autoCheckout.saree.name === currentSaree.name)
+        ) {
+          sessionStorage.removeItem('bamas_auto_checkout_saree');
+          setCheckoutOpen(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    } catch {}
+  }, [currentSaree]);
+
   function handleBuyNow() {
     if (isOutOfStock) {
       alert('This saree is currently Out of Stock (Cost ₹0 or 0 count available) and cannot be booked directly. You can add it to your bag or consult with our stylist via support email.');
+      return;
+    }
+    const currentUser = user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
+    if (!currentUser) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(
+          'bamas_pending_booking',
+          JSON.stringify({
+            saree: currentSaree,
+            quantity,
+            origin: window.location.pathname,
+          })
+        );
+      }
+      setAuthModalOpen(true);
       return;
     }
     setCheckoutOpen(true);
@@ -581,7 +618,7 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
                 title={isOutOfStock ? 'Out of Stock - Cannot book this item directly' : 'Proceed to immediate booking'}
               >
                 <Zap size={18} />
-                <span>{isOutOfStock ? 'Cannot Book (Out of Stock)' : 'Buy Now'}</span>
+                <span>{isOutOfStock ? 'Cannot Book (Out of Stock)' : 'Book Now'}</span>
               </Button>
             </div>
 
@@ -1362,7 +1399,7 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
                 }}
               >
                 <Zap size={14} />
-                <span>{isOutOfStock ? 'Cannot Book' : 'Buy Now'}</span>
+                <span>{isOutOfStock ? 'Cannot Book' : 'Book Now'}</span>
               </button>
             </div>
           </div>
@@ -1444,6 +1481,18 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dedicated Saree Booking Authentication Prompt Modal */}
+      <BookingAuthModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        saree={currentSaree}
+        quantity={quantity}
+        onSuccess={() => {
+          setCheckoutOpen(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
 
     </div>
   );

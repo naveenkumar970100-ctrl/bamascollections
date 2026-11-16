@@ -14,7 +14,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { pageHead } from '@/lib/page-head';
 import { cart, type CartItem } from '@/lib/cart';
+import { api } from '@/lib/api';
+import { useCustomer } from '@/components/bamas/auth-context';
 import { BookingCheckout } from '@/components/bamas/booking-checkout';
+import { BookingAuthModal } from '@/components/bamas/booking-auth-modal';
 
 export const Route = createFileRoute('/cart')({
   head: () =>
@@ -29,9 +32,26 @@ function CartPage() {
   const navigate = useNavigate();
 
   // Cart items state
+  const { user } = useCustomer();
   const [items, setItems] = useState<CartItem[]>(() => cart.getItems());
   const [isCheckout, setIsCheckout] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any | null>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
+  // Resume checkout if patron logged in from /login
+  useEffect(() => {
+    try {
+      const autoCheckoutStr = sessionStorage.getItem('bamas_auto_checkout_saree');
+      if (autoCheckoutStr) {
+        const autoCheckout = JSON.parse(autoCheckoutStr);
+        if (autoCheckout.cartItems || autoCheckout.origin === '/cart') {
+          sessionStorage.removeItem('bamas_auto_checkout_saree');
+          setIsCheckout(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    } catch {}
+  }, []);
 
   // Set body class when Cart page is active to hide top nav bar on mobile
   useEffect(() => {
@@ -645,6 +665,14 @@ function CartPage() {
               type="button"
               disabled={items.length === 0 || hasOutOfStockItems}
               onClick={() => {
+                const currentUser = user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
+                if (!currentUser) {
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('bamas_pending_booking', JSON.stringify({ cartItems: items, origin: '/cart' }));
+                  }
+                  setAuthModalOpen(true);
+                  return;
+                }
                 setIsCheckout(true);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
@@ -691,6 +719,17 @@ function CartPage() {
           </div>
         </div>
       </div>
+
+      <BookingAuthModal
+        open={authModalOpen}
+        onOpenChange={setAuthModalOpen}
+        title="Sign In to Complete Cart Booking"
+        subtitle="Please sign in or create an account to proceed with your silk bag reservation."
+        onSuccess={() => {
+          setIsCheckout(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     </main>
   );
 }

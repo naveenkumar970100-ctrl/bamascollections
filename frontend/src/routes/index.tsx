@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, ArrowUpRight, Flower2, Gem, Heart, Sparkles } from 'lucide-react';
@@ -66,6 +66,21 @@ function Home() {
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedSaree, setSelectedSaree] = useState<any | null>(null);
+
+  // Resume saree booking checkout if patron logged in from /login
+  useEffect(() => {
+    try {
+      const autoCheckoutStr = sessionStorage.getItem('bamas_auto_checkout_saree');
+      if (autoCheckoutStr) {
+        const autoCheckout = JSON.parse(autoCheckoutStr);
+        sessionStorage.removeItem('bamas_auto_checkout_saree');
+        if (autoCheckout.saree) {
+          setSelectedSaree(autoCheckout.saree);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+    } catch {}
+  }, []);
 
   // Prioritize featured and newly added sarees on the homepage
   const rawProducts =
