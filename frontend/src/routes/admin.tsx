@@ -4251,6 +4251,129 @@ function AdminDashboardPage() {
                             </div>
                           </div>
                         )}
+
+                        {/* Customer Payment Verification & Screenshot Proof Card */}
+                        <div
+                          style={{
+                            background: '#f8fafb',
+                            borderRadius: '8px',
+                            padding: '0.85rem',
+                            border: (selectedBookingOrder.paymentProofUrl || selectedBookingOrder.paymentResult?.screenshotUrl)
+                              ? '1.5px solid #10b981'
+                              : '1px solid #edf4f7',
+                            marginTop: '0.75rem',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#8c9ea7', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Camera size={13} color="#d4af37" />
+                              Payment Verification & Screenshot
+                            </span>
+                            {(selectedBookingOrder.paymentProofUrl || selectedBookingOrder.paymentResult?.screenshotUrl) ? (
+                              <span style={{ fontSize: '0.62rem', background: '#ecfdf5', color: '#047857', fontWeight: 700, padding: '2px 7px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
+                                📸 Proof Attached
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.62rem', background: '#f1f5f9', color: '#64748b', fontWeight: 600, padding: '2px 6px', borderRadius: '4px' }}>
+                                Direct UPI Confirm
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ fontSize: '0.78rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.65rem' }}>
+                            <div>
+                              <span style={{ color: '#64748b', fontSize: '0.7rem' }}>Payment Gateway: </span>
+                              <strong style={{ color: '#092330' }}>{selectedBookingOrder.paymentMethod || 'UPI / QR Code'}</strong>
+                            </div>
+                            {selectedBookingOrder.paymentResult?.id && (
+                              <div>
+                                <span style={{ color: '#64748b', fontSize: '0.7rem' }}>Transaction / Ref: </span>
+                                <code style={{ color: '#092330', fontWeight: 700, background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px' }}>
+                                  {selectedBookingOrder.paymentResult.id}
+                                </code>
+                              </div>
+                            )}
+                            {selectedBookingOrder.paymentResult?.utrNumber && (
+                              <div>
+                                <span style={{ color: '#64748b', fontSize: '0.7rem' }}>Patron UTR No: </span>
+                                <code style={{ color: '#047857', fontWeight: 700, background: '#ecfdf5', padding: '1px 5px', borderRadius: '4px' }}>
+                                  {selectedBookingOrder.paymentResult.utrNumber}
+                                </code>
+                              </div>
+                            )}
+                            {selectedBookingOrder.paidAt && (
+                              <div>
+                                <span style={{ color: '#64748b', fontSize: '0.7rem' }}>Paid Timestamp: </span>
+                                <strong style={{ color: '#092330' }}>
+                                  {new Date(selectedBookingOrder.paidAt).toLocaleString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                  })}
+                                </strong>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Customer Uploaded Screenshot Display */}
+                          {(selectedBookingOrder.paymentProofUrl || selectedBookingOrder.paymentResult?.screenshotUrl) ? (
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#092330' }}>
+                                  Patron's Uploaded Screenshot:
+                                </span>
+                                <span style={{ fontSize: '0.65rem', color: '#0e7490' }}>Click image to inspect fullscreen</span>
+                              </div>
+                              <div
+                                onClick={() => setFullscreenBookingImage(selectedBookingOrder.paymentProofUrl || selectedBookingOrder.paymentResult?.screenshotUrl)}
+                                style={{
+                                  position: 'relative',
+                                  width: '100%',
+                                  maxHeight: '220px',
+                                  borderRadius: '8px',
+                                  overflow: 'hidden',
+                                  border: '1.5px solid #d4af37',
+                                  background: '#041017',
+                                  cursor: 'pointer',
+                                  textAlign: 'center',
+                                }}
+                                title="Click to view full screen"
+                              >
+                                <img
+                                  src={selectedBookingOrder.paymentProofUrl || selectedBookingOrder.paymentResult?.screenshotUrl}
+                                  alt="Customer Payment Screenshot"
+                                  style={{ maxHeight: '220px', width: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+                                />
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    bottom: '6px',
+                                    right: '6px',
+                                    background: 'rgba(9, 35, 48, 0.9)',
+                                    color: '#d4af37',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    padding: '2px 8px',
+                                    borderRadius: '5px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    border: '1px solid rgba(212, 175, 55, 0.4)',
+                                  }}
+                                >
+                                  <Maximize2 size={12} /> Inspect Screenshot
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: '0.72rem', color: '#64748b', fontStyle: 'italic', background: '#ffffff', padding: '0.45rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                              No screenshot was uploaded. Patron confirmed payment directly via UPI gateway.
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Live Fulfillment Actions Card */}
@@ -4769,6 +4892,11 @@ function AdminDashboardPage() {
                                     ● Pending
                                   </span>
                                 )}
+                                {(order.paymentProofUrl || order.paymentResult?.screenshotUrl) && (
+                                  <span style={{ fontSize: '0.6rem', color: '#047857', fontWeight: 700, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '0.08rem 0.35rem', borderRadius: '4px' }}>
+                                    📸 Proof
+                                  </span>
+                                )}
                               </div>
 
                               <div
@@ -4961,6 +5089,11 @@ function AdminDashboardPage() {
                                   ) : (
                                     <span style={{ fontSize: '0.72rem', color: '#b91c1c', fontWeight: 600, background: 'rgba(239, 68, 68, 0.1)', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
                                       ● Payment Pending
+                                    </span>
+                                  )}
+                                  {(order.paymentProofUrl || order.paymentResult?.screenshotUrl) && (
+                                    <span style={{ fontSize: '0.7rem', color: '#047857', fontWeight: 700, background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '0.1rem 0.5rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                      📸 Proof Attached
                                     </span>
                                   )}
                                   <span style={{ fontSize: '0.75rem', color: '#688c99', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>

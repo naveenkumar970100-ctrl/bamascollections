@@ -34,7 +34,11 @@ const orderSchema = new mongoose.Schema(
     paymentMethod: {
       type: String,
       required: true,
-      default: 'Demo Online Payment',
+      default: 'UPI / QR Code',
+    },
+    paymentProofUrl: {
+      type: String,
+      default: '',
     },
     paymentResult: {
       id: { type: String },
@@ -44,6 +48,8 @@ const orderSchema = new mongoose.Schema(
       method: { type: String },
       upiId: { type: String },
       paidAt: { type: Date },
+      screenshotUrl: { type: String, default: '' },
+      utrNumber: { type: String, default: '' },
     },
     itemsPrice: { type: Number, required: true, default: 0.0 },
     shippingPrice: { type: Number, required: true, default: 0.0 },

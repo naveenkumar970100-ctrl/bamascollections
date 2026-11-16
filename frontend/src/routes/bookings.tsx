@@ -445,6 +445,11 @@ function BookingsPage() {
                       </span>
                       <p style={{ margin: '0.15rem 0 0', fontSize: '0.72rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                         <span>{order.paymentMethod || 'UPI / QR Code'}</span>
+                        {(order.paymentProofUrl || order.paymentResult?.screenshotUrl) && (
+                          <span style={{ fontSize: '0.64rem', color: '#047857', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                            📸 Proof Attached
+                          </span>
+                        )}
                         <span>·</span>
                         <span>
                           Paid on{' '}

@@ -935,25 +935,45 @@ export function AdminPaymentsView({
 
                         {/* 4. Payment Gateway */}
                         <td style={{ padding: '0.85rem 1rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '3px' }}>
                             {isUpi ? (
-                              <span
-                                style={{
-                                  background: '#fffdf7',
-                                  border: '1px solid #d4af37',
-                                  color: '#aa820a',
-                                  padding: '2px 7px',
-                                  borderRadius: '4px',
-                                  fontSize: '0.7rem',
-                                  fontWeight: 700,
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                }}
-                              >
-                                <QrCode size={12} />
-                                UPI: {payment.upiId || 'bamas@okhdfcbank'}
-                              </span>
+                              <>
+                                <span
+                                  style={{
+                                    background: '#fffdf7',
+                                    border: '1px solid #d4af37',
+                                    color: '#aa820a',
+                                    padding: '2px 7px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  <QrCode size={12} />
+                                  UPI: {payment.upiId || 'bamas@okhdfcbank'}
+                                </span>
+                                {(payment.paymentProofUrl || payment.screenshotUrl) && (
+                                  <span
+                                    style={{
+                                      background: '#ecfdf5',
+                                      border: '1px solid #a7f3d0',
+                                      color: '#047857',
+                                      padding: '1px 6px',
+                                      borderRadius: '4px',
+                                      fontSize: '0.64rem',
+                                      fontWeight: 700,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                    }}
+                                  >
+                                    📸 Proof Attached
+                                  </span>
+                                )}
+                              </>
                             ) : isCard ? (
                               <span
                                 style={{
@@ -1898,6 +1918,47 @@ export function AdminPaymentsView({
                         <strong>₹{Number(item.price || 0).toLocaleString('en-IN')}</strong>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Customer Payment Proof Screenshot */}
+              {(selectedReceipt.paymentProofUrl || selectedReceipt.order?.paymentProofUrl || selectedReceipt.order?.paymentResult?.screenshotUrl) && (
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    borderRadius: '8px',
+                    border: '1.5px solid #10b981',
+                    padding: '0.75rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#047857' }}>
+                      📸 Patron Payment Screenshot Proof
+                    </span>
+                    <a
+                      href={selectedReceipt.paymentProofUrl || selectedReceipt.order?.paymentProofUrl || selectedReceipt.order?.paymentResult?.screenshotUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.68rem', color: '#0284c7', textDecoration: 'underline', fontWeight: 600 }}
+                    >
+                      Open Full Size ↗
+                    </a>
+                  </div>
+                  <div
+                    style={{
+                      maxHeight: '180px',
+                      borderRadius: '6px',
+                      overflow: 'hidden',
+                      background: '#041017',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <img
+                      src={selectedReceipt.paymentProofUrl || selectedReceipt.order?.paymentProofUrl || selectedReceipt.order?.paymentResult?.screenshotUrl}
+                      alt="Payment Proof"
+                      style={{ maxHeight: '180px', maxWidth: '100%', objectFit: 'contain', margin: '0 auto', display: 'block' }}
+                    />
                   </div>
                 </div>
               )}

@@ -84,6 +84,12 @@ export const createOrder = async (req, res, next) => {
     const orderPaid = isPaid !== undefined ? Boolean(isPaid) : true;
     const orderStatus = req.body.status || 'Placed';
 
+    const paymentProof =
+      req.body.paymentProofUrl ||
+      req.body.screenshotUrl ||
+      (paymentResult && (paymentResult.screenshotUrl || paymentResult.paymentProofUrl)) ||
+      '';
+
     const paidTimestamp = paymentResult?.paidAt ? new Date(paymentResult.paidAt) : (orderPaid ? new Date() : null);
 
     const order = new Order({
@@ -94,12 +100,15 @@ export const createOrder = async (req, res, next) => {
       orderItems: normItems,
       shippingAddress: normShipping,
       paymentMethod: paymentMethod || 'UPI / QR Code',
+      paymentProofUrl: paymentProof,
       paymentResult: {
         id: paymentResult?.id || `UPI_${Date.now()}`,
         status: orderPaid ? 'COMPLETED' : 'PENDING',
         method: paymentMethod || 'UPI / QR Code',
         upiId: paymentResult?.upiId || 'bamas@okhdfcbank',
         paidAt: paidTimestamp,
+        screenshotUrl: paymentProof,
+        utrNumber: paymentResult?.utrNumber || '',
         update_time: paidTimestamp ? paidTimestamp.toISOString() : new Date().toISOString(),
       },
       itemsPrice,
@@ -120,7 +129,7 @@ export const createOrder = async (req, res, next) => {
         sender: userId || null,
         senderName: normShipping.fullName,
         title: `🛍️ New Saree Order Placed: ₹${totalPrice.toLocaleString('en-IN')}`,
-        message: `${normShipping.fullName} placed & paid for order #${savedOrder._id.toString().slice(-6).toUpperCase()} via UPI on ${new Date().toLocaleString('en-IN')}. Status: Awaiting Studio Acceptance. Delivery to ${normShipping.city}, ${normShipping.state}.`,
+        message: `${normShipping.fullName} placed & paid for order #${savedOrder._id.toString().slice(-6).toUpperCase()} via UPI on ${new Date().toLocaleString('en-IN')}.${paymentProof ? ' 📸 Payment proof screenshot attached.' : ''} Status: Awaiting Studio Acceptance. Delivery to ${normShipping.city}, ${normShipping.state}.`,
         type: 'order',
         targetUrl: '/admin',
       });
@@ -185,8 +194,10 @@ export const createOrder = async (req, res, next) => {
         customerName: normShipping.fullName,
         customerEmail,
         customerPhone: normShipping.phone,
+        paymentProofUrl: paymentProof,
         verifiedByAdmin: orderPaid,
-        paidAt: orderPaid ? new Date() : null,
+        paidAt: paidTimestamp,
+        notes: paymentProof ? 'Payment proof screenshot attached by patron' : 'Direct UPI payment confirmed',
         rawDetails: paymentResult || {},
       });
 

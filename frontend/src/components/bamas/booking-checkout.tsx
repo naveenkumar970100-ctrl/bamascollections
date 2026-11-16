@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
   ShieldCheck,
@@ -14,6 +14,9 @@ import {
   Smartphone,
   X,
   ExternalLink,
+  Camera,
+  UploadCloud,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomer } from './auth-context';
@@ -131,6 +134,28 @@ export function BookingCheckout({
   const [error, setError] = useState('');
   const [completedOrder, setCompletedOrder] = useState<any | null>(null);
 
+  // Payment confirmation & optional screenshot proof state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string>('');
+  const [utrNumber, setUtrNumber] = useState<string>('');
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const proofFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleScreenshotChange = (file: File | null) => {
+    if (!file) {
+      setScreenshotFile(null);
+      setScreenshotPreview('');
+      return;
+    }
+    setScreenshotFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setScreenshotPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Sync user details if patron signs in
   useEffect(() => {
     if (user) {
@@ -229,17 +254,40 @@ export function BookingCheckout({
     setError('');
 
     try {
-      // Simulate quick secure authorization
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      let finalScreenshotUrl = '';
+      if (screenshotFile) {
+        setUploadingProof(true);
+        try {
+          const uploadRes = await api.upload.uploadImage(screenshotFile, 'bamascollections/payment_proofs');
+          finalScreenshotUrl = uploadRes?.data?.url || uploadRes?.url || '';
+        } catch (uploadErr) {
+          console.warn('Backend direct upload notice, using local image preview:', uploadErr);
+          finalScreenshotUrl = screenshotPreview || '';
+        } finally {
+          setUploadingProof(false);
+        }
+      } else if (screenshotPreview) {
+        finalScreenshotUrl = screenshotPreview;
+      }
+
+      // Quick secure authorization
+      await new Promise((resolve) => setTimeout(resolve, 600));
 
       const now = new Date();
+      const generatedTxnId = utrNumber.trim()
+        ? `UPI_${utrNumber.trim()}`
+        : ('UPI_' + Math.random().toString(36).substring(2, 9).toUpperCase());
+
       const paymentResult = {
-        id: 'UPI_' + Math.random().toString(36).substring(2, 9).toUpperCase(),
+        id: generatedTxnId,
         status: 'COMPLETED',
         method: `UPI / QR (${activeGateway?.upiId || 'bamas@okhdfcbank'})`,
         upiId: activeGateway?.upiId || 'bamas@okhdfcbank',
         amount: totalPrice,
         paidAt: now.toISOString(),
+        screenshotUrl: finalScreenshotUrl,
+        paymentProofUrl: finalScreenshotUrl,
+        utrNumber: utrNumber.trim(),
       };
 
       const orderPayload = {
@@ -264,6 +312,8 @@ export function BookingCheckout({
           email: email || user?.email,
         },
         paymentMethod: paymentResult.method,
+        paymentProofUrl: finalScreenshotUrl,
+        screenshotUrl: finalScreenshotUrl,
         isPaid: true,
         paidAt: now.toISOString(),
         paymentResult,
@@ -286,10 +336,14 @@ export function BookingCheckout({
         isPaid: true,
         status: 'Placed',
         paymentMethod: paymentResult.method,
+        paymentProofUrl: finalScreenshotUrl,
         paymentResult,
         orderItems: orderPayload.orderItems,
         shippingAddress: orderPayload.shippingAddress,
       };
+
+      setShowConfirmModal(false);
+      setPaymentState('success');
 
       setPaymentState('success');
 
@@ -385,6 +439,15 @@ export function BookingCheckout({
               <span className="meta-label">Estimated Delivery</span>
               <span className="meta-val">3–5 Business Days (Insured)</span>
             </div>
+            {(completedOrder.paymentProofUrl || screenshotPreview) && (
+              <div className="receipt-meta-box" style={{ gridColumn: 'span 2' }}>
+                <span className="meta-label">Payment Verification Proof</span>
+                <span className="meta-val" style={{ color: '#047857', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <CheckCircle2 size={13} color="#10b981" />
+                  📸 Payment Screenshot Attached & Delivered to Admin
+                </span>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
@@ -1032,6 +1095,41 @@ export function BookingCheckout({
             </div>
           )}
 
+          {screenshotPreview && (
+            <div
+              style={{
+                background: '#ecfdf5',
+                border: '1px solid #a7f3d0',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '0.72rem',
+                color: '#047857',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <CheckCircle2 size={12} color="#10b981" />
+                Payment screenshot attached
+              </span>
+              <button
+                type="button"
+                onClick={() => handleScreenshotChange(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          )}
+
           {/* Action Button & In-Place Animated State */}
           {!user && (typeof window === 'undefined' || !api.auth.getCurrentUser()) ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', width: '100%', marginTop: '0.2rem' }}>
@@ -1114,20 +1212,37 @@ export function BookingCheckout({
               type="button"
               className="booking-pay-btn"
               disabled={busy || hasOutOfStockItems || totalPrice <= 0}
-              onClick={handleDirectPay}
+              onClick={() => {
+                const currentUser = user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
+                if (!currentUser) {
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem(
+                      'bamas_pending_booking',
+                      JSON.stringify({
+                        saree: primaryItem,
+                        quantity: totalQty,
+                        origin: window.location.pathname,
+                      })
+                    );
+                    window.location.href = '/login';
+                  }
+                  return;
+                }
+                setShowConfirmModal(true);
+              }}
               style={{
                 background: hasOutOfStockItems || totalPrice <= 0 ? '#94a3b8' : '#092330',
                 color: '#ffffff',
                 fontWeight: 700,
                 fontSize: '0.88rem',
-                height: '42px',
+                height: '44px',
                 borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.45rem',
-                border: hasOutOfStockItems || totalPrice <= 0 ? '1px solid #cbd5e1' : '1px solid #d4af37',
-                boxShadow: hasOutOfStockItems || totalPrice <= 0 ? 'none' : '0 4px 14px rgba(9, 35, 48, 0.2)',
+                border: hasOutOfStockItems || totalPrice <= 0 ? '1px solid #cbd5e1' : '1.5px solid #d4af37',
+                boxShadow: hasOutOfStockItems || totalPrice <= 0 ? 'none' : '0 4px 14px rgba(212, 175, 55, 0.25)',
                 width: '100%',
                 cursor: hasOutOfStockItems || totalPrice <= 0 ? 'not-allowed' : 'pointer',
                 marginTop: '0.2rem',
@@ -1137,8 +1252,8 @@ export function BookingCheckout({
                 <span>Cannot Book (Out of Stock)</span>
               ) : (
                 <>
-                  <Sparkles size={15} color="#d4af37" />
-                  <span>Pay ₹{totalPrice.toLocaleString('en-IN')} via UPI</span>
+                  <CheckCircle2 size={16} color="#d4af37" />
+                  <span>I Have Paid · Confirm Booking (₹{totalPrice.toLocaleString('en-IN')})</span>
                 </>
               )}
             </Button>
@@ -1380,6 +1495,364 @@ export function BookingCheckout({
             >
               Close QR Window
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Confirmation & Optional Screenshot Modal */}
+      {showConfirmModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(6, 24, 33, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            padding: '1rem',
+          }}
+          onClick={() => {
+            if (!busy && !uploadingProof) setShowConfirmModal(false);
+          }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '440px',
+              width: '100%',
+              boxShadow: '0 24px 60px rgba(9, 35, 48, 0.4)',
+              border: '2px solid rgba(212, 175, 55, 0.55)',
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              maxHeight: '92vh',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #092330 0%, #163e52 100%)',
+                padding: '1.1rem 1.25rem',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '2px solid #d4af37',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle2 size={22} color="#d4af37" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800, color: '#f5efe6', fontFamily: 'Cormorant Garamond, serif' }}>
+                    Confirm UPI Payment
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.72rem', color: '#9eb4c0' }}>
+                    Atelier Verification & Drape Reservation
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!busy && !uploadingProof) setShowConfirmModal(false);
+                }}
+                disabled={busy || uploadingProof}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#f5efe6',
+                  cursor: busy || uploadingProof ? 'not-allowed' : 'pointer',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div
+              style={{
+                padding: '1.15rem 1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.95rem',
+                overflowY: 'auto',
+              }}
+            >
+              {/* Amount & Merchant Recap */}
+              <div
+                style={{
+                  background: '#fffdf7',
+                  border: '1.5px solid rgba(212, 175, 55, 0.35)',
+                  borderRadius: '10px',
+                  padding: '0.75rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: '0.66rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>
+                    Payment Payable
+                  </span>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#092330' }}>
+                    ₹{totalPrice.toLocaleString('en-IN')}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '0.66rem', color: '#64748b', display: 'block', fontWeight: 600 }}>Recipient UPI VPA</span>
+                  <strong style={{ fontSize: '0.78rem', color: '#092330', fontFamily: 'monospace' }}>
+                    {activeGateway?.upiId || 'bamas@okhdfcbank'}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Screenshot Upload (Optional) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#092330', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Camera size={15} color="#d4af37" />
+                    Payment Screenshot Proof
+                  </label>
+                  <span
+                    style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      background: '#ecfdf5',
+                      color: '#059669',
+                      padding: '1px 7px',
+                      borderRadius: '999px',
+                      border: '1px solid #a7f3d0',
+                    }}
+                  >
+                    Optional
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b', lineHeight: 1.35 }}>
+                  Attach a screenshot of the transaction from Google Pay, PhonePe, Paytm, or BHIM. This is optional, but allows our atelier to verify and accept your order faster.
+                </p>
+
+                <input
+                  type="file"
+                  ref={proofFileInputRef}
+                  accept="image/*"
+                  onChange={(e) => handleScreenshotChange(e.target.files?.[0] || null)}
+                  style={{ display: 'none' }}
+                />
+
+                {screenshotPreview ? (
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      border: '1.5px solid #10b981',
+                      borderRadius: '10px',
+                      padding: '0.65rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    <img
+                      src={screenshotPreview}
+                      alt="Payment Screenshot Preview"
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        objectFit: 'cover',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#065f46', fontSize: '0.78rem', fontWeight: 700 }}>
+                        <CheckCircle2 size={13} color="#10b981" />
+                        <span>Screenshot Attached</span>
+                      </div>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {screenshotFile?.name || 'payment_proof.jpg'}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>
+                        Will be forwarded to Admin Dashboard
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleScreenshotChange(null)}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        color: '#dc2626',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '4px 8px',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => proofFileInputRef.current?.click()}
+                    style={{
+                      background: '#fafbfd',
+                      border: '1.5px dashed #cbd5e1',
+                      borderRadius: '10px',
+                      padding: '0.9rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.35rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      width: '100%',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#d4af37')}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#cbd5e1')}
+                  >
+                    <div
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        background: 'rgba(212, 175, 55, 0.12)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#d4af37',
+                      }}
+                    >
+                      <Camera size={18} />
+                    </div>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#092330' }}>
+                      Click to Upload Screenshot (Optional)
+                    </span>
+                    <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                      JPG, PNG, WebP from photo library or camera
+                    </span>
+                  </button>
+                )}
+              </div>
+
+              {/* UTR / Reference No. (Optional) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#092330' }}>
+                    UPI Reference / UTR Number
+                  </label>
+                  <span style={{ fontSize: '0.65rem', color: '#64748b' }}>Optional</span>
+                </div>
+                <input
+                  type="text"
+                  value={utrNumber}
+                  onChange={(e) => setUtrNumber(e.target.value)}
+                  placeholder="e.g. 4321XXXXXXXX (12-digit UPI UTR)"
+                  style={{
+                    width: '100%',
+                    padding: '0.55rem 0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.82rem',
+                    fontFamily: 'monospace',
+                    color: '#092330',
+                    outline: 'none',
+                    background: '#ffffff',
+                  }}
+                />
+              </div>
+
+              {/* Reassurance text */}
+              <div style={{ background: '#f8fafc', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldCheck size={14} color="#10b981" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '0.7rem', color: '#475569' }}>
+                  Your payment time & date will be recorded and forwarded to the Bamas Admin Suite in real time.
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div
+              style={{
+                padding: '0.85rem 1.25rem',
+                borderTop: '1px solid #e2e8f0',
+                background: '#fafbfd',
+                display: 'flex',
+                gap: '0.65rem',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                disabled={busy || uploadingProof}
+                style={{
+                  flex: '1',
+                  padding: '0.65rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  color: '#64748b',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: busy || uploadingProof ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Back to QR
+              </button>
+
+              <button
+                type="button"
+                disabled={busy || uploadingProof}
+                onClick={handleDirectPay}
+                style={{
+                  flex: '2',
+                  padding: '0.65rem 1rem',
+                  borderRadius: '8px',
+                  border: '1.5px solid #d4af37',
+                  background: 'linear-gradient(135deg, #092330 0%, #163e52 100%)',
+                  color: '#d4af37',
+                  fontSize: '0.86rem',
+                  fontWeight: 800,
+                  cursor: busy || uploadingProof ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 14px rgba(212, 175, 55, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                }}
+              >
+                {busy || uploadingProof ? (
+                  <>
+                    <LoaderCircle className="spin" size={15} color="#d4af37" />
+                    <span>Submitting Order...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={16} color="#d4af37" />
+                    <span>Yes, Payment Done · Confirm</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
