@@ -309,6 +309,8 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
               src={selectedImage || saree.image}
               alt={saree.name}
               className={`pdp-main-image ${saree.position || ''}`}
+              fetchPriority="high"
+              decoding="async"
             />
             <button
               type="button"
@@ -354,7 +356,7 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
                       title={`Click to view ${label}`}
                     >
                       <div className="pdp-gallery-thumb-img-wrap">
-                        <img src={imgUrl} alt={`${saree.name} - ${label}`} />
+                        <img src={imgUrl} alt={`${saree.name} - ${label}`} loading="lazy" decoding="async" />
                         {isSelected && <span className="pdp-thumb-active-dot" />}
                       </div>
                       <span className="pdp-gallery-thumb-label">{label}</span>
@@ -982,7 +984,7 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
                             onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
                             onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                           >
-                            <img src={img} alt="Customer review photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={img} alt="Customer review photo" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
                         ))}
                       </div>
@@ -1292,6 +1294,8 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
                       <img
                         src={imgUrl}
                         alt=""
+                        loading="lazy"
+                        decoding="async"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                     </button>
@@ -1466,6 +1470,8 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
               <img
                 src={previewPhoto}
                 alt="Verified Patron Drape"
+                loading="lazy"
+                decoding="async"
                 style={{
                   maxHeight: '74vh',
                   maxWidth: '100%',

@@ -842,6 +842,8 @@ function ContactPage() {
               <img
                 src={maroon}
                 alt="Bamas Silk Studio"
+                loading="lazy"
+                decoding="async"
                 style={{
                   width: '100%',
                   height: '100%',

@@ -428,6 +428,8 @@ function CartPage() {
                   <img
                     src={item.image}
                     alt={item.name}
+                    loading="lazy"
+                    decoding="async"
                     style={{
                       width: '84px',
                       height: '108px',

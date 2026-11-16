@@ -29,6 +29,8 @@ function About() {
           alt="A graceful emerald saree in a traditional courtyard"
           width="1536"
           height="1024"
+          loading="lazy"
+          decoding="async"
           style={{ objectPosition: '74% 0%' }}
         />
         <div className="reveal">
@@ -76,6 +78,8 @@ function About() {
           <img
             src={maroon}
             alt="Handcrafted Banarasi bridal weaving"
+            loading="lazy"
+            decoding="async"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
           <div
@@ -118,6 +122,8 @@ function About() {
           <img
             src={tissue}
             alt="Contemporary shimmering tissue silk saree"
+            loading="lazy"
+            decoding="async"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
           <div

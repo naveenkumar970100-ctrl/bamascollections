@@ -19,6 +19,34 @@ html,
 body {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+  scroll-behavior: smooth !important;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU Hardware Acceleration for buttery-smooth 60fps transitions */
+.hero-photo,
+.piece-photo,
+.piece-photo img,
+.spotlight-photo,
+.pdp-main-image,
+.pdp-gallery-thumb,
+.cart-saree-card,
+.site-header {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Optimize below-the-fold layout performance */
+.pieces-grid,
+.story-band,
+.spotlight-strip,
+.site-footer,
+.promise-strip {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 550px;
 }
 
 html::-webkit-scrollbar,

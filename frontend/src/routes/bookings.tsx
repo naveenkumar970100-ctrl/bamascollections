@@ -235,6 +235,8 @@ function BookingsPage() {
                   <img
                     src={item.image}
                     alt={item.name}
+                    loading="lazy"
+                    decoding="async"
                     style={{
                       width: '58px',
                       height: '58px',

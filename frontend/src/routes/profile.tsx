@@ -432,6 +432,8 @@ function ProfilePage() {
                             <img
                               src={firstItem.image}
                               alt={firstItem.name}
+                              loading="lazy"
+                              decoding="async"
                               style={{
                                 width: '34px',
                                 height: '42px',

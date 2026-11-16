@@ -3188,6 +3188,8 @@ function AdminDashboardPage() {
                               <img
                                 src={p.image || ivorySaree}
                                 alt={p.name}
+                                loading="lazy"
+                                decoding="async"
                                 onError={(e) => {
                                   (e.currentTarget as HTMLImageElement).src = ivorySaree;
                                 }}
@@ -4001,6 +4003,8 @@ function AdminDashboardPage() {
                                   <img
                                     src={drapeImg}
                                     alt={item.name}
+                                    loading="lazy"
+                                    decoding="async"
                                     onError={(e) => {
                                       (e.currentTarget as HTMLImageElement).src = ivorySaree;
                                     }}
@@ -4345,6 +4349,8 @@ function AdminDashboardPage() {
                                 <img
                                   src={selectedBookingOrder.paymentProofUrl || selectedBookingOrder.paymentResult?.screenshotUrl}
                                   alt="Customer Payment Screenshot"
+                                  loading="lazy"
+                                  decoding="async"
                                   style={{ maxHeight: '220px', width: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' }}
                                 />
                                 <div
@@ -4764,6 +4770,8 @@ function AdminDashboardPage() {
                               <img
                                 src={firstImage}
                                 alt="Drape thumbnail"
+                                loading="lazy"
+                                decoding="async"
                                 onError={(e) => {
                                   (e.currentTarget as HTMLImageElement).src = ivorySaree;
                                 }}
@@ -4978,6 +4986,8 @@ function AdminDashboardPage() {
                                 <img
                                   src={firstImage}
                                   alt="Drape"
+                                  loading="lazy"
+                                  decoding="async"
                                   onError={(e) => {
                                     (e.currentTarget as HTMLImageElement).src = ivorySaree;
                                   }}
@@ -7812,6 +7822,8 @@ function AdminDashboardPage() {
                             <img
                               src={p.image || ivorySaree}
                               alt={p.name}
+                              loading="lazy"
+                              decoding="async"
                               onError={(e) => { (e.currentTarget as HTMLImageElement).src = ivorySaree; }}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
@@ -8051,6 +8063,8 @@ function AdminDashboardPage() {
                       }}
                     >
                       <img
+                        loading="lazy"
+                        decoding="async"
                         src={
                           p.image ||
                           p.images?.[0] ||
@@ -9033,6 +9047,8 @@ function AdminDashboardPage() {
                               <img
                                 src={rev.productImage || ivorySaree}
                                 alt={rev.productName}
+                                loading="lazy"
+                                decoding="async"
                                 style={{
                                   width: '44px',
                                   height: '56px',
@@ -9167,7 +9183,7 @@ function AdminDashboardPage() {
                                     onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
                                     onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                                   >
-                                    <img src={imgUrl} alt={`Customer photo ${pIdx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img src={imgUrl} alt={`Customer photo ${pIdx + 1}`} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     <div
                                       style={{
                                         position: 'absolute',

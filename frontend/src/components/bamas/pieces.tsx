@@ -169,7 +169,8 @@ export function Pieces({
                   src={p.image}
                   width="768"
                   height="1024"
-                  loading="lazy"
+                  loading={i < 2 ? "eager" : "lazy"}
+                  decoding="async"
                   alt={p.name}
                 />
                 {isOutOfStock && (
@@ -264,7 +265,7 @@ export function Pieces({
         <DialogContent className="piece-dialog">
           {piece && (
             <>
-              <img src={piece.image} className={piece.position} alt={piece.name} />
+              <img src={piece.image} className={piece.position} alt={piece.name} loading="lazy" decoding="async" />
               <div>
                 <span className="eyebrow">{piece.category} edit</span>
                 <DialogTitle>{piece.name}</DialogTitle>

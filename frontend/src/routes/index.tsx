@@ -209,6 +209,7 @@ function Home() {
           alt="Emerald saree with a golden border in a heritage courtyard"
           className="hero-photo"
           fetchPriority="high"
+          decoding="async"
         />
         <div className="hero-inner reveal">
           <div className="hero-floating-badge">
@@ -401,6 +402,8 @@ function Home() {
               src={maroon}
               alt="Noor Banarasi Bridal Saree"
               className="spotlight-photo"
+              loading="lazy"
+              decoding="async"
               style={{
                 borderRadius: '0.75rem',
                 width: '100%',
@@ -415,6 +418,8 @@ function Home() {
               src={sapphire}
               alt="Royal Sapphire Silk Saree"
               className="spotlight-photo"
+              loading="lazy"
+              decoding="async"
               style={{
                 borderRadius: '0.75rem',
                 width: '100%',
@@ -463,6 +468,7 @@ function Home() {
           src={rose}
           alt="Rose-coloured saree with intricate golden weaving"
           loading="lazy"
+          decoding="async"
           width="768"
           height="1024"
           className="story-photo"
