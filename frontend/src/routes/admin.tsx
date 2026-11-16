@@ -1138,14 +1138,24 @@ function AdminDashboardPage() {
     return null;
   });
 
+  useEffect(() => {
+    const handleAuthSync = () => {
+      if (typeof window !== 'undefined') {
+        setLocalAdminUser(api.auth.getCurrentUser());
+      }
+    };
+    window.addEventListener('bamas_auth_changed', handleAuthSync);
+    return () => window.removeEventListener('bamas_auth_changed', handleAuthSync);
+  }, []);
+
   const [adminEmail, setAdminEmail] = useState('admin@bamas.com');
   const [adminPassword, setAdminPassword] = useState('admin@123');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [adminLoggingIn, setAdminLoggingIn] = useState(false);
   const [adminLoginError, setAdminLoginError] = useState<string | null>(null);
 
-  const activeUser = localAdminUser || user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null) || { _id: 'admin_root', name: 'Bamas Admin', email: 'admin@bamas.com', role: 'admin' };
-  const isAdmin = true;
+  const activeUser = localAdminUser || user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
+  const isAdmin = activeUser?.role === 'admin';
 
   const handleDirectAdminLogin = async (e?: React.FormEvent, customEmail?: string, customPass?: string) => {
     if (e) e.preventDefault();
@@ -1181,10 +1191,30 @@ function AdminDashboardPage() {
     }
   };
 
-  const handleSignOut = () => {
-    api.auth.logout();
-    setLocalAdminUser(null);
-    window.dispatchEvent(new Event('bamas_auth_changed'));
+  const handleSignOut = async () => {
+    try {
+      api.auth.logout();
+      setLocalAdminUser(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('bamas_token');
+        localStorage.removeItem('bamas_user');
+        sessionStorage.clear();
+      }
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        await supabase.auth.signOut();
+      } catch {}
+      window.dispatchEvent(new Event('bamas_auth_changed'));
+      navigate({ to: '/login', replace: true });
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    } catch (err) {
+      console.error('Sign out error:', err);
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
   };
 
   // Admin Profile Update States
@@ -1313,6 +1343,274 @@ function AdminDashboardPage() {
       inq.message?.toLowerCase().includes(q)
     );
   });
+
+  // Dedicated Executive Admin Portal Sign-In View (When signed out or unauthenticated)
+  if (!isAdmin) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem 1rem',
+          background: 'linear-gradient(180deg, #061821 0%, #0b222f 50%, #061821 100%)',
+          fontFamily: 'Manrope, sans-serif',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '460px',
+            width: '100%',
+            background: 'rgba(10, 34, 47, 0.85)',
+            backdropFilter: 'blur(16px)',
+            borderRadius: '1.25rem',
+            padding: '2.5rem 2rem',
+            boxShadow: '0 24px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(212, 175, 55, 0.3)',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            textAlign: 'center',
+            color: '#ffffff',
+          }}
+        >
+          {/* Atelier Brand Crest */}
+          <div
+            style={{
+              width: '68px',
+              height: '68px',
+              margin: '0 auto 1.25rem',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(9, 35, 48, 0.8) 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1.5px solid #d4af37',
+              boxShadow: '0 8px 24px rgba(212, 175, 55, 0.25)',
+            }}
+          >
+            <ShieldCheck size={34} style={{ color: '#d4af37' }} />
+          </div>
+
+          <h1
+            style={{
+              fontFamily: 'Cormorant Garamond, serif',
+              fontSize: '2rem',
+              fontWeight: 700,
+              color: '#d4af37',
+              margin: '0 0 0.35rem',
+              letterSpacing: '0.5px',
+            }}
+          >
+            Bamas Administration Suite
+          </h1>
+          <p
+            style={{
+              color: '#94a3b8',
+              fontSize: '0.88rem',
+              lineHeight: '1.5',
+              margin: '0 0 1.75rem',
+            }}
+          >
+            Sign in with authorized administrator credentials to manage live collections, bookings, and customer inquiries.
+          </p>
+
+          {adminLoginError && (
+            <div
+              style={{
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#fca5a5',
+                fontSize: '0.82rem',
+                marginBottom: '1.25rem',
+                textAlign: 'left',
+                lineHeight: '1.4',
+              }}
+            >
+              {adminLoginError}
+            </div>
+          )}
+
+          <form onSubmit={(e) => handleDirectAdminLogin(e)} style={{ textAlign: 'left' }}>
+            <div style={{ marginBottom: '1.1rem' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  color: '#e2e8f0',
+                  marginBottom: '0.35rem',
+                }}
+              >
+                Administrator Email / Username
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Mail
+                  size={16}
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#94a3b8',
+                  }}
+                />
+                <input
+                  type="text"
+                  required
+                  placeholder="admin@bamas.com"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 0.85rem 0.75rem 2.4rem',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(212, 175, 55, 0.35)',
+                    background: 'rgba(6, 24, 33, 0.8)',
+                    color: '#ffffff',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.4rem' }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  color: '#e2e8f0',
+                  marginBottom: '0.35rem',
+                }}
+              >
+                Security Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Lock
+                  size={16}
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#94a3b8',
+                  }}
+                />
+                <input
+                  type={showAdminPassword ? 'text' : 'password'}
+                  required
+                  placeholder="admin@123"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 2.5rem 0.75rem 2.4rem',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(212, 175, 55, 0.35)',
+                    background: 'rgba(6, 24, 33, 0.8)',
+                    color: '#ffffff',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPassword(!showAdminPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title={showAdminPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={adminLoggingIn}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #d4af37 0%, #b89326 100%)',
+                  color: '#061821',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  letterSpacing: '0.3px',
+                  boxShadow: '0 6px 20px rgba(212, 175, 55, 0.3)',
+                  cursor: adminLoggingIn ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {adminLoggingIn ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" style={{ marginRight: '0.5rem' }} /> Authenticating...
+                  </>
+                ) : (
+                  <>
+                    Sign In to Admin Dashboard <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
+                  </>
+                )}
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => handleDirectAdminLogin(undefined, 'admin@bamas.com', 'admin@123')}
+                disabled={adminLoggingIn}
+                style={{
+                  width: '100%',
+                  padding: '0.65rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(212, 175, 55, 0.4)',
+                  background: 'rgba(212, 175, 55, 0.1)',
+                  color: '#d4af37',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: adminLoggingIn ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <Sparkles size={14} /> 1-Click Instant Admin Access (admin@bamas.com)
+              </button>
+
+              <a
+                href="/"
+                style={{
+                  marginTop: '0.5rem',
+                  textAlign: 'center',
+                  color: '#94a3b8',
+                  fontSize: '0.82rem',
+                  textDecoration: 'none',
+                  display: 'block',
+                }}
+              >
+                ← Return to Storefront
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1585,7 +1883,9 @@ function AdminDashboardPage() {
 
           <div>
             <button
+              type="button"
               onClick={handleSignOut}
+              title="Sign Out of Admin Suite"
               style={{
                 width: '100%',
                 padding: '0.6rem 0.85rem',
