@@ -1,6 +1,22 @@
 import { refreshSocketAuth } from './socket';
 
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:5000/api';
+export const getApiBaseUrl = (): string => {
+  const envUrl = (import.meta as any).env?.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
+  }
+
+  // In browser: relative /api works seamlessly across localhost, Wi-Fi LAN IP (192.168.x.x), and production
+  // Proxied internally by port 8080 directly to backend (127.0.0.1:5000), eliminating all CORS and port 5000 firewall blocks
+  if (typeof window !== 'undefined') {
+    return '/api';
+  }
+
+  // During SSR execution on node server
+  return 'http://127.0.0.1:5000/api';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Universal API Client for Bamas Collections MERN Backend
@@ -20,8 +36,9 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `${API_BASE_URL}${cleanEndpoint}`;
+  const url = `${baseUrl}${cleanEndpoint}`;
 
   const response = await fetch(url, {
     ...options,
@@ -434,7 +451,7 @@ export const api = {
       formData.append('folder', folder);
 
       const token = localStorage.getItem('bamas_token');
-      const res = await fetch(`${API_BASE_URL}/upload`, {
+      const res = await fetch(`${getApiBaseUrl()}/upload`, {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),

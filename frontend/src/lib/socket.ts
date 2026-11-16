@@ -1,9 +1,25 @@
 import { io, Socket } from 'socket.io-client';
 
-const BACKEND_URL =
-  (import.meta as any).env?.VITE_BACKEND_URL ||
-  (import.meta as any).env?.VITE_API_URL?.replace(/\/api\/?$/, '') ||
-  'http://localhost:5000';
+export const getBackendUrl = (): string => {
+  const envBackend = (import.meta as any).env?.VITE_BACKEND_URL;
+  if (envBackend && typeof envBackend === 'string' && envBackend.trim() !== '') {
+    return envBackend;
+  }
+  const envApi = (import.meta as any).env?.VITE_API_URL;
+  if (envApi && typeof envApi === 'string' && envApi.trim() !== '') {
+    return envApi.replace(/\/api\/?$/, '');
+  }
+
+  // Auto-connect to backend host matching current browser host on port 5000 (e.g. 192.168.x.x:5000 or localhost:5000)
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const { protocol, hostname } = window.location;
+    return `${protocol}//${hostname}:5000`;
+  }
+
+  return 'http://localhost:5000';
+};
+
+export const BACKEND_URL = getBackendUrl();
 
 let socket: Socket | null = null;
 
@@ -17,8 +33,9 @@ export function getSocket(): Socket {
 
   if (!socket) {
     const token = localStorage.getItem('bamas_token');
+    const targetUrl = getBackendUrl();
 
-    socket = io(BACKEND_URL, {
+    socket = io(targetUrl, {
       auth: {
         token: token || '',
       },

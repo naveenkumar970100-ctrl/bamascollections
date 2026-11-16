@@ -49,6 +49,27 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      if (url.pathname.startsWith('/api')) {
+        const backendUrl = `http://127.0.0.1:5000${url.pathname}${url.search}`;
+        try {
+          const fetchHeaders = new Headers(request.headers);
+          fetchHeaders.set('host', '127.0.0.1:5000');
+          return await fetch(backendUrl, {
+            method: request.method,
+            headers: fetchHeaders,
+            body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined,
+            // @ts-ignore
+            duplex: 'half',
+          });
+        } catch (err: any) {
+          return new Response(JSON.stringify({ success: false, message: 'Backend proxy error: ' + err.message }), {
+            status: 502,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

@@ -314,20 +314,21 @@ function Products() {
   }
 
   return (
-    <main>
-      <div className="page-title reveal">
-        <span className="eyebrow">A story in every drape</span>
-        <h1>The Bamas Collection</h1>
-        <p>
+    <main className="collections-page">
+      <div className="page-title collections-header reveal">
+        <span className="eyebrow collections-eyebrow">A story in every drape</span>
+        <h1 className="collections-title">The Bamas Collection</h1>
+        <p className="collections-desc">
           Heritage-inspired details. Modern silhouettes.
-          <br />
+          <br className="collections-desc-br" />
           Explore handcrafted sarees designed for your memorable moments.
         </p>
       </div>
-      <section className="section-wrap">
+      <section className="section-wrap collections-section">
         {/* Luxury Collection Search Bar */}
-        <div style={{ maxWidth: '520px', margin: '0 auto 1.5rem', padding: '0 1rem' }}>
+        <div className="collections-search-bar">
           <div
+            className="collections-search-box"
             style={{
               position: 'relative',
               display: 'flex',
@@ -417,7 +418,7 @@ function Products() {
           )}
         </div>
 
-        <div className="catalog-toolbar" style={{ justifyContent: 'center', marginBottom: '1.5rem' }}>
+        <div className="catalog-toolbar collections-toolbar">
           <div className="category-filter-rail" role="tablist" aria-label="Collection filters">
             {availableCategories.map((c, cIdx) => {
               const isActive = category === c;

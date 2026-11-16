@@ -20,6 +20,38 @@ export default defineConfig({
     preset: process.env.VERCEL ? "vercel" : (process.env.NITRO_PRESET || "vercel"),
   },
   vite: {
+    server: {
+      host: "0.0.0.0",
+      port: 8080,
+      proxy: {
+        "/api": {
+          target: "http://127.0.0.1:5000",
+          changeOrigin: true,
+          secure: false,
+        },
+        "/socket.io": {
+          target: "http://127.0.0.1:5000",
+          ws: true,
+          changeOrigin: true,
+        },
+      },
+    },
+    preview: {
+      host: "0.0.0.0",
+      port: 8080,
+      proxy: {
+        "/api": {
+          target: "http://127.0.0.1:5000",
+          changeOrigin: true,
+          secure: false,
+        },
+        "/socket.io": {
+          target: "http://127.0.0.1:5000",
+          ws: true,
+          changeOrigin: true,
+        },
+      },
+    },
     resolve: {
       alias: {
         "react/jsx-dev-runtime": path.resolve(__dirname, "./src/lib/jsx-dev-runtime-shim.ts"),

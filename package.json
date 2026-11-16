@@ -10,6 +10,7 @@
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,magenta\" \"npm run server\" \"npm run client\"",
+    "tunnel": "npx --yes untun tunnel http://localhost:8080",
     "seed": "npm --prefix backend run seed",
     "seed:destroy": "npm --prefix backend run seed:destroy",
     "postinstall": "npm --prefix backend install && npm --prefix frontend install",

@@ -3,6 +3,7 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import morgan from 'morgan';
+import os from 'os';
 import connectDB from './config/db.js';
 import { initSocket } from './config/socket.js';
 
@@ -116,14 +117,30 @@ if (fs.existsSync(frontendDist)) {
 app.use(notFound);
 app.use(errorHandler);
 
+function getLocalIpAddress() {
+  try {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+  } catch {}
+  return 'localhost';
+}
+
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
+  const localIp = getLocalIpAddress();
   console.log(`\n======================================================`);
   console.log(`✨ Bamas Collections Backend Server Running ✨`);
   console.log(`🚀 Mode:     ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 Server:   http://localhost:${PORT}`);
-  console.log(`⚡ Sockets:  ws://localhost:${PORT}`);
-  console.log(`📋 API Docs: http://localhost:${PORT}/`);
+  console.log(`🌐 Local:    http://localhost:${PORT}`);
+  console.log(`📱 Wi-Fi IP: http://${localIp}:${PORT}`);
+  console.log(`⚡ Sockets:  ws://${localIp}:${PORT}`);
+  console.log(`📋 API Docs: http://${localIp}:${PORT}/`);
   console.log(`======================================================\n`);
 });
