@@ -444,7 +444,7 @@ export function BookingCheckout({
                 <span className="meta-label">Payment Verification Proof</span>
                 <span className="meta-val" style={{ color: '#047857', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <CheckCircle2 size={13} color="#10b981" />
-                  📸 Payment Screenshot Attached & Delivered to Admin
+                  📸 Payment Screenshot Attached & Delivered to Atelier Team
                 </span>
               </div>
             )}
@@ -477,67 +477,69 @@ export function BookingCheckout({
             style={{
               background:
                 completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
-                  ? 'rgba(16, 185, 129, 0.12)'
-                  : 'rgba(212, 175, 55, 0.1)',
+                  ? '#ecfdf5'
+                  : '#fffdf7',
               border:
                 completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
                   ? '1.5px solid #10b981'
-                  : '1px solid rgba(212, 175, 55, 0.35)',
+                  : '1.5px solid rgba(212, 175, 55, 0.35)',
               borderRadius: '8px',
               padding: '0.75rem 1rem',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '0.5rem',
+              gap: '0.65rem',
               marginTop: '1rem',
               transition: 'all 0.3s ease',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Sparkles
-                size={16}
-                color={
-                  completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
-                    ? '#10b981'
-                    : '#d4af37'
-                }
-              />
-              <span
-                style={{
-                  fontSize: '0.85rem',
-                  color:
-                    completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
-                      ? '#065f46'
-                      : '#092330',
-                  fontWeight: 700,
-                }}
-              >
-                {completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
-                  ? '🎉 Order Accepted! Bamas Admin has accepted your order and weaving is initiated.'
-                  : 'UPI Payment & Timestamp Synced with Admin Dashboard · Awaiting Studio Acceptance'}
-              </span>
-            </div>
-            <a
-              href="/admin"
+            <Sparkles
+              size={18}
+              color={
+                completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
+                  ? '#10b981'
+                  : '#d4af37'
+              }
+              style={{ flexShrink: 0 }}
+            />
+            <span
               style={{
-                fontSize: '0.8rem',
-                color: '#092330',
-                background: '#d4af37',
-                padding: '4px 10px',
-                borderRadius: '6px',
-                textDecoration: 'none',
+                fontSize: '0.85rem',
+                color:
+                  completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
+                    ? '#065f46'
+                    : '#092330',
                 fontWeight: 700,
               }}
             >
-              View in Admin Suite →
-            </a>
+              {completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
+                ? '🎉 Order Confirmed! Atelier weaving and drape packaging are initiated.'
+                : 'UPI Payment Verified & Timestamp Logged · Awaiting Atelier Acceptance'}
+            </span>
           </div>
 
           <div className="booking-receipt-actions">
             <Button onClick={onBack} variant="outline" style={{ borderColor: 'var(--gold)' }}>
               Browse More Sarees
             </Button>
+            <a
+              href="/bookings"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                background: 'linear-gradient(135deg, #d4af37 0%, #b89320 100%)',
+                color: '#092330',
+                padding: '0.6rem 1.15rem',
+                borderRadius: '6px',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                textDecoration: 'none',
+                boxShadow: '0 2px 8px rgba(212, 175, 55, 0.25)',
+              }}
+            >
+              <Package size={15} />
+              <span>View My Bookings</span>
+            </a>
             <a
               href={`https://wa.me/919876543210?text=${encodeURIComponent(
                 `Hello Bamas Collection, I have confirmed order #${orderNumber} for ${
@@ -577,66 +579,68 @@ export function BookingCheckout({
           maxWidth: '450px',
           width: '100%',
           background: '#ffffff',
-          borderRadius: '14px',
-          boxShadow: '0 20px 45px rgba(9, 35, 48, 0.12)',
-          border: '1px solid rgba(212, 175, 55, 0.35)',
+          borderRadius: '16px',
+          boxShadow: '0 20px 50px rgba(212, 175, 55, 0.14), 0 4px 18px rgba(9, 35, 48, 0.05)',
+          border: '1.5px solid rgba(212, 175, 55, 0.35)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           maxHeight: '94vh',
         }}
       >
-        {/* Top Header */}
+        {/* Top Header - Light Colours */}
         <div
           className="booking-checkout-header"
           style={{
-            background: 'linear-gradient(135deg, #092330 0%, #103444 100%)',
-            color: '#f8f9fa',
-            padding: '0.8rem 1.15rem',
+            background: 'linear-gradient(135deg, #fdfbf7 0%, #f7f2e7 100%)',
+            color: '#092330',
+            padding: '0.85rem 1.15rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid rgba(212, 175, 55, 0.25)',
+            borderBottom: '1.5px solid rgba(212, 175, 55, 0.3)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <div
               style={{
-                width: '30px',
-                height: '30px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #d4af37 0%, #aa820a 100%)',
+                background: 'linear-gradient(135deg, #d4af37 0%, #b89320 100%)',
                 color: '#092330',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 800,
                 fontSize: '0.85rem',
+                boxShadow: '0 2px 6px rgba(212, 175, 55, 0.25)',
               }}
             >
               B
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#ffffff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <h3 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#092330' }}>
                   Bamas Payment
                 </h3>
                 <span
                   style={{
-                    background: 'rgba(212, 175, 55, 0.22)',
-                    color: '#d4af37',
+                    background: 'rgba(212, 175, 55, 0.18)',
+                    color: '#997300',
                     fontSize: '0.62rem',
                     fontWeight: 700,
                     padding: '1px 6px',
                     borderRadius: '4px',
                     letterSpacing: '0.5px',
+                    border: '1px solid rgba(212, 175, 55, 0.35)',
                   }}
                 >
                   UPI GATEWAY
                 </span>
               </div>
-              <p style={{ margin: 0, fontSize: '0.68rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                <Lock size={10} color="#d4af37" /> 256-Bit SSL Insured
+              <p style={{ margin: 0, fontSize: '0.68rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                <Lock size={10} color="#b89320" /> 256-Bit SSL Insured
               </p>
             </div>
           </div>
@@ -646,13 +650,13 @@ export function BookingCheckout({
             onClick={onBack}
             title="Cancel and return to Saree Details"
             style={{
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
-              color: '#cbd5e1',
+              background: '#f1ece1',
+              border: '1px solid #e2dbcd',
+              color: '#527482',
               cursor: 'pointer',
               borderRadius: '50%',
-              width: '26px',
-              height: '26px',
+              width: '28px',
+              height: '28px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1167,9 +1171,9 @@ export function BookingCheckout({
                   }
                 }}
                 style={{
-                  background: 'linear-gradient(135deg, #092330 0%, #15394b 100%)',
-                  color: '#d4af37',
-                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #d4af37 0%, #b89320 100%)',
+                  color: '#092330',
+                  fontWeight: 800,
                   fontSize: '0.88rem',
                   height: '44px',
                   borderRadius: '8px',
@@ -1177,13 +1181,13 @@ export function BookingCheckout({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.45rem',
-                  border: '1.5px solid #d4af37',
-                  boxShadow: '0 4px 14px rgba(212, 175, 55, 0.25)',
+                  border: '1.5px solid #c99f24',
+                  boxShadow: '0 4px 14px rgba(212, 175, 55, 0.35)',
                   width: '100%',
                   cursor: 'pointer',
                 }}
               >
-                <Lock size={15} color="#d4af37" />
+                <Lock size={15} color="#092330" />
                 <span>Sign In to Book Saree (₹{totalPrice.toLocaleString('en-IN')})</span>
               </Button>
             </div>
@@ -1231,9 +1235,9 @@ export function BookingCheckout({
                 setShowConfirmModal(true);
               }}
               style={{
-                background: hasOutOfStockItems || totalPrice <= 0 ? '#94a3b8' : '#092330',
-                color: '#ffffff',
-                fontWeight: 700,
+                background: hasOutOfStockItems || totalPrice <= 0 ? '#e2e8f0' : 'linear-gradient(135deg, #d4af37 0%, #b89320 100%)',
+                color: hasOutOfStockItems || totalPrice <= 0 ? '#94a3b8' : '#092330',
+                fontWeight: 800,
                 fontSize: '0.88rem',
                 height: '44px',
                 borderRadius: '8px',
@@ -1241,18 +1245,19 @@ export function BookingCheckout({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.45rem',
-                border: hasOutOfStockItems || totalPrice <= 0 ? '1px solid #cbd5e1' : '1.5px solid #d4af37',
-                boxShadow: hasOutOfStockItems || totalPrice <= 0 ? 'none' : '0 4px 14px rgba(212, 175, 55, 0.25)',
+                border: hasOutOfStockItems || totalPrice <= 0 ? '1px solid #cbd5e1' : '1.5px solid #c99f24',
+                boxShadow: hasOutOfStockItems || totalPrice <= 0 ? 'none' : '0 4px 14px rgba(212, 175, 55, 0.35)',
                 width: '100%',
                 cursor: hasOutOfStockItems || totalPrice <= 0 ? 'not-allowed' : 'pointer',
                 marginTop: '0.2rem',
+                transition: 'all 0.15s ease',
               }}
             >
               {hasOutOfStockItems || totalPrice <= 0 ? (
                 <span>Cannot Book (Out of Stock)</span>
               ) : (
                 <>
-                  <CheckCircle2 size={16} color="#d4af37" />
+                  <CheckCircle2 size={16} color="#092330" />
                   <span>I Have Paid · Confirm Booking (₹{totalPrice.toLocaleString('en-IN')})</span>
                 </>
               )}
@@ -1456,7 +1461,7 @@ export function BookingCheckout({
               </div>
             </div>
 
-            {/* Direct Mobile UPI Intent Button */}
+            {/* Direct Mobile UPI Intent Button - Light Luxury Gold */}
             <a
               href={upiIntentUrl}
               style={{
@@ -1464,19 +1469,19 @@ export function BookingCheckout({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                background: 'linear-gradient(135deg, #092330 0%, #15394b 100%)',
-                color: '#d4af37',
+                background: 'linear-gradient(135deg, #d4af37 0%, #b89320 100%)',
+                color: '#092330',
                 padding: '0.65rem',
                 borderRadius: '8px',
-                fontWeight: 700,
+                fontWeight: 800,
                 fontSize: '0.84rem',
                 textDecoration: 'none',
-                border: '1.5px solid #d4af37',
+                border: '1.5px solid #c99f24',
                 marginBottom: '0.65rem',
-                boxShadow: '0 4px 12px rgba(9, 35, 48, 0.15)',
+                boxShadow: '0 4px 14px rgba(212, 175, 55, 0.3)',
               }}
             >
-              <Smartphone size={16} />
+              <Smartphone size={16} color="#092330" />
               <span>Pay via Installed UPI App</span>
             </a>
 
@@ -1499,7 +1504,7 @@ export function BookingCheckout({
         </div>
       )}
 
-      {/* Payment Confirmation & Optional Screenshot Modal */}
+      {/* Payment Confirmation & Optional Screenshot Modal - Light Luxury Colours */}
       {showConfirmModal && (
         <div
           role="dialog"
@@ -1510,8 +1515,8 @@ export function BookingCheckout({
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(6, 24, 33, 0.85)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(9, 35, 48, 0.42)',
+            backdropFilter: 'blur(5px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1528,8 +1533,8 @@ export function BookingCheckout({
               borderRadius: '16px',
               maxWidth: '440px',
               width: '100%',
-              boxShadow: '0 24px 60px rgba(9, 35, 48, 0.4)',
-              border: '2px solid rgba(212, 175, 55, 0.55)',
+              boxShadow: '0 18px 45px rgba(212, 175, 55, 0.16), 0 4px 18px rgba(9, 35, 48, 0.08)',
+              border: '1.5px solid rgba(212, 175, 55, 0.45)',
               position: 'relative',
               overflow: 'hidden',
               display: 'flex',
@@ -1538,25 +1543,38 @@ export function BookingCheckout({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* Header - Light Silk Cream */}
             <div
               style={{
-                background: 'linear-gradient(135deg, #092330 0%, #163e52 100%)',
-                padding: '1.1rem 1.25rem',
-                color: '#ffffff',
+                background: 'linear-gradient(135deg, #fdfbf7 0%, #f6f0e2 100%)',
+                padding: '1rem 1.25rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderBottom: '2px solid #d4af37',
+                borderBottom: '1.5px solid rgba(212, 175, 55, 0.35)',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <CheckCircle2 size={22} color="#d4af37" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'rgba(212, 175, 55, 0.18)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#b89320',
+                    border: '1px solid rgba(212, 175, 55, 0.4)',
+                  }}
+                >
+                  <CheckCircle2 size={18} color="#b89320" />
+                </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800, color: '#f5efe6', fontFamily: 'Cormorant Garamond, serif' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800, color: '#092330', fontFamily: 'Cormorant Garamond, serif' }}>
                     Confirm UPI Payment
                   </h3>
-                  <p style={{ margin: 0, fontSize: '0.72rem', color: '#9eb4c0' }}>
+                  <p style={{ margin: 0, fontSize: '0.72rem', color: '#688c99' }}>
                     Atelier Verification & Drape Reservation
                   </p>
                 </div>
@@ -1569,19 +1587,21 @@ export function BookingCheckout({
                 }}
                 disabled={busy || uploadingProof}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: 'none',
+                  background: '#f1ece1',
+                  border: '1px solid #e2dbcd',
                   borderRadius: '50%',
                   width: '28px',
                   height: '28px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#f5efe6',
+                  color: '#527482',
                   cursor: busy || uploadingProof ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.15s ease',
                 }}
+                title="Close"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             </div>
 
@@ -1781,21 +1801,21 @@ export function BookingCheckout({
                 />
               </div>
 
-              {/* Reassurance text */}
-              <div style={{ background: '#f8fafc', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShieldCheck size={14} color="#10b981" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: '0.7rem', color: '#475569' }}>
-                  Your payment time & date will be recorded and forwarded to the Bamas Admin Suite in real time.
+              {/* Reassurance text - Light Emerald */}
+              <div style={{ background: '#f0fdf4', padding: '0.6rem 0.85rem', borderRadius: '8px', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 600 }}>
+                  Your payment timestamp will be logged and verified by the atelier in real time.
                 </span>
               </div>
             </div>
 
-            {/* Modal Actions */}
+            {/* Modal Actions - Light Colours */}
             <div
               style={{
                 padding: '0.85rem 1.25rem',
-                borderTop: '1px solid #e2e8f0',
-                background: '#fafbfd',
+                borderTop: '1px solid #ede8dd',
+                background: '#fdfbf7',
                 display: 'flex',
                 gap: '0.65rem',
               }}
@@ -1808,12 +1828,13 @@ export function BookingCheckout({
                   flex: '1',
                   padding: '0.65rem',
                   borderRadius: '8px',
-                  border: '1px solid #cbd5e1',
+                  border: '1.5px solid #cbd5e1',
                   background: '#ffffff',
-                  color: '#64748b',
+                  color: '#475569',
                   fontSize: '0.82rem',
                   fontWeight: 700,
                   cursor: busy || uploadingProof ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 Back to QR
@@ -1827,27 +1848,30 @@ export function BookingCheckout({
                   flex: '2',
                   padding: '0.65rem 1rem',
                   borderRadius: '8px',
-                  border: '1.5px solid #d4af37',
-                  background: 'linear-gradient(135deg, #092330 0%, #163e52 100%)',
-                  color: '#d4af37',
+                  border: busy || uploadingProof ? '1px solid #cbd5e1' : '1.5px solid #b89320',
+                  background: busy || uploadingProof
+                    ? '#e2e8f0'
+                    : 'linear-gradient(135deg, #d4af37 0%, #b89320 100%)',
+                  color: busy || uploadingProof ? '#64748b' : '#092330',
                   fontSize: '0.86rem',
                   fontWeight: 800,
                   cursor: busy || uploadingProof ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 4px 14px rgba(212, 175, 55, 0.25)',
+                  boxShadow: busy || uploadingProof ? 'none' : '0 4px 14px rgba(212, 175, 55, 0.35)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.45rem',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 {busy || uploadingProof ? (
                   <>
-                    <LoaderCircle className="spin" size={15} color="#d4af37" />
+                    <LoaderCircle className="spin" size={15} color="#092330" />
                     <span>Submitting Order...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 size={16} color="#d4af37" />
+                    <CheckCircle2 size={16} color="#092330" />
                     <span>Yes, Payment Done · Confirm</span>
                   </>
                 )}
