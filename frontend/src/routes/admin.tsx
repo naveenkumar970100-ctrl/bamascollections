@@ -42,6 +42,8 @@ import {
   Activity,
   Check,
   CreditCard,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react';
 import { useCustomer } from '@/components/bamas/auth-context';
 import { api } from '@/lib/api';
@@ -3825,15 +3827,19 @@ function AdminDashboardPage() {
                           background:
                             selectedBookingOrder.status === 'Delivered'
                               ? 'rgba(16, 185, 129, 0.14)'
+                              : selectedBookingOrder.status === 'Accepted'
+                              ? 'rgba(16, 185, 129, 0.16)'
                               : selectedBookingOrder.status === 'Shipped'
                               ? 'rgba(14, 116, 144, 0.14)'
                               : selectedBookingOrder.status === 'Cancelled'
                               ? 'rgba(239, 68, 68, 0.14)'
                               : selectedBookingOrder.status === 'Processing'
                               ? 'rgba(212, 175, 55, 0.18)'
-                              : 'rgba(9, 35, 48, 0.1)',
+                              : 'rgba(217, 119, 6, 0.15)',
                           color:
                             selectedBookingOrder.status === 'Delivered'
+                              ? '#047857'
+                              : selectedBookingOrder.status === 'Accepted'
                               ? '#047857'
                               : selectedBookingOrder.status === 'Shipped'
                               ? '#0e7490'
@@ -3841,11 +3847,11 @@ function AdminDashboardPage() {
                               ? '#b91c1c'
                               : selectedBookingOrder.status === 'Processing'
                               ? '#997510'
-                              : '#092330',
+                              : '#b45309',
                           border: '1px solid rgba(0,0,0,0.08)',
                         }}
                       >
-                        ● {selectedBookingOrder.status}
+                        ● {selectedBookingOrder.status === 'Placed' ? 'Placed (Awaiting Acceptance)' : selectedBookingOrder.status}
                       </span>
                     </div>
                   </div>
@@ -3866,15 +3872,27 @@ function AdminDashboardPage() {
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#d4af37', fontWeight: 700 }}>
                           Booking Drape Studio
                         </span>
                         <span style={{ fontSize: '0.68rem', color: '#8cabb8' }}>·</span>
-                        <span style={{ fontSize: '0.72rem', color: '#c5d9e2' }}>
-                          Placed on {new Date(selectedBookingOrder.createdAt).toLocaleDateString('en-IN', {
+                        <span style={{ fontSize: '0.72rem', color: '#c5d9e2', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={12} color="#d4af37" />
+                          Placed: {new Date(selectedBookingOrder.createdAt).toLocaleDateString('en-IN', {
                             day: 'numeric',
-                            month: 'long',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: '#8cabb8' }}>·</span>
+                        <span style={{ fontSize: '0.72rem', color: '#6ee7b7', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle2 size={12} color="#10b981" />
+                          Paid via UPI on {new Date(selectedBookingOrder.paidAt || selectedBookingOrder.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
                             year: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit',
@@ -3886,6 +3904,11 @@ function AdminDashboardPage() {
                       </h3>
                       <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem', color: '#9eb4c0' }}>
                         Order for {selectedBookingOrder.user?.name || selectedBookingOrder.shippingAddress?.fullName || 'Patron'} ({selectedBookingOrder.orderItems?.length || 0} drape{selectedBookingOrder.orderItems?.length === 1 ? '' : 's'})
+                        {selectedBookingOrder.paymentResult?.id && (
+                          <span style={{ marginLeft: '0.5rem', color: '#d4af37', fontFamily: 'monospace', fontSize: '0.76rem' }}>
+                            Txn: {selectedBookingOrder.paymentResult.id}
+                          </span>
+                        )}
                       </p>
                     </div>
 
@@ -4245,6 +4268,126 @@ function AdminDashboardPage() {
                           Fulfillment & Order Actions
                         </h4>
 
+                        {/* Instant 1-Click Accept Order Action */}
+                        {selectedBookingOrder.status === 'Placed' && (
+                          <div
+                            style={{
+                              background: '#ecfdf5',
+                              border: '1.5px solid #10b981',
+                              borderRadius: '10px',
+                              padding: '0.85rem',
+                              marginBottom: '0.95rem',
+                              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.35rem' }}>
+                              <CheckCircle2 size={16} color="#10b981" />
+                              <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#065f46' }}>
+                                New Order Awaiting Studio Acceptance
+                              </span>
+                            </div>
+                            <p style={{ margin: '0 0 0.65rem', fontSize: '0.75rem', color: '#047857', lineHeight: 1.4 }}>
+                              Paid via UPI at {new Date(selectedBookingOrder.paidAt || selectedBookingOrder.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} on {new Date(selectedBookingOrder.paidAt || selectedBookingOrder.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}. Click below to accept the order and notify the customer.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateOrderStatus(selectedBookingOrder._id, 'Accepted')}
+                              style={{
+                                width: '100%',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.45rem',
+                                padding: '0.65rem 1rem',
+                                borderRadius: '8px',
+                                border: 'none',
+                                background: '#10b981',
+                                color: '#ffffff',
+                                fontSize: '0.88rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.35)',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <CheckCircle2 size={16} /> Accept Order
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Quick Stage Transitions */}
+                        <div style={{ marginBottom: '0.85rem' }}>
+                          <span style={{ display: 'block', fontSize: '0.72rem', color: '#688c99', fontWeight: 600, marginBottom: '0.35rem' }}>
+                            Quick Stage Actions:
+                          </span>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.45rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateOrderStatus(selectedBookingOrder._id, 'Accepted')}
+                              style={{
+                                padding: '0.45rem 0.5rem',
+                                borderRadius: '6px',
+                                border: selectedBookingOrder.status === 'Accepted' ? '1.5px solid #10b981' : '1px solid #dce8ec',
+                                background: selectedBookingOrder.status === 'Accepted' ? '#ecfdf5' : '#ffffff',
+                                color: selectedBookingOrder.status === 'Accepted' ? '#047857' : '#092330',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              ✓ Accepted
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateOrderStatus(selectedBookingOrder._id, 'Processing')}
+                              style={{
+                                padding: '0.45rem 0.5rem',
+                                borderRadius: '6px',
+                                border: selectedBookingOrder.status === 'Processing' ? '1.5px solid #d4af37' : '1px solid #dce8ec',
+                                background: selectedBookingOrder.status === 'Processing' ? '#fffdf7' : '#ffffff',
+                                color: selectedBookingOrder.status === 'Processing' ? '#997510' : '#092330',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              🧵 In Weaving
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateOrderStatus(selectedBookingOrder._id, 'Shipped')}
+                              style={{
+                                padding: '0.45rem 0.5rem',
+                                borderRadius: '6px',
+                                border: selectedBookingOrder.status === 'Shipped' ? '1.5px solid #0e7490' : '1px solid #dce8ec',
+                                background: selectedBookingOrder.status === 'Shipped' ? '#ecfeff' : '#ffffff',
+                                color: selectedBookingOrder.status === 'Shipped' ? '#0e7490' : '#092330',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              🚚 Shipped
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateOrderStatus(selectedBookingOrder._id, 'Delivered')}
+                              style={{
+                                padding: '0.45rem 0.5rem',
+                                borderRadius: '6px',
+                                border: selectedBookingOrder.status === 'Delivered' ? '1.5px solid #15803d' : '1px solid #dce8ec',
+                                background: selectedBookingOrder.status === 'Delivered' ? '#f0fdf4' : '#ffffff',
+                                color: selectedBookingOrder.status === 'Delivered' ? '#15803d' : '#092330',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              🎉 Delivered
+                            </button>
+                          </div>
+                        </div>
+
                         <div style={{ marginBottom: '0.85rem' }}>
                           <label style={{ display: 'block', fontSize: '0.74rem', color: '#527482', fontWeight: 600, marginBottom: '0.35rem' }}>
                             Update Live Fulfillment Status:
@@ -4264,11 +4407,12 @@ function AdminDashboardPage() {
                               cursor: 'pointer',
                             }}
                           >
-                            <option value="Placed">Placed</option>
+                            <option value="Placed">Placed (Awaiting Acceptance)</option>
+                            <option value="Accepted">Accepted by Atelier</option>
                             <option value="Confirmed">Confirmed</option>
-                            <option value="Processing">Processing</option>
-                            <option value="Shipped">Shipped</option>
-                            <option value="Delivered">Delivered</option>
+                            <option value="Processing">Processing / In Weaving</option>
+                            <option value="Shipped">Shipped / In Transit</option>
+                            <option value="Delivered">Delivered to Patron</option>
                             <option value="Cancelled">Cancelled</option>
                           </select>
                         </div>
@@ -4465,7 +4609,7 @@ function AdminDashboardPage() {
                       marginBottom: isMobile ? '0.85rem' : '1rem',
                     }}
                   >
-                    {['All', 'Placed', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map((status) => {
+                    {['All', 'Placed', 'Accepted', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map((status) => {
                       const isActive = bookingFilter === status;
                       const count =
                         status === 'All'
@@ -4526,23 +4670,27 @@ function AdminDashboardPage() {
                         const statusColor =
                           order.status === 'Delivered'
                             ? '#047857'
+                            : order.status === 'Accepted'
+                            ? '#047857'
                             : order.status === 'Shipped'
                             ? '#0e7490'
                             : order.status === 'Cancelled'
                             ? '#b91c1c'
                             : order.status === 'Processing'
                             ? '#997510'
-                            : '#092330';
+                            : '#b45309';
                         const statusBg =
                           order.status === 'Delivered'
                             ? 'rgba(16, 185, 129, 0.14)'
+                            : order.status === 'Accepted'
+                            ? 'rgba(16, 185, 129, 0.16)'
                             : order.status === 'Shipped'
                             ? 'rgba(14, 116, 144, 0.14)'
                             : order.status === 'Cancelled'
                             ? 'rgba(239, 68, 68, 0.14)'
                             : order.status === 'Processing'
                             ? 'rgba(212, 175, 55, 0.18)'
-                            : 'rgba(9, 35, 48, 0.1)';
+                            : 'rgba(245, 158, 11, 0.14)';
 
                         const customerName = order.user?.name || order.shippingAddress?.fullName || 'Valued Guest';
                         const firstItem = order.orderItems?.[0];
@@ -4649,16 +4797,18 @@ function AdminDashboardPage() {
                                 {itemsSummary}
                               </div>
 
-                              <div style={{ fontSize: '0.68rem', color: '#8c9ea7', marginTop: '0.15rem' }}>
-                                {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                              <div style={{ fontSize: '0.68rem', color: '#8c9ea7', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Clock size={11} color="#d4af37" />
+                                Paid on {new Date(order.paidAt || order.createdAt).toLocaleDateString('en-IN', {
                                   day: 'numeric',
                                   month: 'short',
-                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
                                 })}
                               </div>
                             </div>
 
-                            {/* Right column: Status & Total & Arrow */}
+                            {/* Right column: Status & Total & Action */}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', flexShrink: 0, gap: '0.25rem' }}>
                               <span
                                 style={{
@@ -4672,16 +4822,43 @@ function AdminDashboardPage() {
                                   textTransform: 'capitalize',
                                 }}
                               >
-                                ● {order.status}
+                                ● {order.status === 'Placed' ? 'Placed' : order.status}
                               </span>
 
                               <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#092330' }}>
                                 ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
                               </span>
 
-                              <span style={{ fontSize: '0.7rem', color: '#d4af37', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                Details <ChevronRight size={13} />
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.1rem' }}>
+                                {order.status === 'Placed' && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleUpdateOrderStatus(order._id, 'Accepted');
+                                    }}
+                                    style={{
+                                      padding: '0.2rem 0.55rem',
+                                      borderRadius: '5px',
+                                      background: '#10b981',
+                                      color: '#ffffff',
+                                      fontSize: '0.68rem',
+                                      fontWeight: 700,
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                    }}
+                                  >
+                                    <CheckCircle2 size={11} /> Accept
+                                  </button>
+                                )}
+                                <span style={{ fontSize: '0.7rem', color: '#d4af37', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                  Details <ChevronRight size={13} />
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -4696,23 +4873,27 @@ function AdminDashboardPage() {
                         const statusColor =
                           order.status === 'Delivered'
                             ? '#047857'
+                            : order.status === 'Accepted'
+                            ? '#047857'
                             : order.status === 'Shipped'
                             ? '#0e7490'
                             : order.status === 'Cancelled'
                             ? '#b91c1c'
                             : order.status === 'Processing'
                             ? '#997510'
-                            : '#092330';
+                            : '#b45309';
                         const statusBg =
                           order.status === 'Delivered'
                             ? 'rgba(16, 185, 129, 0.14)'
+                            : order.status === 'Accepted'
+                            ? 'rgba(16, 185, 129, 0.16)'
                             : order.status === 'Shipped'
                             ? 'rgba(14, 116, 144, 0.14)'
                             : order.status === 'Cancelled'
                             ? 'rgba(239, 68, 68, 0.14)'
                             : order.status === 'Processing'
                             ? 'rgba(212, 175, 55, 0.18)'
-                            : 'rgba(9, 35, 48, 0.1)';
+                            : 'rgba(245, 158, 11, 0.14)';
 
                         const customerName = order.user?.name || order.shippingAddress?.fullName || 'Valued Guest';
                         const firstItem = order.orderItems?.[0];
@@ -4769,21 +4950,28 @@ function AdminDashboardPage() {
                               </div>
 
                               <div style={{ minWidth: 0, flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
                                   <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#092330' }}>
                                     Order #{order._id?.slice(-6).toUpperCase()}
                                   </span>
                                   {order.isPaid ? (
-                                    <span style={{ fontSize: '0.72rem', color: '#047857', fontWeight: 600 }}>● Paid</span>
+                                    <span style={{ fontSize: '0.72rem', color: '#047857', fontWeight: 600, background: 'rgba(16, 185, 129, 0.1)', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
+                                      ● Paid via UPI
+                                    </span>
                                   ) : (
-                                    <span style={{ fontSize: '0.72rem', color: '#b91c1c', fontWeight: 600 }}>● Payment Pending</span>
+                                    <span style={{ fontSize: '0.72rem', color: '#b91c1c', fontWeight: 600, background: 'rgba(239, 68, 68, 0.1)', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
+                                      ● Payment Pending
+                                    </span>
                                   )}
-                                  <span style={{ fontSize: '0.75rem', color: '#688c99' }}>
-                                    · Placed on{' '}
-                                    {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                  <span style={{ fontSize: '0.75rem', color: '#688c99', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <Clock size={12} color="#d4af37" />
+                                    Paid on{' '}
+                                    {new Date(order.paidAt || order.createdAt).toLocaleDateString('en-IN', {
                                       day: 'numeric',
                                       month: 'short',
                                       year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
                                     })}
                                   </span>
                                 </div>
@@ -4795,6 +4983,11 @@ function AdminDashboardPage() {
                                       ({order.user.email})
                                     </span>
                                   )}
+                                  {(order.customerPhone || order.shippingAddress?.phone) && (
+                                    <span style={{ fontWeight: 400, color: '#688c99', marginLeft: '0.5rem', fontSize: '0.78rem' }}>
+                                      · 📞 {order.customerPhone || order.shippingAddress?.phone}
+                                    </span>
+                                  )}
                                 </div>
 
                                 <div style={{ fontSize: '0.8rem', color: '#527482', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -4803,7 +4996,7 @@ function AdminDashboardPage() {
                               </div>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
                               <div style={{ textAlign: 'right' }}>
                                 <span
                                   style={{
@@ -4818,12 +5011,40 @@ function AdminDashboardPage() {
                                     marginBottom: '0.25rem',
                                   }}
                                 >
-                                  ● {order.status}
+                                  ● {order.status === 'Placed' ? 'Placed (Awaiting Acceptance)' : order.status}
                                 </span>
                                 <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#092330' }}>
                                   ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
                                 </div>
                               </div>
+
+                              {order.status === 'Placed' && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleUpdateOrderStatus(order._id, 'Accepted');
+                                  }}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    padding: '0.5rem 0.95rem',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: '#10b981',
+                                    color: '#ffffff',
+                                    fontSize: '0.82rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  title="Accept this order and notify patron"
+                                >
+                                  <CheckCircle2 size={15} /> Accept Order
+                                </button>
+                              )}
 
                               <button
                                 type="button"

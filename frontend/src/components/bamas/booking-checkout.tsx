@@ -185,6 +185,22 @@ export function BookingCheckout({
       ? activeGateway.qrCodeUrl
       : `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=${encodeURIComponent(upiIntentUrl)}`;
 
+  // Listen for live order updates (e.g. when Admin accepts the order)
+  useEffect(() => {
+    const handleOrderUpdated = (e: any) => {
+      const updated = e.detail;
+      if (
+        updated &&
+        completedOrder &&
+        (updated._id === completedOrder._id || updated.id === completedOrder._id)
+      ) {
+        setCompletedOrder((prev: any) => ({ ...prev, ...updated }));
+      }
+    };
+    window.addEventListener('bamas_order_updated', handleOrderUpdated);
+    return () => window.removeEventListener('bamas_order_updated', handleOrderUpdated);
+  }, [completedOrder]);
+
   // 1-Click Direct UPI Payment Confirmation Handler
   async function handleDirectPay() {
     const currentUser = user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
@@ -216,12 +232,14 @@ export function BookingCheckout({
       // Simulate quick secure authorization
       await new Promise((resolve) => setTimeout(resolve, 800));
 
+      const now = new Date();
       const paymentResult = {
         id: 'UPI_' + Math.random().toString(36).substring(2, 9).toUpperCase(),
         status: 'COMPLETED',
         method: `UPI / QR (${activeGateway?.upiId || 'bamas@okhdfcbank'})`,
+        upiId: activeGateway?.upiId || 'bamas@okhdfcbank',
         amount: totalPrice,
-        paidAt: new Date().toISOString(),
+        paidAt: now.toISOString(),
       };
 
       const orderPayload = {
@@ -247,7 +265,9 @@ export function BookingCheckout({
         },
         paymentMethod: paymentResult.method,
         isPaid: true,
+        paidAt: now.toISOString(),
         paymentResult,
+        status: 'Placed',
         itemsPrice,
         taxPrice,
         shippingPrice: 0,
@@ -261,10 +281,12 @@ export function BookingCheckout({
       const orderData = res.data || {
         _id: 'BAMAS-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
         totalPrice,
-        createdAt: new Date().toISOString(),
+        createdAt: now.toISOString(),
+        paidAt: now.toISOString(),
         isPaid: true,
-        status: 'Confirmed',
+        status: 'Placed',
         paymentMethod: paymentResult.method,
+        paymentResult,
         orderItems: orderPayload.orderItems,
         shippingAddress: orderPayload.shippingAddress,
       };
@@ -319,10 +341,44 @@ export function BookingCheckout({
             </div>
             <div className="receipt-meta-box">
               <span className="meta-label">Payment Method</span>
-              <span className="meta-val">{paymentMethod}</span>
+              <span className="meta-val">{completedOrder.paymentMethod || paymentMethod}</span>
             </div>
             <div className="receipt-meta-box">
-              <span className="meta-label">Total Amount</span>
+              <span className="meta-label">Payment Date & Time</span>
+              <span className="meta-val" style={{ fontSize: '0.8rem', fontWeight: 700, color: '#092330' }}>
+                {new Date(completedOrder.paidAt || completedOrder.createdAt || Date.now()).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            </div>
+            <div className="receipt-meta-box">
+              <span className="meta-label">Order Status</span>
+              <span
+                className="meta-val"
+                style={{
+                  color:
+                    completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
+                      ? '#047857'
+                      : completedOrder.status === 'Processing'
+                      ? '#0284c7'
+                      : '#b45309',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                }}
+              >
+                ● {completedOrder.status === 'Accepted'
+                  ? 'Accepted by Studio'
+                  : completedOrder.status === 'Processing'
+                  ? 'In Weaving / Preparation'
+                  : 'Placed (Awaiting Atelier Acceptance)'}
+              </span>
+            </div>
+            <div className="receipt-meta-box">
+              <span className="meta-label">Total Amount Paid</span>
               <span className="meta-val gold">₹{totalPrice.toLocaleString('en-IN')}</span>
             </div>
             <div className="receipt-meta-box">
@@ -356,8 +412,14 @@ export function BookingCheckout({
 
           <div
             style={{
-              background: 'rgba(16, 185, 129, 0.08)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
+              background:
+                completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
+                  ? 'rgba(16, 185, 129, 0.12)'
+                  : 'rgba(212, 175, 55, 0.1)',
+              border:
+                completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
+                  ? '1.5px solid #10b981'
+                  : '1px solid rgba(212, 175, 55, 0.35)',
               borderRadius: '8px',
               padding: '0.75rem 1rem',
               display: 'flex',
@@ -366,12 +428,31 @@ export function BookingCheckout({
               flexWrap: 'wrap',
               gap: '0.5rem',
               marginTop: '1rem',
+              transition: 'all 0.3s ease',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Sparkles size={16} color="#10b981" />
-              <span style={{ fontSize: '0.85rem', color: '#065f46', fontWeight: 600 }}>
-                UPI Payment Verified & Synced with Admin Dashboard in Real Time
+              <Sparkles
+                size={16}
+                color={
+                  completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
+                    ? '#10b981'
+                    : '#d4af37'
+                }
+              />
+              <span
+                style={{
+                  fontSize: '0.85rem',
+                  color:
+                    completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
+                      ? '#065f46'
+                      : '#092330',
+                  fontWeight: 700,
+                }}
+              >
+                {completedOrder.status === 'Accepted' || completedOrder.status === 'Confirmed'
+                  ? '🎉 Order Accepted! Bamas Admin has accepted your order and weaving is initiated.'
+                  : 'UPI Payment & Timestamp Synced with Admin Dashboard · Awaiting Studio Acceptance'}
               </span>
             </div>
             <a

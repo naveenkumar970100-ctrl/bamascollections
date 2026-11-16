@@ -90,10 +90,12 @@ function BookingsPage() {
 
     const handleOrderSync = () => fetchOrdersData();
     window.addEventListener('bamas_order_created', handleOrderSync);
+    window.addEventListener('bamas_order_updated', handleOrderSync);
 
     return () => {
       window.removeEventListener('bamas_cart_updated', handleCartSync);
       window.removeEventListener('bamas_order_created', handleOrderSync);
+      window.removeEventListener('bamas_order_updated', handleOrderSync);
     };
   }, [user]);
 
@@ -402,12 +404,17 @@ function BookingsPage() {
               const orderId = order._id?.slice(-8)?.toUpperCase() || 'BM-ORDER';
               const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : 'Recent';
               const itemsList = order.orderItems || [];
+              const currentStatus = order.status || order.orderStatus || 'Placed';
               const statusColor =
-                order.orderStatus === 'Delivered'
+                currentStatus === 'Delivered'
                   ? '#16a34a'
-                  : order.orderStatus === 'Dispatched'
+                  : currentStatus === 'Shipped' || currentStatus === 'Dispatched'
                   ? '#0284c7'
-                  : '#d4af37';
+                  : currentStatus === 'Accepted' || currentStatus === 'Confirmed'
+                  ? '#059669'
+                  : currentStatus === 'Processing'
+                  ? '#d97706'
+                  : '#b45309';
 
               return (
                 <div
@@ -428,14 +435,27 @@ function BookingsPage() {
                       marginBottom: '0.75rem',
                       paddingBottom: '0.65rem',
                       borderBottom: '1px solid #f1f5f9',
+                      flexWrap: 'wrap',
+                      gap: '0.5rem',
                     }}
                   >
                     <div>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#092330' }}>
+                      <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#092330' }}>
                         Booking #{orderId}
                       </span>
-                      <p style={{ margin: '0.1rem 0 0', fontSize: '0.72rem', color: '#64748b' }}>
-                        {dateStr} · {order.paymentMethod || 'Prepaid'}
+                      <p style={{ margin: '0.15rem 0 0', fontSize: '0.72rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                        <span>{order.paymentMethod || 'UPI / QR Code'}</span>
+                        <span>·</span>
+                        <span>
+                          Paid on{' '}
+                          {new Date(order.paidAt || order.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
                       </p>
                     </div>
 
@@ -444,13 +464,13 @@ function BookingsPage() {
                         background: `${statusColor}15`,
                         color: statusColor,
                         border: `1px solid ${statusColor}35`,
-                        padding: '0.2rem 0.6rem',
+                        padding: '0.2rem 0.65rem',
                         borderRadius: '999px',
                         fontSize: '0.72rem',
                         fontWeight: 700,
                       }}
                     >
-                      {order.orderStatus || 'Confirmed'}
+                      ● {currentStatus === 'Placed' ? 'Placed (Awaiting Studio Acceptance)' : currentStatus === 'Accepted' ? 'Accepted by Studio' : currentStatus}
                     </span>
                   </div>
 

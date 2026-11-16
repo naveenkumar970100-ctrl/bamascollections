@@ -82,7 +82,9 @@ export const createOrder = async (req, res, next) => {
     const totalPrice = clientTotalPrice || itemsPrice + shippingPrice + taxPrice;
 
     const orderPaid = isPaid !== undefined ? Boolean(isPaid) : true;
-    const orderStatus = orderPaid ? 'Confirmed' : 'Placed';
+    const orderStatus = req.body.status || 'Placed';
+
+    const paidTimestamp = paymentResult?.paidAt ? new Date(paymentResult.paidAt) : (orderPaid ? new Date() : null);
 
     const order = new Order({
       user: userId,
@@ -91,18 +93,21 @@ export const createOrder = async (req, res, next) => {
       customerPhone: normShipping.phone,
       orderItems: normItems,
       shippingAddress: normShipping,
-      paymentMethod: paymentMethod || 'Demo Online Payment',
-      paymentResult: paymentResult || {
-        id: 'DEMO_PAY_' + Date.now(),
+      paymentMethod: paymentMethod || 'UPI / QR Code',
+      paymentResult: {
+        id: paymentResult?.id || `UPI_${Date.now()}`,
         status: orderPaid ? 'COMPLETED' : 'PENDING',
-        method: paymentMethod || 'Demo Payment Gateway',
+        method: paymentMethod || 'UPI / QR Code',
+        upiId: paymentResult?.upiId || 'bamas@okhdfcbank',
+        paidAt: paidTimestamp,
+        update_time: paidTimestamp ? paidTimestamp.toISOString() : new Date().toISOString(),
       },
       itemsPrice,
       shippingPrice,
       taxPrice,
       totalPrice,
       isPaid: orderPaid,
-      paidAt: orderPaid ? new Date() : null,
+      paidAt: paidTimestamp,
       status: orderStatus,
     });
 
@@ -114,8 +119,8 @@ export const createOrder = async (req, res, next) => {
         recipientRole: 'admin',
         sender: userId || null,
         senderName: normShipping.fullName,
-        title: `New Saree Order Placed: ₹${totalPrice.toLocaleString('en-IN')}`,
-        message: `${normShipping.fullName} placed order #${savedOrder._id.toString().slice(-6).toUpperCase()} (${orderPaid ? 'Paid via Demo Gateway' : 'Pending'}). Shipping to ${normShipping.city}, ${normShipping.state}.`,
+        title: `🛍️ New Saree Order Placed: ₹${totalPrice.toLocaleString('en-IN')}`,
+        message: `${normShipping.fullName} placed & paid for order #${savedOrder._id.toString().slice(-6).toUpperCase()} via UPI on ${new Date().toLocaleString('en-IN')}. Status: Awaiting Studio Acceptance. Delivery to ${normShipping.city}, ${normShipping.state}.`,
         type: 'order',
         targetUrl: '/admin',
       });
@@ -310,9 +315,13 @@ export const updateOrderStatus = async (req, res, next) => {
         recipient: order.user,
         sender: req.user._id,
         senderName: 'Bamas Admin',
-        title: `Order #${order._id.toString().slice(-6).toUpperCase()} Status: ${order.status}`,
+        title: `Order #${order._id.toString().slice(-6).toUpperCase()} ${order.status === 'Accepted' || order.status === 'Confirmed' ? 'Accepted' : `Status: ${order.status}`}`,
         message: `Your Bamas Collection saree order has been updated to "${order.status}". ${
-          order.status === 'Shipped'
+          order.status === 'Accepted' || order.status === 'Confirmed'
+            ? 'Your order has been officially accepted by Bamas atelier. Handcrafting & packaging are underway!'
+            : order.status === 'Processing'
+            ? 'Master weavers are finishing and quality-inspecting your pure silk drape.'
+            : order.status === 'Shipped'
             ? 'Your artisanal package is in transit with priority courier!'
             : order.status === 'Delivered'
             ? 'Your saree has been delivered. We hope you cherish every drape!'
@@ -328,6 +337,7 @@ export const updateOrderStatus = async (req, res, next) => {
     if (order.user) {
       emitToUser(order.user, 'order:updated', updatedOrder);
     }
+    emitBroadcast('order:updated', updatedOrder);
 
     return renderSuccess(res, 200, 'Order status updated', updatedOrder);
   } catch (error) {

@@ -42,6 +42,8 @@ const orderSchema = new mongoose.Schema(
       update_time: { type: String },
       email_address: { type: String },
       method: { type: String },
+      upiId: { type: String },
+      paidAt: { type: Date },
     },
     itemsPrice: { type: Number, required: true, default: 0.0 },
     shippingPrice: { type: Number, required: true, default: 0.0 },
@@ -53,8 +55,8 @@ const orderSchema = new mongoose.Schema(
     deliveredAt: { type: Date },
     status: {
       type: String,
-      enum: ['Placed', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-      default: 'Confirmed',
+      enum: ['Placed', 'Accepted', 'Confirmed', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
+      default: 'Placed',
     },
   },
   {
