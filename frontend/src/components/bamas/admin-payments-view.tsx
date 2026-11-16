@@ -970,7 +970,7 @@ export function AdminPaymentsView({
                                 }}
                               >
                                 <CreditCard size={12} />
-                                Card (Demo 4242)
+                                Card
                               </span>
                             ) : (
                               <span
@@ -1212,7 +1212,7 @@ export function AdminPaymentsView({
               </div>
               <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#64748b', maxWidth: '680px' }}>
                 Configure multiple UPI IDs and QR code images. When you activate or edit a gateway, it will
-                instantly update on the customer checkout screen and demo payment modals in real-time.
+                instantly update on the customer checkout screen in real-time.
               </p>
             </div>
 

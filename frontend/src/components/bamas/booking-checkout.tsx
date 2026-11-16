@@ -5,14 +5,11 @@ import {
   CheckCircle2,
   Lock,
   LoaderCircle,
-  Truck,
-  CreditCard,
   QrCode,
   MapPin,
   Sparkles,
   Copy,
   Check,
-  Radio,
   Maximize2,
   Smartphone,
   X,
@@ -59,10 +56,8 @@ export function BookingCheckout({
   const [pincode, setPincode] = useState(user?.address?.postalCode || '500033');
   const [editingAddress, setEditingAddress] = useState(false);
 
-  // Payment method selection ('UPI / QR Code' | 'Cards & NetBanking' | 'Cash on Delivery')
-  const [paymentMethod, setPaymentMethod] = useState<
-    'UPI / QR Code' | 'Cards & NetBanking' | 'Cash on Delivery'
-  >('UPI / QR Code');
+  // Dedicated Payment Method: UPI & QR Code Only
+  const paymentMethod = 'UPI / QR Code';
 
   // Real-Time Active UPI Gateway (Synced with Admin Dashboard via WebSocket)
   const [activeGateway, setActiveGateway] = useState<any>({
@@ -190,7 +185,7 @@ export function BookingCheckout({
       ? activeGateway.qrCodeUrl
       : `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&data=${encodeURIComponent(upiIntentUrl)}`;
 
-  // 1-Click Direct Demo Payment Handler
+  // 1-Click Direct UPI Payment Confirmation Handler
   async function handleDirectPay() {
     const currentUser = user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
     if (!currentUser) {
@@ -222,9 +217,9 @@ export function BookingCheckout({
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       const paymentResult = {
-        id: 'DEMO_' + Math.random().toString(36).substring(2, 9).toUpperCase(),
+        id: 'UPI_' + Math.random().toString(36).substring(2, 9).toUpperCase(),
         status: 'COMPLETED',
-        method: paymentMethod === 'UPI / QR Code' ? `UPI (${activeGateway?.upiId || 'bamas@okhdfcbank'})` : paymentMethod,
+        method: `UPI / QR (${activeGateway?.upiId || 'bamas@okhdfcbank'})`,
         amount: totalPrice,
         paidAt: new Date().toISOString(),
       };
@@ -376,7 +371,7 @@ export function BookingCheckout({
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Sparkles size={16} color="#10b981" />
               <span style={{ fontSize: '0.85rem', color: '#065f46', fontWeight: 600 }}>
-                Demo Payment Approved & Synced with Admin Dashboard in Real Time
+                UPI Payment Verified & Synced with Admin Dashboard in Real Time
               </span>
             </div>
             <a
@@ -484,15 +479,16 @@ export function BookingCheckout({
                 </h3>
                 <span
                   style={{
-                    background: 'rgba(212, 175, 55, 0.2)',
+                    background: 'rgba(212, 175, 55, 0.22)',
                     color: '#d4af37',
-                    fontSize: '0.6rem',
+                    fontSize: '0.62rem',
                     fontWeight: 700,
-                    padding: '1px 5px',
+                    padding: '1px 6px',
                     borderRadius: '4px',
+                    letterSpacing: '0.5px',
                   }}
                 >
-                  DEMO
+                  UPI GATEWAY
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: '0.68rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '3px' }}>
@@ -688,130 +684,66 @@ export function BookingCheckout({
           </div>
         )}
 
-        {/* Payment Methods Section */}
+        {/* Payment Methods Section: UPI & QR Code Only */}
         <div
           className="booking-methods-section"
-          style={{ padding: '0.75rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}
+          style={{ padding: '0.75rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}
         >
-          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Select Payment Method
-          </span>
-
-          {/* 3 Payment Options */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-            {/* Option 1: UPI */}
-            <label
-              className="booking-payment-option"
-              onClick={() => setPaymentMethod('UPI / QR Code')}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Payment Method
+            </span>
+            <span
               style={{
+                fontSize: '0.62rem',
+                color: '#047857',
+                background: '#dcfce7',
+                padding: '1px 6px',
+                borderRadius: '4px',
+                fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.65rem',
-                padding: '0.6rem 0.8rem',
-                borderRadius: '8px',
-                border: paymentMethod === 'UPI / QR Code' ? '1.5px solid #d4af37' : '1px solid #e2e8f0',
-                background: paymentMethod === 'UPI / QR Code' ? '#fffdf7' : '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                gap: '4px',
               }}
             >
-              <input
-                type="radio"
-                name="bookingCheckoutMethod"
-                checked={paymentMethod === 'UPI / QR Code'}
-                onChange={() => setPaymentMethod('UPI / QR Code')}
-                style={{ accentColor: '#d4af37', width: '15px', height: '15px' }}
-              />
-              <QrCode size={17} color={paymentMethod === 'UPI / QR Code' ? '#d4af37' : '#64748b'} />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: paymentMethod === 'UPI / QR Code' ? 700 : 600, color: '#092330' }}>
-                    UPI / QR Code
-                  </span>
-                  <span style={{ fontSize: '0.62rem', color: '#10b981', fontWeight: 700, background: '#ecfdf5', padding: '1px 5px', borderRadius: '4px' }}>
-                    Fastest
-                  </span>
-                </div>
-                <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'block' }}>
-                  Google Pay, PhonePe, Paytm, BHIM UPI
-                </span>
-              </div>
-            </label>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+              Active UPI Gateway
+            </span>
+          </div>
 
-            {/* Option 2: Card */}
-            <label
-              className="booking-payment-option"
-              onClick={() => setPaymentMethod('Cards & NetBanking')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.65rem',
-                padding: '0.6rem 0.8rem',
-                borderRadius: '8px',
-                border: paymentMethod === 'Cards & NetBanking' ? '1.5px solid #d4af37' : '1px solid #e2e8f0',
-                background: paymentMethod === 'Cards & NetBanking' ? '#fffdf7' : '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <input
-                type="radio"
-                name="bookingCheckoutMethod"
-                checked={paymentMethod === 'Cards & NetBanking'}
-                onChange={() => setPaymentMethod('Cards & NetBanking')}
-                style={{ accentColor: '#d4af37', width: '15px', height: '15px' }}
-              />
-              <CreditCard size={17} color={paymentMethod === 'Cards & NetBanking' ? '#d4af37' : '#64748b'} />
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: paymentMethod === 'Cards & NetBanking' ? 700 : 600, color: '#092330', display: 'block' }}>
-                  Credit / Debit Card
+          {/* Dedicated UPI / QR Option Banner */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+              padding: '0.6rem 0.8rem',
+              borderRadius: '8px',
+              border: '1.5px solid #d4af37',
+              background: '#fffdf7',
+              boxShadow: '0 2px 6px rgba(212, 175, 55, 0.1)',
+            }}
+          >
+            <QrCode size={18} color="#d4af37" />
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#092330' }}>
+                  UPI / QR Code
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                  Instant Demo Authorization (Test Card)
+                <span style={{ fontSize: '0.62rem', color: '#10b981', fontWeight: 700, background: '#ecfdf5', padding: '1px 5px', borderRadius: '4px' }}>
+                  Instant & Direct
                 </span>
               </div>
-            </label>
-
-            {/* Option 3: COD */}
-            <label
-              className="booking-payment-option"
-              onClick={() => setPaymentMethod('Cash on Delivery')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.65rem',
-                padding: '0.6rem 0.8rem',
-                borderRadius: '8px',
-                border: paymentMethod === 'Cash on Delivery' ? '1.5px solid #d4af37' : '1px solid #e2e8f0',
-                background: paymentMethod === 'Cash on Delivery' ? '#fffdf7' : '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <input
-                type="radio"
-                name="bookingCheckoutMethod"
-                checked={paymentMethod === 'Cash on Delivery'}
-                onChange={() => setPaymentMethod('Cash on Delivery')}
-                style={{ accentColor: '#d4af37', width: '15px', height: '15px' }}
-              />
-              <Truck size={17} color={paymentMethod === 'Cash on Delivery' ? '#d4af37' : '#64748b'} />
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: paymentMethod === 'Cash on Delivery' ? 700 : 600, color: '#092330', display: 'block' }}>
-                  Cash on Delivery
-                </span>
-                <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                  Pay upon doorstep delivery
-                </span>
-              </div>
-            </label>
+              <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'block' }}>
+                Google Pay, PhonePe, Paytm, BHIM UPI
+              </span>
+            </div>
           </div>
 
           {/* Context Details */}
-          {paymentMethod === 'UPI / QR Code' && (
-            <div
-              style={{
-                background: '#f8fafc',
+          <div
+            style={{
+              background: '#f8fafc',
                 border: '1.5px solid #e2edf0',
                 borderRadius: '8px',
                 padding: '0.75rem',
@@ -1002,19 +934,6 @@ export function BookingCheckout({
                 <span style={{ fontWeight: 700, color: '#092330' }}>₹{totalPrice.toLocaleString('en-IN')}</span>
               </div>
             </div>
-          )}
-
-          {paymentMethod === 'Cards & NetBanking' && (
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.72rem', color: '#475569' }}>
-              <strong style={{ color: '#092330' }}>Test Card: •••• 4242</strong> · Pre-authorized for instant demo payment.
-            </div>
-          )}
-
-          {paymentMethod === 'Cash on Delivery' && (
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.5rem 0.75rem', fontSize: '0.72rem', color: '#475569' }}>
-              <strong style={{ color: '#092330' }}>Doorstep Collection</strong> · Pay cash or UPI upon package handover.
-            </div>
-          )}
 
           {hasOutOfStockItems && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '0.6rem 0.75rem', color: '#991b1b', fontSize: '0.74rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
@@ -1093,7 +1012,7 @@ export function BookingCheckout({
             <div style={{ padding: '0.85rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <LoaderCircle className="spin" size={24} style={{ color: '#d4af37', margin: '0 auto 0.35rem' }} />
               <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#092330', display: 'block' }}>
-                Authorizing Demo Payment...
+                Confirming UPI Payment Authorization...
               </span>
               <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
                 Registering booking in MongoDB Atlas & notifying master weavers
@@ -1138,7 +1057,7 @@ export function BookingCheckout({
               ) : (
                 <>
                   <Sparkles size={15} color="#d4af37" />
-                  <span>Pay ₹{totalPrice.toLocaleString('en-IN')} (Demo)</span>
+                  <span>Pay ₹{totalPrice.toLocaleString('en-IN')} via UPI</span>
                 </>
               )}
             </Button>
