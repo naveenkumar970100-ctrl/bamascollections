@@ -146,8 +146,8 @@ export function AuthForm({
           sessionStorage.setItem('bamas_auto_checkout_saree', JSON.stringify(pending));
           setMessage('Signed in successfully! Returning to complete your saree booking...');
           setTimeout(() => {
-            navigate({ to: (pending.origin || '/products') as any });
-          }, 600);
+            window.location.href = pending.origin || '/products';
+          }, 500);
           return;
         } catch {}
       }
@@ -1834,7 +1834,7 @@ export function AuthForm({
           )}
 
           {/* Saree Booking Pending Notice */}
-          {pendingBookingInfo?.saree && (
+          {(pendingBookingInfo?.saree || pendingBookingInfo?.cartItems) && (
             <div
               style={{
                 background: 'rgba(212, 175, 55, 0.12)',
@@ -1853,11 +1853,14 @@ export function AuthForm({
               <Sparkles size={20} color="#d4af37" style={{ flexShrink: 0 }} />
               <div>
                 <strong style={{ color: '#092330', display: 'block', fontSize: '0.88rem' }}>
-                  Reserve Your Saree
+                  Reserve Your Handloom Saree
                 </strong>
                 <span>
-                  Please sign in or register to complete your reservation for{' '}
-                  <strong style={{ color: '#092330' }}>{pendingBookingInfo.saree.name}</strong>.
+                  Please sign in or create an account to complete your reservation
+                  {pendingBookingInfo.saree
+                    ? ` for ${pendingBookingInfo.saree.name}`
+                    : ` for your ${pendingBookingInfo.cartItems?.length || 0} selected sarees`}
+                  .
                 </span>
               </div>
             </div>

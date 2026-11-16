@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, Flower2, Gem, Heart, Sparkles } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Pieces } from '@/components/bamas/pieces';
 import { SareeDetailFullPage } from '@/components/bamas/saree-detail-full-page';
+import { BookingCheckout } from '@/components/bamas/booking-checkout';
 import { collection } from '@/lib/collection';
 import { pageHead } from '@/lib/page-head';
 import { api } from '@/lib/api';
@@ -66,6 +67,7 @@ function Home() {
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedSaree, setSelectedSaree] = useState<any | null>(null);
+  const [checkoutSaree, setCheckoutSaree] = useState<any | null>(null);
 
   // Resume saree booking checkout if patron logged in from /login
   useEffect(() => {
@@ -75,8 +77,9 @@ function Home() {
         const autoCheckout = JSON.parse(autoCheckoutStr);
         sessionStorage.removeItem('bamas_auto_checkout_saree');
         if (autoCheckout.saree) {
-          setSelectedSaree(autoCheckout.saree);
+          setCheckoutSaree(autoCheckout.saree);
           window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
         }
       }
     } catch {}
@@ -161,6 +164,22 @@ function Home() {
       isFeatured: p.isFeatured,
     };
   });
+
+  // If checkout is active directly for a booked saree
+  if (checkoutSaree) {
+    return (
+      <main>
+        <BookingCheckout
+          saree={checkoutSaree}
+          quantity={1}
+          onBack={() => {
+            setCheckoutSaree(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      </main>
+    );
+  }
 
   // If a specific saree was clicked from the homepage, show the exact details page directly
   if (selectedSaree) {
@@ -292,6 +311,25 @@ function Home() {
             items={displayItems}
             onSelectPiece={(s) => {
               setSelectedSaree(s);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onBuyNow={(piece) => {
+              const currentUser = typeof window !== 'undefined' ? api.auth.getCurrentUser() : null;
+              if (!currentUser) {
+                if (typeof window !== 'undefined') {
+                  sessionStorage.setItem(
+                    'bamas_pending_booking',
+                    JSON.stringify({
+                      saree: piece,
+                      quantity: 1,
+                      origin: '/',
+                    })
+                  );
+                  window.location.href = '/login';
+                }
+                return;
+              }
+              setCheckoutSaree(piece);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />

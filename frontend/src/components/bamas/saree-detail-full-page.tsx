@@ -25,7 +25,6 @@ import { cart } from '@/lib/cart';
 import { api } from '@/lib/api';
 import { useCustomer } from './auth-context';
 import { BookingCheckout } from './booking-checkout';
-import { BookingAuthModal } from './booking-auth-modal';
 import { CartDrawer } from './cart-drawer';
 
 interface SareeDetailFullPageProps {
@@ -40,7 +39,6 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
   const [addedNotice, setAddedNotice] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'care' | 'shipping'>('details');
   const [zoomOpen, setZoomOpen] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState(false);
@@ -223,8 +221,8 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
             origin: window.location.pathname,
           })
         );
+        window.location.href = '/login';
       }
-      setAuthModalOpen(true);
       return;
     }
     setCheckoutOpen(true);
@@ -1481,18 +1479,6 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Dedicated Saree Booking Authentication Prompt Modal */}
-      <BookingAuthModal
-        open={authModalOpen}
-        onOpenChange={setAuthModalOpen}
-        saree={currentSaree}
-        quantity={quantity}
-        onSuccess={() => {
-          setCheckoutOpen(true);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
 
     </div>
   );

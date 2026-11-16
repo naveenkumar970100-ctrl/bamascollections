@@ -17,7 +17,6 @@ import { cart, type CartItem } from '@/lib/cart';
 import { api } from '@/lib/api';
 import { useCustomer } from '@/components/bamas/auth-context';
 import { BookingCheckout } from '@/components/bamas/booking-checkout';
-import { BookingAuthModal } from '@/components/bamas/booking-auth-modal';
 
 export const Route = createFileRoute('/cart')({
   head: () =>
@@ -36,7 +35,6 @@ function CartPage() {
   const [items, setItems] = useState<CartItem[]>(() => cart.getItems());
   const [isCheckout, setIsCheckout] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any | null>(null);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Resume checkout if patron logged in from /login
   useEffect(() => {
@@ -669,8 +667,8 @@ function CartPage() {
                 if (!currentUser) {
                   if (typeof window !== 'undefined') {
                     sessionStorage.setItem('bamas_pending_booking', JSON.stringify({ cartItems: items, origin: '/cart' }));
+                    window.location.href = '/login';
                   }
-                  setAuthModalOpen(true);
                   return;
                 }
                 setIsCheckout(true);
@@ -720,16 +718,6 @@ function CartPage() {
         </div>
       </div>
 
-      <BookingAuthModal
-        open={authModalOpen}
-        onOpenChange={setAuthModalOpen}
-        title="Sign In to Complete Cart Booking"
-        subtitle="Please sign in or create an account to proceed with your silk bag reservation."
-        onSuccess={() => {
-          setIsCheckout(true);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
     </main>
   );
 }

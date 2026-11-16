@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomer } from './auth-context';
-import { BookingAuthModal } from './booking-auth-modal';
 import { api } from '@/lib/api';
 import { cart } from '@/lib/cart';
 
@@ -99,7 +98,6 @@ export function BookingCheckout({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [completedOrder, setCompletedOrder] = useState<any | null>(null);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   // Sync user details if patron signs in
   useEffect(() => {
@@ -147,8 +145,17 @@ export function BookingCheckout({
   async function handleDirectPay() {
     const currentUser = user || (typeof window !== 'undefined' ? api.auth.getCurrentUser() : null);
     if (!currentUser) {
-      setError('Authentication required: You must sign in to confirm and book this handloom saree order.');
-      setAuthModalOpen(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(
+          'bamas_pending_booking',
+          JSON.stringify({
+            saree: primaryItem,
+            quantity: totalQty,
+            origin: window.location.pathname,
+          })
+        );
+        window.location.href = '/login';
+      }
       return;
     }
 
@@ -956,7 +963,19 @@ export function BookingCheckout({
               <Button
                 type="button"
                 className="booking-pay-btn"
-                onClick={() => setAuthModalOpen(true)}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem(
+                      'bamas_pending_booking',
+                      JSON.stringify({
+                        saree: primaryItem,
+                        quantity: totalQty,
+                        origin: window.location.pathname,
+                      })
+                    );
+                    window.location.href = '/login';
+                  }
+                }}
                 style={{
                   background: 'linear-gradient(135deg, #092330 0%, #15394b 100%)',
                   color: '#d4af37',
@@ -1040,16 +1059,6 @@ export function BookingCheckout({
           </div>
         </div>
       </div>
-
-      <BookingAuthModal
-        open={authModalOpen}
-        onOpenChange={setAuthModalOpen}
-        saree={primaryItem}
-        quantity={totalQty}
-        onSuccess={() => {
-          setError('');
-        }}
-      />
     </main>
   );
 }

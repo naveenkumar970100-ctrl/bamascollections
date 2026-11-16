@@ -7,7 +7,6 @@ import { cart } from '@/lib/cart';
 import { validateName, validateEmail, validatePhone, validateRequired } from '@/lib/validation';
 import { CartDrawer } from './cart-drawer';
 import { BookingCheckout } from './booking-checkout';
-import { BookingAuthModal } from './booking-auth-modal';
 import { SareeDetailFullPage } from './saree-detail-full-page';
 import { useCustomer } from './auth-context';
 
@@ -34,8 +33,6 @@ export function Pieces({
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [directBuySaree, setDirectBuySaree] = useState<any | null>(null);
   const { user } = useCustomer();
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [pendingAuthSaree, setPendingAuthSaree] = useState<any | null>(null);
 
   // Real-time validation checks for inquiry
   const nameValidation = validateName(name, 'Your name');
@@ -82,9 +79,8 @@ export function Pieces({
             origin: window.location.pathname,
           })
         );
+        window.location.href = '/login';
       }
-      setPendingAuthSaree(p);
-      setAuthModalOpen(true);
       return;
     }
 
@@ -444,24 +440,6 @@ export function Pieces({
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Booking Authentication Modal */}
-      <BookingAuthModal
-        open={authModalOpen}
-        onOpenChange={setAuthModalOpen}
-        saree={pendingAuthSaree}
-        quantity={1}
-        onSuccess={() => {
-          if (pendingAuthSaree) {
-            if (onBuyNow) {
-              onBuyNow(pendingAuthSaree);
-            } else {
-              setDirectBuySaree(pendingAuthSaree);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }
-        }}
-      />
 
       {/* Cart Drawer */}
       <CartDrawer

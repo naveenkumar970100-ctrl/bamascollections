@@ -447,6 +447,21 @@ function Products() {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             onBuyNow={(piece) => {
+              const currentUser = typeof window !== 'undefined' ? api.auth.getCurrentUser() : null;
+              if (!currentUser) {
+                if (typeof window !== 'undefined') {
+                  sessionStorage.setItem(
+                    'bamas_pending_booking',
+                    JSON.stringify({
+                      saree: piece,
+                      quantity: 1,
+                      origin: '/products',
+                    })
+                  );
+                  window.location.href = '/login';
+                }
+                return;
+              }
               setCheckoutSaree(piece);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
