@@ -287,17 +287,22 @@ export const updateOrderStatus = async (req, res, next) => {
       return renderError(res, 404, 'Order not found');
     }
 
-    if (status) order.status = status;
+    const updateFields = {};
+    if (status) updateFields.status = status;
     if (isPaid !== undefined) {
-      order.isPaid = isPaid;
-      if (isPaid) order.paidAt = new Date();
+      updateFields.isPaid = isPaid;
+      if (isPaid) updateFields.paidAt = new Date();
     }
     if (isDelivered !== undefined) {
-      order.isDelivered = isDelivered;
-      if (isDelivered) order.deliveredAt = new Date();
+      updateFields.isDelivered = isDelivered;
+      if (isDelivered) updateFields.deliveredAt = new Date();
     }
 
-    const updatedOrder = await order.save();
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateFields },
+      { new: true, runValidators: false }
+    );
 
     // Sync corresponding payment status
     if (isPaid !== undefined) {

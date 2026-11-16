@@ -4438,81 +4438,9 @@ function AdminDashboardPage() {
                           </div>
                         )}
 
-                        {/* Quick Stage Transitions */}
-                        <div style={{ marginBottom: '0.85rem' }}>
-                          <span style={{ display: 'block', fontSize: '0.72rem', color: '#688c99', fontWeight: 600, marginBottom: '0.35rem' }}>
-                            Quick Stage Actions:
-                          </span>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.45rem' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateOrderStatus(selectedBookingOrder._id, 'Accepted')}
-                              style={{
-                                padding: '0.45rem 0.5rem',
-                                borderRadius: '6px',
-                                border: selectedBookingOrder.status === 'Accepted' ? '1.5px solid #10b981' : '1px solid #dce8ec',
-                                background: selectedBookingOrder.status === 'Accepted' ? '#ecfdf5' : '#ffffff',
-                                color: selectedBookingOrder.status === 'Accepted' ? '#047857' : '#092330',
-                                fontSize: '0.74rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              ✓ Accepted
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateOrderStatus(selectedBookingOrder._id, 'Processing')}
-                              style={{
-                                padding: '0.45rem 0.5rem',
-                                borderRadius: '6px',
-                                border: selectedBookingOrder.status === 'Processing' ? '1.5px solid #d4af37' : '1px solid #dce8ec',
-                                background: selectedBookingOrder.status === 'Processing' ? '#fffdf7' : '#ffffff',
-                                color: selectedBookingOrder.status === 'Processing' ? '#997510' : '#092330',
-                                fontSize: '0.74rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              🧵 In Weaving
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateOrderStatus(selectedBookingOrder._id, 'Shipped')}
-                              style={{
-                                padding: '0.45rem 0.5rem',
-                                borderRadius: '6px',
-                                border: selectedBookingOrder.status === 'Shipped' ? '1.5px solid #0e7490' : '1px solid #dce8ec',
-                                background: selectedBookingOrder.status === 'Shipped' ? '#ecfeff' : '#ffffff',
-                                color: selectedBookingOrder.status === 'Shipped' ? '#0e7490' : '#092330',
-                                fontSize: '0.74rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              🚚 Shipped
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateOrderStatus(selectedBookingOrder._id, 'Delivered')}
-                              style={{
-                                padding: '0.45rem 0.5rem',
-                                borderRadius: '6px',
-                                border: selectedBookingOrder.status === 'Delivered' ? '1.5px solid #15803d' : '1px solid #dce8ec',
-                                background: selectedBookingOrder.status === 'Delivered' ? '#f0fdf4' : '#ffffff',
-                                color: selectedBookingOrder.status === 'Delivered' ? '#15803d' : '#092330',
-                                fontSize: '0.74rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              🎉 Delivered
-                            </button>
-                          </div>
-                        </div>
-
-                        <div style={{ marginBottom: '0.85rem' }}>
-                          <label style={{ display: 'block', fontSize: '0.74rem', color: '#527482', fontWeight: 600, marginBottom: '0.35rem' }}>
+                        {/* Order Fulfillment Status Dropdown */}
+                        <div style={{ marginBottom: '1rem' }}>
+                          <label style={{ display: 'block', fontSize: '0.76rem', color: '#527482', fontWeight: 600, marginBottom: '0.4rem' }}>
                             Update Live Fulfillment Status:
                           </label>
                           <select
@@ -4520,14 +4448,16 @@ function AdminDashboardPage() {
                             onChange={(e) => handleUpdateOrderStatus(selectedBookingOrder._id, e.target.value)}
                             style={{
                               width: '100%',
-                              padding: '0.55rem 0.75rem',
+                              padding: '0.65rem 0.85rem',
                               borderRadius: '8px',
                               border: '1.5px solid #d4af37',
                               background: '#ffffff',
-                              fontSize: '0.85rem',
+                              fontSize: '0.88rem',
                               fontWeight: 700,
                               color: '#092330',
                               cursor: 'pointer',
+                              outline: 'none',
+                              boxShadow: '0 1px 4px rgba(212, 175, 55, 0.15)',
                             }}
                           >
                             <option value="Placed">Placed (Awaiting Acceptance)</option>
@@ -4540,30 +4470,7 @@ function AdminDashboardPage() {
                           </select>
                         </div>
 
-                        <div style={{ paddingTop: '0.75rem', borderTop: '1px solid #edf4f7', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteOrder(selectedBookingOrder._id)}
-                            style={{
-                              width: '100%',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '0.4rem',
-                              padding: '0.55rem 0.85rem',
-                              borderRadius: '8px',
-                              border: '1px solid rgba(239, 68, 68, 0.35)',
-                              background: 'rgba(239, 68, 68, 0.08)',
-                              color: '#dc2626',
-                              fontSize: '0.8rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                            }}
-                          >
-                            <Trash2 size={14} /> Delete Booking Permanently
-                          </button>
-
+                        <div style={{ paddingTop: '0.75rem', borderTop: '1px solid #edf4f7' }}>
                           <button
                             type="button"
                             onClick={() => setSelectedBookingOrder(null)}
@@ -4573,14 +4480,15 @@ function AdminDashboardPage() {
                               alignItems: 'center',
                               justifyContent: 'center',
                               gap: '0.4rem',
-                              padding: '0.55rem 0.85rem',
+                              padding: '0.6rem 0.85rem',
                               borderRadius: '8px',
                               border: '1px solid #dce8ec',
                               background: '#f8fafb',
                               color: '#527482',
-                              fontSize: '0.8rem',
+                              fontSize: '0.82rem',
                               fontWeight: 600,
                               cursor: 'pointer',
+                              transition: 'all 0.15s ease',
                             }}
                           >
                             <ArrowLeft size={14} /> Back to Bookings List
@@ -12140,18 +12048,17 @@ function AdminDashboardPage() {
         <DialogContent
           className="pdp-lightbox-dialog"
           style={{
-            maxWidth: '92vw',
-            maxHeight: '92vh',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
             width: 'auto',
-            padding: '1rem',
-            background: 'rgba(9, 35, 48, 0.98)',
-            border: '1.5px solid #d4af37',
+            padding: '1.25rem',
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
             borderRadius: '16px',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.65)',
+            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.12)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            backdropFilter: 'blur(12px)',
           }}
         >
           <DialogTitle className="sr-only">Booking Saree Drape Fullscreen Inspection</DialogTitle>
@@ -12163,13 +12070,13 @@ function AdminDashboardPage() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '0.75rem',
-                  marginBottom: '0.75rem',
-                  borderBottom: '1px solid rgba(212, 175, 55, 0.25)',
-                  paddingBottom: '0.5rem',
+                  marginBottom: '0.85rem',
+                  borderBottom: '1px solid #f1f5f9',
+                  paddingBottom: '0.65rem',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#d4af37', fontSize: '0.85rem', fontWeight: 700 }}>
-                  <Maximize2 size={16} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#092330', fontSize: '0.88rem', fontWeight: 700 }}>
+                  <Maximize2 size={16} color="#d4af37" />
                   <span>Drape Fullscreen View</span>
                 </div>
                 <button
@@ -12178,15 +12085,16 @@ function AdminDashboardPage() {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '0.3rem',
-                    padding: '0.3rem 0.65rem',
-                    borderRadius: '999px',
-                    border: '1px solid rgba(212, 175, 55, 0.4)',
-                    background: 'rgba(255, 255, 255, 0.08)',
-                    color: '#ffffff',
-                    fontSize: '0.78rem',
+                    gap: '0.35rem',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    background: '#f8fafc',
+                    color: '#475569',
+                    fontSize: '0.8rem',
                     fontWeight: 600,
                     cursor: 'pointer',
+                    transition: 'all 0.15s ease',
                   }}
                 >
                   <X size={14} /> Close
@@ -12195,15 +12103,16 @@ function AdminDashboardPage() {
 
               <div
                 style={{
-                  maxHeight: '76vh',
+                  maxHeight: '75vh',
                   maxWidth: '100%',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   overflow: 'hidden',
                   borderRadius: '10px',
-                  background: '#041017',
-                  border: '1px solid rgba(212, 175, 55, 0.2)',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  padding: '0.5rem',
                 }}
               >
                 <img
@@ -12213,11 +12122,12 @@ function AdminDashboardPage() {
                     (e.currentTarget as HTMLImageElement).src = ivorySaree;
                   }}
                   style={{
-                    maxHeight: '74vh',
+                    maxHeight: '72vh',
                     maxWidth: '100%',
                     objectFit: 'contain',
                     display: 'block',
                     margin: '0 auto',
+                    borderRadius: '6px',
                   }}
                 />
               </div>
@@ -12228,17 +12138,17 @@ function AdminDashboardPage() {
 
       {/* Fullscreen Patron Photo Modal in Admin */}
       <Dialog open={!!previewReviewPhoto} onOpenChange={(open) => !open && setPreviewReviewPhoto(null)}>
-        <DialogContent className="pdp-lightbox-dialog" style={{ maxWidth: '640px', padding: '1rem', background: '#092330', border: '1px solid #d4af37' }}>
+        <DialogContent className="pdp-lightbox-dialog" style={{ maxWidth: '640px', padding: '1.25rem', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', boxShadow: '0 20px 45px rgba(0, 0, 0, 0.12)' }}>
           <DialogTitle className="sr-only">Customer Drape Photo Preview</DialogTitle>
           {previewReviewPhoto && (
             <div style={{ position: 'relative', textAlign: 'center' }}>
               <img
                 src={previewReviewPhoto}
                 alt="Patron Drape Photo"
-                style={{ maxHeight: '80vh', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px', margin: '0 auto', display: 'block' }}
+                style={{ maxHeight: '80vh', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px', margin: '0 auto', display: 'block', border: '1px solid #e2e8f0' }}
               />
-              <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#d4af37', fontSize: '0.85rem', fontWeight: 600 }}>
-                <Camera size={16} />
+              <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#092330', fontSize: '0.85rem', fontWeight: 600 }}>
+                <Camera size={16} color="#d4af37" />
                 <span>Verified Customer Drape Photo (Stored in Cloudinary)</span>
               </div>
             </div>
