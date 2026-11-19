@@ -1,0 +1,467 @@
+import { refreshSocketAuth } from './socket';
+
+export const getApiBaseUrl = (): string => {
+  const envUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_API_URL : null);
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
+  }
+  return '/api';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
+
+/**
+ * Universal API Client for Bamas Collections MERN Backend
+ */
+export async function apiRequest<T = any>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<{ success: boolean; message?: string; data: T }> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('bamas_token') : null;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const baseUrl = getApiBaseUrl();
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${cleanEndpoint}`;
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  const data = await response.json().catch(() => ({
+    success: false,
+    message: 'Failed to parse JSON response from server',
+  }));
+
+  if (!response.ok || data.success === false) {
+    const errorMessage = data.message || `Request failed with status ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
+  return data;
+}
+
+export const api = {
+  // Auth endpoints
+  auth: {
+    async register(payload: { name: string; email?: string; phone?: string; password: string; confirmPassword?: string }) {
+      const res = await apiRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      if (res.data?.token) {
+        localStorage.setItem('bamas_token', res.data.token);
+        localStorage.setItem('bamas_user', JSON.stringify(res.data));
+        refreshSocketAuth();
+      }
+      return res;
+    },
+
+    async login(payload: { email?: string; phone?: string; identifier?: string; password: string }) {
+      const res = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      if (res.data?.token) {
+        localStorage.setItem('bamas_token', res.data.token);
+        localStorage.setItem('bamas_user', JSON.stringify(res.data));
+        refreshSocketAuth();
+      }
+      return res;
+    },
+
+    async google(payload: { email: string; name?: string; avatar?: string; googleId?: string }) {
+      const res = await apiRequest('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      if (res.data?.token) {
+        localStorage.setItem('bamas_token', res.data.token);
+        localStorage.setItem('bamas_user', JSON.stringify(res.data));
+        refreshSocketAuth();
+      }
+      return res;
+    },
+
+    async getProfile() {
+      return apiRequest('/auth/profile', { method: 'GET' });
+    },
+
+    async updateProfile(payload: { name?: string; phone?: string; address?: any; addresses?: any[]; password?: string }) {
+      return apiRequest('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    logout() {
+      localStorage.removeItem('bamas_token');
+      localStorage.removeItem('bamas_user');
+      refreshSocketAuth();
+    },
+
+    getCurrentUser() {
+      try {
+        const stored = localStorage.getItem('bamas_user');
+        return stored ? JSON.parse(stored) : null;
+      } catch {
+        return null;
+      }
+    },
+  },
+
+  // Admin Dashboard endpoints (Protected by role === 'admin')
+  admin: {
+    async getStats() {
+      return apiRequest('/admin/stats', { method: 'GET' });
+    },
+
+    async getUsers() {
+      return apiRequest('/admin/users', { method: 'GET' });
+    },
+
+    async createUser(payload: {
+      name: string;
+      email?: string;
+      phone?: string;
+      password: string;
+      role?: 'customer' | 'admin';
+      address?: any;
+    }) {
+      return apiRequest('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async updateUser(
+      id: string,
+      payload: {
+        name?: string;
+        email?: string;
+        phone?: string;
+        role?: 'customer' | 'admin';
+        address?: any;
+        password?: string;
+      }
+    ) {
+      return apiRequest(`/admin/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async updateUserRole(id: string, role: 'customer' | 'admin') {
+      return apiRequest(`/admin/users/${id}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role }),
+      });
+    },
+
+    async deleteUser(id: string) {
+      return apiRequest(`/admin/users/${id}`, { method: 'DELETE' });
+    },
+
+    async getOrders() {
+      return apiRequest('/admin/orders', { method: 'GET' });
+    },
+
+    async updateOrderStatus(id: string, status: string) {
+      return apiRequest(`/admin/orders/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      });
+    },
+
+    async deleteOrder(id: string) {
+      return apiRequest(`/admin/orders/${id}`, { method: 'DELETE' });
+    },
+
+    async createProduct(productData: any) {
+      return apiRequest('/admin/products', {
+        method: 'POST',
+        body: JSON.stringify(productData),
+      });
+    },
+
+    async updateProduct(id: string, productData: any) {
+      return apiRequest(`/admin/products/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(productData),
+      });
+    },
+
+    async deleteProduct(id: string) {
+      return apiRequest(`/admin/products/${id}`, { method: 'DELETE' });
+    },
+
+    async getInquiries() {
+      return apiRequest('/admin/inquiries', { method: 'GET' });
+    },
+
+    async updateInquiryStatus(id: string, status: string) {
+      return apiRequest(`/admin/inquiries/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      });
+    },
+
+    async deleteInquiry(id: string) {
+      return apiRequest(`/admin/inquiries/${id}`, { method: 'DELETE' });
+    },
+
+    async sendInquiryMessage(id: string, payload: { text: string; senderName?: string }) {
+      return apiRequest(`/inquiries/${id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ ...payload, senderRole: 'admin' }),
+      });
+    },
+
+    async getReviews() {
+      return apiRequest('/admin/reviews', { method: 'GET' });
+    },
+
+    async deleteReview(productId: string, reviewId: string) {
+      return apiRequest(`/admin/reviews/${productId}/${reviewId}`, { method: 'DELETE' });
+    },
+  },
+
+  // Product endpoints
+  products: {
+    async getAll(params: { category?: string; keyword?: string; sort?: string } = {}) {
+      const query = new URLSearchParams();
+      if (params.category && params.category !== 'All') query.set('category', params.category);
+      if (params.keyword) query.set('keyword', params.keyword);
+      if (params.sort) query.set('sort', params.sort);
+
+      const qs = query.toString();
+      return apiRequest(`/products${qs ? `?${qs}` : ''}`, { method: 'GET' });
+    },
+
+    async getFeatured() {
+      return apiRequest('/products/featured', { method: 'GET' });
+    },
+
+    async getBySlugOrId(idOrSlug: string) {
+      return apiRequest(`/products/${idOrSlug}`, { method: 'GET' });
+    },
+
+    async createReview(
+      idOrSlug: string,
+      reviewData: {
+        rating: number;
+        comment: string;
+        images?: string[];
+        name?: string;
+        orderId?: string;
+      }
+    ) {
+      return apiRequest(`/products/${idOrSlug}/reviews`, {
+        method: 'POST',
+        body: JSON.stringify(reviewData),
+      });
+    },
+  },
+
+  // Order endpoints
+  orders: {
+    async create(orderData: any) {
+      return apiRequest('/orders', {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+      });
+    },
+
+    async getMyOrders() {
+      return apiRequest('/orders/myorders', { method: 'GET' });
+    },
+
+    async getById(id: string) {
+      return apiRequest(`/orders/${id}`, { method: 'GET' });
+    },
+  },
+
+  // Inquiry endpoints (Contact / Drape consultation)
+  inquiries: {
+    async create(payload: {
+      name: string;
+      email: string;
+      phone?: string;
+      subject?: string;
+      message: string;
+      sareeInterest?: string;
+    }) {
+      return apiRequest('/inquiries', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async getMy(email?: string) {
+      const qs = email ? `?email=${encodeURIComponent(email)}` : '';
+      return apiRequest(`/inquiries/my${qs}`, { method: 'GET' });
+    },
+
+    async getById(id: string) {
+      return apiRequest(`/inquiries/${id}`, { method: 'GET' });
+    },
+
+    async sendMessage(id: string, payload: { text: string; senderName?: string; senderRole?: 'admin' | 'user' }) {
+      return apiRequest(`/inquiries/${id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+  },
+
+  // Site Configuration & Branding from MongoDB
+  siteConfig: {
+    async get() {
+      return apiRequest('/site-config', { method: 'GET' });
+    },
+    async update(data: any) {
+      return apiRequest('/site-config', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+  },
+
+  // Payment transactions and UPI / QR configuration (CRUD & Realtime)
+  payments: {
+    async getActiveMethod() {
+      return apiRequest('/payments/active-method', { method: 'GET' });
+    },
+    async getMethods() {
+      return apiRequest('/payments/methods', { method: 'GET' });
+    },
+    async createMethod(payload: {
+      title?: string;
+      upiId: string;
+      payeeName?: string;
+      bankName?: string;
+      qrCodeUrl?: string;
+      description?: string;
+      isActive?: boolean;
+    }) {
+      return apiRequest('/payments/methods', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+    async updateMethod(
+      id: string,
+      payload: {
+        title?: string;
+        upiId?: string;
+        payeeName?: string;
+        bankName?: string;
+        qrCodeUrl?: string;
+        description?: string;
+        isActive?: boolean;
+      }
+    ) {
+      return apiRequest(`/payments/methods/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    },
+    async setActiveMethod(id: string) {
+      return apiRequest(`/payments/methods/${id}/activate`, {
+        method: 'PUT',
+      });
+    },
+    async deleteMethod(id: string) {
+      return apiRequest(`/payments/methods/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    async getAll(params: { status?: string; keyword?: string; method?: string } = {}) {
+      const query = new URLSearchParams();
+      if (params.status && params.status !== 'All') query.set('status', params.status);
+      if (params.keyword) query.set('keyword', params.keyword);
+      if (params.method && params.method !== 'All') query.set('method', params.method);
+      const qs = query.toString();
+      return apiRequest(`/payments${qs ? `?${qs}` : ''}`, { method: 'GET' });
+    },
+    async getById(id: string) {
+      return apiRequest(`/payments/${id}`, { method: 'GET' });
+    },
+    async updateStatus(id: string, payload: { status: string; notes?: string }) {
+      return apiRequest(`/payments/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    },
+    async delete(id: string) {
+      return apiRequest(`/payments/${id}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // Real-time Notification endpoints (Admin <-> Customer)
+  notifications: {
+    async getAll() {
+      return apiRequest<{ notifications: any[]; unreadCount: number }>('/notifications', { method: 'GET' });
+    },
+    async markRead(id: string) {
+      return apiRequest(`/notifications/${id}/read`, { method: 'PUT' });
+    },
+    async markAllRead() {
+      return apiRequest('/notifications/read-all', { method: 'PUT' });
+    },
+    async send(payload: {
+      recipientId?: string;
+      recipientRole?: 'admin' | 'customer' | 'all';
+      title: string;
+      message: string;
+      type?: string;
+      targetUrl?: string;
+    }) {
+      return apiRequest('/notifications/send', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
+  },
+
+  // Cloudinary direct upload via backend
+  upload: {
+    async uploadImage(file: File, folder = 'bamascollections/products') {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('folder', folder);
+
+      const token = localStorage.getItem('bamas_token');
+      const res = await fetch(`${getApiBaseUrl()}/upload`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Image upload failed');
+      }
+      return data;
+    },
+  },
+
+  // Health check
+  async checkHealth() {
+    return apiRequest('/health', { method: 'GET' });
+  },
+};

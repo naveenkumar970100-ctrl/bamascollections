@@ -1,0 +1,246 @@
+import { io, Socket } from 'socket.io-client';
+
+export const getBackendUrl = (): string => {
+  const envBackend =
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_BACKEND_URL : null);
+  if (envBackend && typeof envBackend === 'string' && envBackend.trim() !== '') {
+    return envBackend;
+  }
+  const envApi =
+    process.env.NEXT_PUBLIC_API_URL ||
+    (typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_API_URL : null);
+  if (envApi && typeof envApi === 'string' && envApi.trim() !== '') {
+    return envApi.replace(/\/api\/?$/, '');
+  }
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+
+  return 'http://localhost:3000';
+};
+
+export const BACKEND_URL = getBackendUrl();
+
+let socket: Socket | null = null;
+
+/**
+ * Get or initialize singleton Socket.IO connection
+ */
+export function getSocket(): Socket {
+  if (typeof window === 'undefined') {
+    return null as any;
+  }
+
+  if (!socket) {
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    if (!socketUrl) {
+      // Standalone Next.js mode: persistent socket server is optional
+      // Provide an in-memory event bus so components continue functioning smoothly
+      const listeners: Record<string, Function[]> = {};
+      const mockSocket: any = {
+        id: 'local-session',
+        connected: true,
+        on: (event: string, callback: Function) => {
+          if (!listeners[event]) listeners[event] = [];
+          listeners[event].push(callback);
+          return mockSocket;
+        },
+        off: (event: string, callback?: Function) => {
+          if (!callback) delete listeners[event];
+          else if (listeners[event]) listeners[event] = listeners[event].filter((cb) => cb !== callback);
+          return mockSocket;
+        },
+        emit: (event: string, ...args: any[]) => {
+          (listeners[event] || []).forEach((cb) => cb(...args));
+          return mockSocket;
+        },
+        disconnect: () => {},
+        connect: () => {},
+      };
+      socket = mockSocket;
+      return socket as Socket;
+    }
+
+    const token = localStorage.getItem('bamas_token');
+    socket = io(socketUrl, {
+      auth: {
+        token: token || '',
+      },
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 3,
+      reconnectionDelay: 2000,
+    });
+
+    socket.on('connect', () => {
+      console.log('⚡ [WebSocket Connected]: Connected to Bamas Realtime Engine ->', socket?.id);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('🔌 [WebSocket Disconnected]:', reason);
+    });
+
+    socket.on('connect_error', () => {
+      // Quietly handle connection attempts without spamming console
+    });
+
+    // 🔔 System Notifications
+    socket.on('notification:new', (notification) => {
+      console.log('🔔 [WebSocket]: New notification received ->', notification.title);
+      window.dispatchEvent(
+        new CustomEvent('bamas_notification_received', { detail: notification })
+      );
+    });
+
+    // 🛍️ Bookings & Orders
+    socket.on('order:new', (order) => {
+      console.log('🛍️ [WebSocket]: New order created ->', order._id);
+      window.dispatchEvent(new CustomEvent('bamas_order_created', { detail: order }));
+    });
+
+    socket.on('order:updated', (order) => {
+      console.log('🛍️ [WebSocket]: Order updated ->', order._id, order.status);
+      window.dispatchEvent(new CustomEvent('bamas_order_updated', { detail: order }));
+    });
+
+    socket.on('order:deleted', (data) => {
+      console.log('🛍️ [WebSocket]: Order deleted ->', data.id);
+      window.dispatchEvent(new CustomEvent('bamas_order_deleted', { detail: data }));
+    });
+
+    // 💬 Inquiries & Direct Messages
+    socket.on('inquiry:new', (inquiry) => {
+      console.log('💬 [WebSocket]: New inquiry received ->', inquiry._id);
+      window.dispatchEvent(new CustomEvent('bamas_inquiry_created', { detail: inquiry }));
+    });
+
+    socket.on('inquiry:updated', (inquiry) => {
+      console.log('💬 [WebSocket]: Inquiry updated ->', inquiry._id);
+      window.dispatchEvent(new CustomEvent('bamas_inquiry_updated', { detail: inquiry }));
+    });
+
+    socket.on('inquiry:status_updated', (inquiry) => {
+      console.log('💬 [WebSocket]: Inquiry status changed ->', inquiry._id, inquiry.status);
+      window.dispatchEvent(new CustomEvent('bamas_inquiry_status_updated', { detail: inquiry }));
+    });
+
+    socket.on('message:new', (payload) => {
+      console.log('💬 [WebSocket]: Direct message received ->', payload);
+      window.dispatchEvent(new CustomEvent('bamas_message_received', { detail: payload }));
+      // Also notify general inquiry update
+      if (payload?.inquiry) {
+        window.dispatchEvent(new CustomEvent('bamas_inquiry_updated', { detail: payload.inquiry }));
+      }
+    });
+
+    // ⭐ Reviews
+    socket.on('review:new', (data) => {
+      console.log('⭐ [WebSocket]: Review posted ->', data);
+      window.dispatchEvent(new CustomEvent('bamas_review_created', { detail: data }));
+    });
+
+    socket.on('review:deleted', (data) => {
+      console.log('⭐ [WebSocket]: Review deleted ->', data);
+      window.dispatchEvent(new CustomEvent('bamas_review_deleted', { detail: data }));
+    });
+
+    // 👗 Products & Inventory Real-Time Sync
+    socket.on('product:created', (product) => {
+      console.log('👗 [WebSocket]: Product created ->', product?.name);
+      window.dispatchEvent(new CustomEvent('bamas_product_created', { detail: product }));
+    });
+
+    socket.on('product:updated', (product) => {
+      console.log('👗 [WebSocket]: Product updated ->', product?.name, 'Price:', product?.price, 'Stock:', product?.countInStock);
+      window.dispatchEvent(new CustomEvent('bamas_product_updated', { detail: product }));
+    });
+
+    socket.on('product:deleted', (data) => {
+      console.log('👗 [WebSocket]: Product deleted ->', data);
+      window.dispatchEvent(new CustomEvent('bamas_product_deleted', { detail: data }));
+    });
+
+    // 💳 Real-time Payments & UPI Gateway Sync
+    socket.on('payment_method:updated', (method) => {
+      console.log('💳 [WebSocket]: Active UPI Gateway updated ->', method?.upiId);
+      window.dispatchEvent(new CustomEvent('bamas_payment_config_updated', { detail: method }));
+    });
+
+    socket.on('payment_config:updated', (method) => {
+      console.log('💳 [WebSocket]: Payment config updated ->', method?.upiId);
+      window.dispatchEvent(new CustomEvent('bamas_payment_config_updated', { detail: method }));
+    });
+
+    socket.on('payment:new', (payment) => {
+      console.log('💳 [WebSocket]: New Payment recorded ->', payment?.transactionId, 'Amount: ₹', payment?.amount);
+      window.dispatchEvent(new CustomEvent('bamas_payment_new', { detail: payment }));
+    });
+
+    socket.on('payment:updated', (payment) => {
+      console.log('💳 [WebSocket]: Payment updated ->', payment?.transactionId, 'Status:', payment?.status);
+      window.dispatchEvent(new CustomEvent('bamas_payment_updated', { detail: payment }));
+    });
+
+    socket.on('payment:deleted', (data) => {
+      console.log('💳 [WebSocket]: Payment deleted ->', data?.id);
+      window.dispatchEvent(new CustomEvent('bamas_payment_deleted', { detail: data }));
+    });
+  }
+
+  return socket;
+}
+
+/**
+ * Re-authenticate socket when user logs in or out
+ */
+export function refreshSocketAuth() {
+  if (typeof window === 'undefined') return;
+  const token = localStorage.getItem('bamas_token');
+  if (socket) {
+    socket.auth = { token: token || '' };
+    socket.disconnect().connect();
+  } else {
+    getSocket();
+  }
+}
+
+/**
+ * Join specific chat/inquiry room for real-time conversation
+ */
+export function joinChatRoom(chatId: string) {
+  const s = getSocket();
+  if (s && chatId) {
+    s.emit('join_chat', chatId);
+  }
+}
+
+/**
+ * Leave specific chat/inquiry room
+ */
+export function leaveChatRoom(chatId: string) {
+  const s = getSocket();
+  if (s && chatId) {
+    s.emit('leave_chat', chatId);
+  }
+}
+
+/**
+ * Emit typing indicator
+ */
+export function sendTyping(chatId: string, senderName: string) {
+  const s = getSocket();
+  if (s && chatId) {
+    s.emit('typing', { chatId, senderName });
+  }
+}
+
+/**
+ * Stop typing indicator
+ */
+export function stopTyping(chatId: string) {
+  const s = getSocket();
+  if (s && chatId) {
+    s.emit('stop_typing', { chatId });
+  }
+}

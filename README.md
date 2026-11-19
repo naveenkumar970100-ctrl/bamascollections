@@ -1,167 +1,112 @@
-# Bamas Collections · MERN Stack Architecture (MVC)
+# Bamas Collections · Full-Stack Next.js Atelier
 
-A modern e-commerce web application for **Bamas Collections** ("Timeless Sarees. Modern You."), architected with the full **MERN Stack** (MongoDB, Express, React, Node.js) and adhering strictly to the **MVC (Model-View-Controller)** pattern.
+A luxury e-commerce web application for **Bamas Collections** ("Timeless Sarees. Modern You."), architected as a **Full-Stack Next.js 15 (App Router)** application with unified frontend pages, serverless API routes, MongoDB Atlas integration, and Cloudinary media storage — optimized for 1-click deployment on **Vercel**.
 
 ---
 
 ## 🏗️ Architecture Overview
 
-The project is decoupled into two clean tiers: `backend/` and `frontend/`:
+The application is completely unified under Next.js:
 
 ```
 bamascollections/
-├── backend/                        # Node.js + Express + MongoDB Atlas
-│   ├── config/                     # Configuration (Database connection)
-│   │   └── db.js                   # Mongoose connection with resilient DNS resolver
-│   ├── models/                     # [M]ODELS: Schemas and business entities
-│   │   ├── User.js                 # Customer accounts, roles, bcrypt hashing
-│   │   ├── Product.js              # Sarees, fabrics, prices, stock, ratings
-│   │   ├── Order.js                # Orders, line items, address, payment status
-│   │   └── Inquiry.js              # Styling consultations and customer inquiries
-│   ├── views/                      # [V]IEWS: Presentation and response formatting
-│   │   ├── responseView.js         # API JSON response presenters & sanitizers
-│   │   └── homeView.js             # Visual HTML API console & server health monitor
-│   ├── controllers/                # [C]ONTROLLERS: Request handling and business logic
-│   │   ├── authController.js       # Customer registration, login, profile management
-│   │   ├── productController.js    # Saree catalog, category filtering, featured edits
-│   │   ├── orderController.js      # Order placement and history
-│   │   └── inquiryController.js    # Saree questions & consultation submissions
-│   ├── routes/                     # Express modular routing
-│   │   ├── authRoutes.js           # /api/auth
-│   │   ├── productRoutes.js        # /api/products
-│   │   ├── orderRoutes.js          # /api/orders
-│   │   └── inquiryRoutes.js        # /api/inquiries
-│   ├── middleware/                 # Middleware layer
-│   │   ├── authMiddleware.js       # JWT Bearer verification & Admin guards
-│   │   └── errorMiddleware.js      # 404 handler and central error response
-│   ├── data/                       # Seed datasets
-│   │   └── products.js             # Initial Bamas Collection sarees
-│   ├── seeder.js                   # MongoDB Atlas seeding utility
-│   ├── server.js                   # Express application entry point
-│   ├── .env                        # Environment variables (Mongo URI, JWT Secret)
-│   └── package.json
-│
-├── frontend/                       # React + Vite + Tailwind + TanStack Router
-│   ├── src/
-│   │   ├── components/bamas/       # Branded UI components (pieces, dialog, auth)
-│   │   │   ├── auth-context.tsx    # Customer context connected to MERN JWT
-│   │   │   ├── auth-form.tsx       # Sign In, Register, Profile, Sign Out
-│   │   │   ├── pieces.tsx          # Saree card grid, price display & inquiry form
-│   │   │   └── shell.tsx           # Header, mobile nav, wordmark, footer
-│   │   ├── lib/
-│   │   │   └── api.ts              # Universal client for backend API communication
-│   │   ├── routes/                 # Multi-page TanStack routing
-│   │   │   ├── index.tsx           # Home page
-│   │   │   ├── products.tsx        # Collection page (Live MongoDB data fetch)
-│   │   │   ├── about.tsx           # Brand story page
-│   │   │   ├── faq.tsx             # FAQs & Styling Consultation form
-│   │   │   ├── login.tsx           # Customer sign in
-│   │   │   └── register.tsx        # Customer registration
-│   │   └── styles.css              # Curated design system and animations
-│   ├── .env                        # VITE_API_URL pointing to http://localhost:5000/api
-│   └── package.json
-│
-├── package.json                    # Root scripts orchestrating both tiers
-└── README.md
+├── src/
+│   ├── app/                            # Next.js App Router (Pages & Serverless APIs)
+│   │   ├── layout.tsx                  # Root HTML layout with Google Fonts & metadata
+│   │   ├── page.tsx                    # Luxury Homepage
+│   │   ├── products/page.tsx           # Collection Catalog & search
+│   │   ├── cart/page.tsx               # Silk Bag checkout & address drawer
+│   │   ├── bookings/page.tsx           # Customer orders & bookings
+│   │   ├── about/page.tsx              # Our Story page
+│   │   ├── contact/page.tsx            # Concierge & contact desk
+│   │   ├── faq/page.tsx                # FAQs & inquiry desk
+│   │   ├── profile/page.tsx            # Customer profile
+│   │   ├── address/page.tsx            # Saved delivery addresses
+│   │   ├── notifications/page.tsx      # Notifications center
+│   │   ├── admin/page.tsx              # Executive Admin Suite
+│   │   ├── login/page.tsx              # Customer login
+│   │   ├── register/page.tsx           # Customer registration
+│   │   └── api/                        # Next.js Serverless API Route Handlers
+│   │       ├── products/               # Saree catalog, details, search
+│   │       ├── auth/                   # JWT auth, login, register, profile
+│   │       ├── orders/                 # Order booking & status tracking
+│   │       ├── payments/               # Payment screenshot submission & review
+│   │       ├── inquiries/              # Customer styling requests
+│   │       ├── notifications/          # Real-time customer notifications
+│   │       ├── site-config/            # Storewide banners, hero images, UPI settings
+│   │       └── upload/                 # Direct Cloudinary image uploader
+│   ├── components/
+│   │   ├── bamas/                      # Branded luxury UI components
+│   │   └── ui/                         # Accessible Radix primitives
+│   ├── models/                         # Mongoose Models (Singleton cached)
+│   │   ├── User.ts
+│   │   ├── Product.ts
+│   │   ├── Order.ts
+│   │   ├── Payment.ts
+│   │   ├── Inquiry.ts
+│   │   ├── Notification.ts
+│   │   ├── SiteConfig.ts
+│   │   └── PaymentMethod.ts
+│   ├── lib/
+│   │   ├── mongodb.ts                  # Serverless MongoDB Atlas connection pool
+│   │   ├── auth.ts                     # JWT signing & verification helpers
+│   │   ├── api.ts                      # Client-side API caller
+│   │   └── collection.ts               # Core atelier catalog dataset
+│   └── styles.css / globals.css        # Luxury design system & typography
+├── public/                             # Static imagery & brand assets
+├── scripts/
+│   └── seed.mjs                        # MongoDB Atlas collection seeder
+├── next.config.mjs                     # Next.js configuration
+├── package.json
+└── .env.example                        # Template environment variables
 ```
 
 ---
 
-## 🗄️ Database: MongoDB Atlas
-
-The backend connects to MongoDB Atlas using the configured connection string:
-
-- **Cluster:** `bamascollenctions.uefgz3u.mongodb.net`
-- **Database:** `bamascollections`
-- **Collections:** `users`, `products`, `orders`, `inquiries`
-
-### Seeded Credentials
-
-| Role | Email | Password |
-| :--- | :--- | :--- |
-| **Admin** | `admin@bamas.com` | `BamasAdmin123!` |
-| **Customer** | `bama@bamas.com` | `Bama123!` |
-
----
-
-## 🚀 Quick Start Guide
+## 🚀 Quick Start (Local Development)
 
 ### 1. Install Dependencies
-
-Install root, backend, and frontend dependencies in one command:
-
-```sh
-npm run install:all
-```
-
-Or individually:
-
-```sh
-# Root
+```bash
 npm install
-
-# Backend
-cd backend && npm install
-
-# Frontend
-cd ../frontend && npm install
 ```
 
-### 2. Seed Database (Optional)
-
-Populate MongoDB Atlas with initial sarees and demo accounts:
-
-```sh
-npm run seed
+### 2. Configure Environment Variables
+Ensure `.env` contains your MongoDB Atlas URI, JWT Secret, and Cloudinary keys:
+```env
+MONGO_URI=mongodb+srv://...
+JWT_SECRET=your_jwt_secret
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+NEXT_PUBLIC_API_URL=/api
+NEXT_PUBLIC_SITE_NAME="Bamas Collection"
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### 3. Run Development Servers
-
-Run both backend and frontend concurrently:
-
-```sh
+### 3. Run Development Server
+```bash
 npm run dev
 ```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Or run them individually in separate terminals:
-
-```sh
-# Terminal 1: Backend API (port 5000)
-npm run server
-
-# Terminal 2: Frontend Client (port 5173)
-npm run client
+### 4. Build for Production
+```bash
+npm run build
 ```
 
 ---
 
-## 🌐 URLs & Endpoints
+## ☁️ 1-Click Vercel Deployment
 
-| Service | URL | Description |
-| :--- | :--- | :--- |
-| **Frontend Client** | `http://localhost:5173` | React web application |
-| **Backend API Home** | `http://localhost:5000/` | Interactive API Health Console & Docs |
-| **Products API** | `http://localhost:5000/api/products` | Saree catalog with filtering |
-| **Featured Sarees** | `http://localhost:5000/api/products/featured` | Curated editorial sarees |
-| **Auth Register** | `POST http://localhost:5000/api/auth/register` | Create customer account |
-| **Auth Login** | `POST http://localhost:5000/api/auth/login` | Sign in & receive JWT |
-| **Customer Profile** | `GET http://localhost:5000/api/auth/profile` | Authenticated profile details |
-| **Inquiries** | `POST http://localhost:5000/api/inquiries` | Submit drape questions |
-| **Orders** | `POST http://localhost:5000/api/orders` | Place saree orders |
-
----
-
-## 🏛️ MVC Pattern Implementation
-
-1. **Model (`backend/models/`)**:
-   Mongoose models encapsulate data schemas, field types, validation rules, relationships (`ref`), and lifecycle hooks (e.g. password hashing with `bcryptjs`).
-
-2. **View (`backend/views/`)**:
-   - `responseView.js`: Formats JSON envelopes, sanitizes sensitive data (omitting password hashes), calculates dynamic presentation fields (`formattedPrice`, stock badges).
-   - `homeView.js`: Renders a server dashboard at `GET /` displaying database connection status, uptime, and available API routes.
-
-3. **Controller (`backend/controllers/`)**:
-   Controllers act as intermediaries handling request validation, invoking models for queries and mutations, applying business rules, and passing results to views.
-
-4. **Routes (`backend/routes/`)**:
-   Express routers map HTTP verbs and endpoints to controller methods and apply security middleware (`protect`, `admin`).
+1. Import your GitHub repository to [Vercel](https://vercel.com).
+2. Framework preset will automatically detect **Next.js**.
+3. In **Project Settings** $\rightarrow$ **Environment Variables**, paste the keys from `.env.example`:
+   * `MONGO_URI`
+   * `JWT_SECRET`
+   * `CLOUDINARY_CLOUD_NAME`
+   * `CLOUDINARY_API_KEY`
+   * `CLOUDINARY_API_SECRET`
+   * `NEXT_PUBLIC_API_URL`
+   * `NEXT_PUBLIC_SITE_NAME`
+   * `NEXT_PUBLIC_APP_URL`
+4. Click **Deploy**.
