@@ -398,7 +398,7 @@ export default function AddressPage() {
             }}
           >
             <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#092330' }}>
-              {formMode === 'add' ? 'âž• Add New Delivery Address' : 'âœï¸ Edit Delivery Address'}
+              {formMode === 'add' ? '➕ Add New Delivery Address' : '✏️ï¸ Edit Delivery Address'}
             </h3>
             <button
               type="button"

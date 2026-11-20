@@ -155,7 +155,7 @@ export default function Home() {
       price: priceNum,
       countInStock,
       inStock,
-      formattedPrice: priceNum > 0 ? `â‚¹${priceNum.toLocaleString('en-IN')}` : 'Out of Stock',
+      formattedPrice: priceNum > 0 ? `₹${priceNum.toLocaleString('en-IN')}` : 'Out of Stock',
       image: primaryImg,
       images: mappedImages,
       detail: p.detail || p.description,
@@ -215,7 +215,7 @@ export default function Home() {
         <div className="hero-inner reveal">
           <div className="hero-floating-badge">
             <Sparkles size={13} className="gold-sparkle" />
-            <span>Pure Mulberry Silk Â· Certified Handloom</span>
+            <span>Pure Mulberry Silk · Certified Handloom</span>
           </div>
           <span className="eyebrow delay-1">Tradition, beautifully reimagined</span>
           <h1 className="delay-2">
@@ -483,8 +483,8 @@ export default function Home() {
             A lot of you.
           </h2>
           <p>
-            Thereâ€™s something special about a saree. The way it moves, the memories it holds, the
-            confidence it brings. At Bamas, we celebrate that connection â€” between tradition and the
+            There's something special about a saree. The way it moves, the memories it holds, the
+            confidence it brings. At Bamas, we celebrate that connection — between tradition and the
             woman you are today.
           </p>
           <Link to="/about" className="text-link">
@@ -495,7 +495,7 @@ export default function Home() {
 
       <section className="quote-section">
         <span className="eyebrow">The Bamas philosophy</span>
-        <h2>â€œTrends come and go. Elegance stays.â€</h2>
+        <h2>"Trends come and go. Elegance stays."</h2>
         <p>Timeless Sarees. Modern You.</p>
       </section>
     </main>

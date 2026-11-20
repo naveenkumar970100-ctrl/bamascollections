@@ -35,12 +35,12 @@ export default function AboutPage() {
             go out of style.
           </h2>
           <p>
-            A saree is more than what you wear. Itâ€™s a little piece of heritage, a reflection of
-            personality, and a part of the moments youâ€™ll always remember.
+            A saree is more than what you wear. It's a little piece of heritage, a reflection of
+            personality, and a part of the moments you'll always remember.
           </p>
           <p>
             Bamas Collection brings that feeling into the present. Our world is one of rich colours,
-            graceful drapes and details that speak softly â€” an expression of timeless elegance for
+            graceful drapes and details that speak softly — an expression of timeless elegance for
             the modern you.
           </p>
           <Link to="/products" className="text-link">

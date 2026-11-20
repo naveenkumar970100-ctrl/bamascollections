@@ -306,7 +306,7 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
             title="Click to view full photo in high resolution"
           >
             <img
-              src={selectedImage || saree.image}
+              src={typeof (selectedImage || saree.image) === 'string' ? (selectedImage || saree.image) : (selectedImage || saree.image as any)?.src || ''}
               alt={saree.name}
               className={`pdp-main-image ${saree.position || ''}`}
               fetchPriority="high"

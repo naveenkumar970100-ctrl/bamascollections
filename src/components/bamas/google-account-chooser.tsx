@@ -138,7 +138,7 @@ export function GoogleAccountChooser({
             <div className="google-dark-left-col">
               <div className="google-dark-app-logo">
                 <img
-                  src={bamasLogo}
+                  src={typeof bamasLogo === 'string' ? bamasLogo : (bamasLogo as any)?.src || ''}
                   alt="Bamas Collection"
                   width="48"
                   height="48"

@@ -259,7 +259,7 @@ export function DemoPaymentModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
             {saree.image && (
               <img
-                src={saree.image}
+                src={typeof saree.image === 'string' ? saree.image : (saree.image as any)?.src || ''}
                 alt={saree.name}
                 style={{
                   width: '38px',

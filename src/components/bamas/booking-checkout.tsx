@@ -462,7 +462,11 @@ export function BookingCheckout({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: '1rem 0' }}>
             {activeItems.map((item, idx) => (
               <div key={item.id || item._id || item.slug || `receipt-item-${idx}`} className="booking-receipt-item-row" style={{ margin: 0 }}>
-                <img src={item.image} alt={item.name} className="receipt-item-photo" />
+                <img
+                  src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''}
+                  alt={item.name}
+                  className="receipt-item-photo"
+                />
                 <div className="receipt-item-info">
                   <h4>{item.name}</h4>
                   <span className="receipt-item-category">{item.category} edit</span>
@@ -692,7 +696,7 @@ export function BookingCheckout({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
             {primaryImage && (
               <img
-                src={primaryImage}
+                src={typeof primaryImage === 'string' ? primaryImage : (primaryImage as any)?.src || ''}
                 alt={primaryName}
                 style={{
                   width: '38px',

@@ -66,15 +66,26 @@ import tissueSaree from '@/assets/tissue-saree.jpg';
 import lavenderSaree from '@/assets/lavender-saree.jpg';
 import sareeHero from '@/assets/saree-hero.jpg';
 
+const toImg = (img: any): string => {
+  if (!img) return '';
+  if (typeof img === 'string') return img;
+  if (typeof img === 'object' && typeof img.src === 'string') return img.src;
+  return String(img);
+};
+
+const defaultLogoUrl = toImg(bamasLogo);
+const defaultIvoryUrl = toImg(ivorySaree);
+const defaultHeroUrl = toImg(sareeHero);
+
 const fallbackSareeImages: Record<string, string> = {
-  emerald: sareeHero,
-  rose: roseSaree,
-  ivory: ivorySaree,
-  wine: wineSaree,
-  sapphire: sapphireSaree,
-  'maroon-bridal': maroonSaree,
-  tissue: tissueSaree,
-  lavender: lavenderSaree,
+  emerald: toImg(sareeHero),
+  rose: toImg(roseSaree),
+  ivory: toImg(ivorySaree),
+  wine: toImg(wineSaree),
+  sapphire: toImg(sapphireSaree),
+  'maroon-bridal': toImg(maroonSaree),
+  tissue: toImg(tissueSaree),
+  lavender: toImg(lavenderSaree),
 };
 
 
@@ -155,7 +166,7 @@ export default function AdminPage() {
   const [siteConfig, setSiteConfig] = useState<any>({
     brandName: 'Bamas Collection',
     tagline: 'Timeless Sarees. Modern You.',
-    heroHeading: 'Bamas Collection Â· Timeless sarees. Modern you.',
+    heroHeading: 'Bamas Collection · Timeless sarees. Modern you.',
     heroSubheading: 'For the moments that become memories. Discover sarees as beautifully individual as you.',
     heroBannerUrl: 'https://res.cloudinary.com/ddgjubbbx/image/upload/v1792690710/bamascollections/branding/saree-hero-banner.jpg',
     logoUrl: 'https://res.cloudinary.com/ddgjubbbx/image/upload/v1792690709/bamascollections/branding/bamas-logo.jpg',
@@ -223,10 +234,10 @@ export default function AdminPage() {
       'Dry Clean Only to maintain the sheen and longevity of authentic handwoven pure zari silk. Store folded in a breathable cotton or muslin bag. Avoid direct spraying of perfumes or chemicals onto the pure zari border. Refold periodically along different crease lines.',
     shippingReturns:
       'All authentic heirloom sarees are dispatched in tamper-evident luxury keepsake boxes with complimentary insured domestic courier (3-5 business days). Easy 7-day exchanges available for unworn items with original seals intact.',
-    highlights: ['Tested Gold Zari', 'Free Delivery in 3â€“5 Days', 'Blouse Piece Included'],
+    highlights: ['Tested Gold Zari', 'Free Delivery in 3–5 Days', 'Blouse Piece Included'],
     customSpecs: [],
-    taxNotice: 'Taxes Included Â· Free Insured Dispatch',
-    certificationNotice: 'Silk Mark Certified Â· 100% Pure Silk',
+    taxNotice: 'Taxes Included · Free Insured Dispatch',
+    certificationNotice: 'Silk Mark Certified · 100% Pure Silk',
     whatsappText: 'Questions? Chat with Bamas Stylist on WhatsApp',
     whatsappNumber: '919876543210',
   });
@@ -283,10 +294,10 @@ export default function AdminPage() {
         'Dry Clean Only to maintain the sheen and longevity of authentic handwoven pure zari silk. Store folded in a breathable cotton or muslin bag. Avoid direct spraying of perfumes or chemicals onto the pure zari border. Refold periodically along different crease lines.',
       shippingReturns:
         'All authentic heirloom sarees are dispatched in tamper-evident luxury keepsake boxes with complimentary insured domestic courier (3-5 business days). Easy 7-day exchanges available for unworn items with original seals intact.',
-      highlights: ['Tested Gold Zari', 'Free Delivery in 3â€“5 Days', 'Blouse Piece Included'],
+      highlights: ['Tested Gold Zari', 'Free Delivery in 3–5 Days', 'Blouse Piece Included'],
       customSpecs: [],
-      taxNotice: 'Taxes Included Â· Free Insured Dispatch',
-      certificationNotice: 'Silk Mark Certified Â· 100% Pure Silk',
+      taxNotice: 'Taxes Included · Free Insured Dispatch',
+      certificationNotice: 'Silk Mark Certified · 100% Pure Silk',
       whatsappText: 'Questions? Chat with Bamas Stylist on WhatsApp',
       whatsappNumber: '919876543210',
     });
@@ -444,7 +455,7 @@ export default function AdminPage() {
           completedCount: prev.completedCount + (pay.status === 'Completed' ? 1 : 0),
           pendingCount: prev.pendingCount + (pay.status === 'Pending' ? 1 : 0),
         }));
-        showNotification(`ðŸ’³ Payment Received: â‚¹${Number(pay.amount || 0).toLocaleString('en-IN')} from ${pay.customerName || 'Patron'}!`);
+        showNotification(`💳 Payment Received: ₹${Number(pay.amount || 0).toLocaleString('en-IN')} from ${pay.customerName || 'Patron'}!`);
       }
     };
 
@@ -472,7 +483,7 @@ export default function AdminPage() {
             isActive: m._id === method._id,
           }))
         );
-        showNotification(`âš¡ Live UPI Gateway Switched to: ${method.upiId}`);
+        showNotification(`⚡ Live UPI Gateway Switched to: ${method.upiId}`);
       }
     };
 
@@ -520,7 +531,7 @@ export default function AdminPage() {
     try {
       await api.admin.deleteReview(productId, reviewId);
       setReviews((prev) => prev.filter((r) => r._id !== reviewId));
-      showNotification('âœ“ Customer review deleted and product rating updated!');
+      showNotification('✓ Customer review deleted and product rating updated!');
       fetchAllData();
     } catch (err: any) {
       showNotification(`Error deleting review: ${err.message}`);
@@ -653,7 +664,7 @@ export default function AdminPage() {
 
       if (customerModalMode === 'create') {
         const res = await api.admin.createUser(payload);
-        showNotification(`âœ¨ Customer account "${customerFormData.name}" created successfully!`);
+        showNotification(`✨ Customer account "${customerFormData.name}" created successfully!`);
         if (res.data) {
           setCustomers((prev) => [res.data, ...prev]);
         } else {
@@ -662,7 +673,7 @@ export default function AdminPage() {
       } else {
         const cId = editingCustomer.id || editingCustomer._id;
         const res = await api.admin.updateUser(cId, payload);
-        showNotification(`âœ¨ Customer profile for "${customerFormData.name}" updated!`);
+        showNotification(`✨ Customer profile for "${customerFormData.name}" updated!`);
         if (res.data) {
           setCustomers((prev) =>
             prev.map((item) => (item.id === cId || item._id === cId ? { ...item, ...res.data } : item))
@@ -743,7 +754,7 @@ export default function AdminPage() {
         );
       }
       setInquiryReplyTexts((prev) => ({ ...prev, [inquiryId]: '' }));
-      showNotification('âœ“ Direct message sent to customer in real-time!');
+      showNotification('✓ Direct message sent to customer in real-time!');
     } catch (err: any) {
       showNotification(`Failed to send message: ${err.message}`);
     } finally {
@@ -800,10 +811,10 @@ export default function AdminPage() {
 
       if (editingProduct) {
         await api.admin.updateProduct(editingProduct.id || editingProduct._id, payload);
-        showNotification(`âœ¨ Saree piece updated successfully in category "${categoryToSave}"!`);
+        showNotification(`✨ Saree piece updated successfully in category "${categoryToSave}"!`);
       } else {
         await api.admin.createProduct(payload);
-        showNotification(`âœ¨ New saree piece published in category "${categoryToSave}"!`);
+        showNotification(`✨ New saree piece published in category "${categoryToSave}"!`);
       }
       setIsEditingProductView(false);
       setEditingProduct(null);
@@ -833,7 +844,7 @@ export default function AdminPage() {
           image: url,
           images: Array.from(new Set([url, ...(prev.images || [])])),
         }));
-        showNotification('âœ¨ Primary cover photo uploaded directly to Cloudinary!');
+        showNotification('✨ Primary cover photo uploaded directly to Cloudinary!');
       }
     } catch (err: any) {
       console.warn('Direct upload error, reading as Data URL:', err);
@@ -893,7 +904,7 @@ export default function AdminPage() {
             images: merged,
           };
         });
-        showNotification(`âœ¨ Added ${newUrls.length} related photo(s) to this saree piece!`);
+        showNotification(`✨ Added ${newUrls.length} related photo(s) to this saree piece!`);
       }
     } catch (err: any) {
       showNotification(`Upload error: ${err.message}`);
@@ -917,7 +928,7 @@ export default function AdminPage() {
       };
     });
     setNewRelatedImageUrl('');
-    showNotification('âœ¨ Related photo URL added!');
+    showNotification('✨ Related photo URL added!');
   };
 
   // Remove photo from gallery
@@ -950,7 +961,7 @@ export default function AdminPage() {
         images: [imgUrl, ...rest],
       };
     });
-    showNotification('â˜… Set as primary cover photo!');
+    showNotification('★ Set as primary cover photo!');
   };
 
   // Delete product
@@ -1004,10 +1015,10 @@ export default function AdminPage() {
       highlights:
         Array.isArray(p.highlights) && p.highlights.length > 0
           ? p.highlights
-          : ['Tested Gold Zari', 'Free Delivery in 3â€“5 Days', 'Blouse Piece Included'],
+          : ['Tested Gold Zari', 'Free Delivery in 3–5 Days', 'Blouse Piece Included'],
       customSpecs: Array.isArray(p.customSpecs) ? p.customSpecs : [],
-      taxNotice: p.taxNotice || 'Taxes Included Â· Free Insured Dispatch',
-      certificationNotice: p.certificationNotice || 'Silk Mark Certified Â· 100% Pure Silk',
+      taxNotice: p.taxNotice || 'Taxes Included · Free Insured Dispatch',
+      certificationNotice: p.certificationNotice || 'Silk Mark Certified · 100% Pure Silk',
       whatsappText: p.whatsappText || 'Questions? Chat with Bamas Stylist on WhatsApp',
       whatsappNumber: p.whatsappNumber || '919876543210',
     });
@@ -1095,7 +1106,7 @@ export default function AdminPage() {
       );
       showNotification(
         newFeatured
-          ? `â˜… "${p.name}" will now be showcased on the Home Page!`
+          ? `★ "${p.name}" will now be showcased on the Home Page!`
           : `"${p.name}" removed from Home Page featured list.`
       );
       fetchAllData();
@@ -1177,7 +1188,7 @@ export default function AdminPage() {
 
       setLocalAdminUser(res.data);
       window.dispatchEvent(new Event('bamas_auth_changed'));
-      showNotification('âœ¨ Welcome to Bamas Admin Dashboard!');
+      showNotification('✨ Welcome to Bamas Admin Dashboard!');
       fetchAllData();
     } catch (err: any) {
       setAdminLoginError(err.message || 'Invalid administrator credentials. Please check and try again.');
@@ -1598,7 +1609,7 @@ export default function AdminPage() {
                   display: 'block',
                 }}
               >
-                â† Return to Storefront
+                ← Return to Storefront
               </a>
             </div>
           </form>
@@ -1678,7 +1689,7 @@ export default function AdminPage() {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <img
-              src={bamasLogo}
+              src={defaultLogoUrl}
               alt="Bamas Collection"
               style={{
                 width: '42px',
@@ -2040,7 +2051,7 @@ export default function AdminPage() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                     <img
-                      src={bamasLogo}
+                      src={defaultLogoUrl}
                       alt="Bamas Collection"
                       style={{
                         width: '38px',
@@ -2106,7 +2117,7 @@ export default function AdminPage() {
                 {[
                   {
                     title: 'Total Revenue',
-                    value: `â‚¹${(paymentStats.totalRevenue || stats?.overview?.totalRevenue || 0).toLocaleString('en-IN')}`,
+                    value: `₹${(paymentStats.totalRevenue || stats?.overview?.totalRevenue || 0).toLocaleString('en-IN')}`,
                     icon: IndianRupee,
                     sub: 'Paid orders collected',
                     color: '#b59028',
@@ -2694,7 +2705,7 @@ export default function AdminPage() {
                                   {inq.name}
                                 </p>
                                 <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#527482' }}>
-                                  {inq.email} {inq.phone ? `Â· ${inq.phone}` : ''}
+                                  {inq.email} {inq.phone ? `· ${inq.phone}` : ''}
                                 </p>
                               </div>
                               <span
@@ -2719,7 +2730,7 @@ export default function AdminPage() {
                                 fontStyle: 'italic',
                               }}
                             >
-                              "{inq.message?.slice(0, 80)}â€¦"
+                              "{inq.message?.slice(0, 80)}..."
                             </p>
                           </div>
                         ))}
@@ -2890,7 +2901,7 @@ export default function AdminPage() {
                             border: '1px solid rgba(16, 185, 129, 0.3)',
                           }}
                         >
-                          â— {products.length} Sarees
+                          ● {products.length} Sarees
                         </span>
                       </div>
                       <h3
@@ -2989,7 +3000,7 @@ export default function AdminPage() {
                     />
                     <input
                       type="text"
-                      placeholder="Search sarees by name or fabricâ€¦"
+                      placeholder="Search sarees by name or fabric..."
                       value={overviewProductSearch}
                       onChange={(e) => setOverviewProductSearch(e.target.value)}
                       style={{
@@ -3179,12 +3190,12 @@ export default function AdminPage() {
                               }}
                             >
                               <img
-                                src={p.image || ivorySaree}
+                                src={toImg(p.image) || defaultIvoryUrl}
                                 alt={p.name}
                                 loading="lazy"
                                 decoding="async"
                                 onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                                  (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl;
                                 }}
                                 style={{
                                   width: '100%',
@@ -3247,7 +3258,7 @@ export default function AdminPage() {
                                   gap: '0.2rem',
                                 }}
                               >
-                                <Sparkles size={isMobile ? 9 : 11} /> {p.isFeatured ? (isMobile ? 'â˜…' : 'â˜… Home') : (isMobile ? '+' : '+ Feature')}
+                                <Sparkles size={isMobile ? 9 : 11} /> {p.isFeatured ? (isMobile ? '★' : '★ Home') : (isMobile ? '+' : '+ Feature')}
                               </button>
 
                               {/* Stock status pill */}
@@ -3328,7 +3339,7 @@ export default function AdminPage() {
                                     color: '#092330',
                                   }}
                                 >
-                                  â‚¹{(p.price || 0).toLocaleString('en-IN')}
+                                  ₹{(p.price || 0).toLocaleString('en-IN')}
                                 </span>
                                 {p.originalPrice > p.price && (
                                   <span
@@ -3338,7 +3349,7 @@ export default function AdminPage() {
                                       textDecoration: 'line-through',
                                     }}
                                   >
-                                    â‚¹{p.originalPrice.toLocaleString('en-IN')}
+                                    ₹{p.originalPrice.toLocaleString('en-IN')}
                                   </span>
                                 )}
                               </div>
@@ -3450,7 +3461,7 @@ export default function AdminPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    View All Orders â†’
+                    View All Orders →
                   </button>
                 </div>
 
@@ -3519,7 +3530,7 @@ export default function AdminPage() {
                                   : '#997510',
                             }}
                           >
-                            â— {order.status}
+                            ● {order.status}
                           </span>
                         </div>
 
@@ -3541,7 +3552,7 @@ export default function AdminPage() {
                             </div>
                           </div>
                           <div style={{ fontSize: '1.02rem', fontWeight: 800, color: '#092330' }}>
-                            â‚¹{(order.totalPrice || 0).toLocaleString('en-IN')}
+                            ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
                           </div>
                         </div>
 
@@ -3642,7 +3653,7 @@ export default function AdminPage() {
                               </div>
                             </td>
                             <td style={{ padding: '0.75rem', fontWeight: 700, color: '#092330' }}>
-                              â‚¹{(order.totalPrice || 0).toLocaleString('en-IN')}
+                              ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
                             </td>
                             <td style={{ padding: '0.75rem' }}>
                               <span
@@ -3796,7 +3807,7 @@ export default function AdminPage() {
                             border: '1px solid rgba(16, 185, 129, 0.25)',
                           }}
                         >
-                          â— Paid
+                          ● Paid
                         </span>
                       ) : (
                         <span
@@ -3810,7 +3821,7 @@ export default function AdminPage() {
                             border: '1px solid rgba(239, 68, 68, 0.25)',
                           }}
                         >
-                          â— Payment Pending
+                          ● Payment Pending
                         </span>
                       )}
                       <span
@@ -3846,7 +3857,7 @@ export default function AdminPage() {
                           border: '1px solid rgba(0,0,0,0.08)',
                         }}
                       >
-                        â— {selectedBookingOrder.status === 'Placed' ? 'Placed (Awaiting Acceptance)' : selectedBookingOrder.status}
+                        ● {selectedBookingOrder.status === 'Placed' ? 'Placed (Awaiting Acceptance)' : selectedBookingOrder.status}
                       </span>
                     </div>
                   </div>
@@ -3871,7 +3882,7 @@ export default function AdminPage() {
                         <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#d4af37', fontWeight: 700 }}>
                           Booking Drape Studio
                         </span>
-                        <span style={{ fontSize: '0.68rem', color: '#8cabb8' }}>Â·</span>
+                        <span style={{ fontSize: '0.68rem', color: '#8cabb8' }}>·</span>
                         <span style={{ fontSize: '0.72rem', color: '#c5d9e2', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <Clock size={12} color="#d4af37" />
                           Placed: {new Date(selectedBookingOrder.createdAt).toLocaleDateString('en-IN', {
@@ -3882,7 +3893,7 @@ export default function AdminPage() {
                             minute: '2-digit',
                           })}
                         </span>
-                        <span style={{ fontSize: '0.68rem', color: '#8cabb8' }}>Â·</span>
+                        <span style={{ fontSize: '0.68rem', color: '#8cabb8' }}>·</span>
                         <span style={{ fontSize: '0.72rem', color: '#6ee7b7', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <CheckCircle2 size={12} color="#10b981" />
                           Paid via UPI on {new Date(selectedBookingOrder.paidAt || selectedBookingOrder.createdAt).toLocaleDateString('en-IN', {
@@ -3912,7 +3923,7 @@ export default function AdminPage() {
                         Total Booking Value
                       </div>
                       <div style={{ fontSize: isMobile ? '1.45rem' : '1.75rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.15 }}>
-                        â‚¹{(selectedBookingOrder.totalPrice || 0).toLocaleString('en-IN')}
+                        ₹{(selectedBookingOrder.totalPrice || 0).toLocaleString('en-IN')}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: '#8cabb8', marginTop: '0.15rem' }}>
                         {selectedBookingOrder.isPaid ? 'Payment Captured via Gateway' : 'Awaiting Payment Settlement'}
@@ -3962,7 +3973,7 @@ export default function AdminPage() {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                           {selectedBookingOrder.orderItems?.map((item: any, idx: number) => {
-                            const drapeImg = item.image || ivorySaree;
+                            const drapeImg = toImg(item.image) || defaultIvoryUrl;
                             return (
                               <div
                                 key={idx}
@@ -3999,7 +4010,7 @@ export default function AdminPage() {
                                     loading="lazy"
                                     decoding="async"
                                     onError={(e) => {
-                                      (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                                      (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl;
                                     }}
                                     style={{
                                       width: '100%',
@@ -4055,7 +4066,7 @@ export default function AdminPage() {
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', marginBottom: '0.65rem', fontSize: '0.8rem', color: '#527482' }}>
                                     <div>
                                       <span style={{ color: '#8c9ea7', fontSize: '0.72rem', display: 'block' }}>Unit Price</span>
-                                      <span style={{ fontWeight: 600, color: '#092330' }}>â‚¹{(item.price || 0).toLocaleString('en-IN')}</span>
+                                      <span style={{ fontWeight: 600, color: '#092330' }}>₹{(item.price || 0).toLocaleString('en-IN')}</span>
                                     </div>
                                     <div>
                                       <span style={{ color: '#8c9ea7', fontSize: '0.72rem', display: 'block' }}>Quantity</span>
@@ -4064,7 +4075,7 @@ export default function AdminPage() {
                                     <div>
                                       <span style={{ color: '#8c9ea7', fontSize: '0.72rem', display: 'block' }}>Subtotal</span>
                                       <span style={{ fontWeight: 800, color: '#047857', fontSize: '0.9rem' }}>
-                                        â‚¹{((item.price || 0) * (item.qty || 1)).toLocaleString('en-IN')}
+                                        ₹{((item.price || 0) * (item.qty || 1)).toLocaleString('en-IN')}
                                       </span>
                                     </div>
                                   </div>
@@ -4114,7 +4125,7 @@ export default function AdminPage() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#527482' }}>
                             <span>Drapes Subtotal:</span>
                             <span style={{ fontWeight: 600, color: '#092330' }}>
-                              â‚¹{(selectedBookingOrder.totalPrice || 0).toLocaleString('en-IN')}
+                              ₹{(selectedBookingOrder.totalPrice || 0).toLocaleString('en-IN')}
                             </span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#527482' }}>
@@ -4137,7 +4148,7 @@ export default function AdminPage() {
                           >
                             <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#092330' }}>Total Grand Amount:</span>
                             <span style={{ fontWeight: 800, fontSize: '1.3rem', color: '#092330' }}>
-                              â‚¹{(selectedBookingOrder.totalPrice || 0).toLocaleString('en-IN')}
+                              ₹{(selectedBookingOrder.totalPrice || 0).toLocaleString('en-IN')}
                             </span>
                           </div>
                         </div>
@@ -4527,7 +4538,7 @@ export default function AdminPage() {
                               border: '1px solid rgba(16, 185, 129, 0.3)',
                             }}
                           >
-                            â— Real-time
+                            ● Real-time
                           </span>
                         </div>
                         <h2
@@ -4611,7 +4622,7 @@ export default function AdminPage() {
                         />
                         <input
                           type="text"
-                          placeholder="Search by Order #, Customer, or Phoneâ€¦"
+                          placeholder="Search by Order #, Customer, or Phone..."
                           value={bookingSearch}
                           onChange={(e) => setBookingSearch(e.target.value)}
                           style={{
@@ -4724,7 +4735,7 @@ export default function AdminPage() {
 
                         const customerName = order.user?.name || order.shippingAddress?.fullName || 'Valued Guest';
                         const firstItem = order.orderItems?.[0];
-                        const firstImage = firstItem?.image || ivorySaree;
+                        const firstImage = toImg(firstItem?.image) || defaultIvoryUrl;
                         const itemsCount = order.orderItems?.length || 0;
                         const itemsSummary = firstItem
                           ? `${firstItem.name}${itemsCount > 1 ? ` (+${itemsCount - 1} more)` : ''}`
@@ -4766,7 +4777,7 @@ export default function AdminPage() {
                                 loading="lazy"
                                 decoding="async"
                                 onError={(e) => {
-                                  (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                                  (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl;
                                 }}
                                 style={{
                                   width: '100%',
@@ -4794,11 +4805,11 @@ export default function AdminPage() {
                                 </span>
                                 {order.isPaid ? (
                                   <span style={{ fontSize: '0.62rem', color: '#047857', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '0.08rem 0.4rem', borderRadius: '999px' }}>
-                                    â— Paid
+                                    ● Paid
                                   </span>
                                 ) : (
                                   <span style={{ fontSize: '0.62rem', color: '#b91c1c', fontWeight: 700, background: 'rgba(239, 68, 68, 0.1)', padding: '0.08rem 0.4rem', borderRadius: '999px' }}>
-                                    â— Pending
+                                    ● Pending
                                   </span>
                                 )}
                                 {(order.paymentProofUrl || order.paymentResult?.screenshotUrl) && (
@@ -4859,11 +4870,11 @@ export default function AdminPage() {
                                   textTransform: 'capitalize',
                                 }}
                               >
-                                â— {order.status === 'Placed' ? 'Placed' : order.status}
+                                ● {order.status === 'Placed' ? 'Placed' : order.status}
                               </span>
 
                               <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#092330' }}>
-                                â‚¹{(order.totalPrice || 0).toLocaleString('en-IN')}
+                                ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
                               </span>
 
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.1rem' }}>
@@ -4934,7 +4945,7 @@ export default function AdminPage() {
 
                         const customerName = order.user?.name || order.shippingAddress?.fullName || 'Valued Guest';
                         const firstItem = order.orderItems?.[0];
-                        const firstImage = firstItem?.image || ivorySaree;
+                        const firstImage = toImg(firstItem?.image) || defaultIvoryUrl;
                         const itemsCount = order.orderItems?.length || 0;
 
                         return (
@@ -4982,7 +4993,7 @@ export default function AdminPage() {
                                   loading="lazy"
                                   decoding="async"
                                   onError={(e) => {
-                                    (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                                    (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl;
                                   }}
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 />
@@ -4995,11 +5006,11 @@ export default function AdminPage() {
                                   </span>
                                   {order.isPaid ? (
                                     <span style={{ fontSize: '0.72rem', color: '#047857', fontWeight: 600, background: 'rgba(16, 185, 129, 0.1)', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
-                                      â— Paid via UPI
+                                      ● Paid via UPI
                                     </span>
                                   ) : (
                                     <span style={{ fontSize: '0.72rem', color: '#b91c1c', fontWeight: 600, background: 'rgba(239, 68, 68, 0.1)', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
-                                      â— Payment Pending
+                                      ● Payment Pending
                                     </span>
                                   )}
                                   {(order.paymentProofUrl || order.paymentResult?.screenshotUrl) && (
@@ -5029,7 +5040,7 @@ export default function AdminPage() {
                                   )}
                                   {(order.customerPhone || order.shippingAddress?.phone) && (
                                     <span style={{ fontWeight: 400, color: '#688c99', marginLeft: '0.5rem', fontSize: '0.78rem' }}>
-                                      Â· ðŸ“ž {order.customerPhone || order.shippingAddress?.phone}
+                                      · ðŸ“ž {order.customerPhone || order.shippingAddress?.phone}
                                     </span>
                                   )}
                                 </div>
@@ -5055,10 +5066,10 @@ export default function AdminPage() {
                                     marginBottom: '0.25rem',
                                   }}
                                 >
-                                  â— {order.status === 'Placed' ? 'Placed (Awaiting Acceptance)' : order.status}
+                                  ● {order.status === 'Placed' ? 'Placed (Awaiting Acceptance)' : order.status}
                                 </span>
                                 <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#092330' }}>
-                                  â‚¹{(order.totalPrice || 0).toLocaleString('en-IN')}
+                                  ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
                                 </div>
                               </div>
 
@@ -5230,7 +5241,7 @@ export default function AdminPage() {
                       ) : (
                         <CheckCircle size={13} />
                       )}
-                      <span>{savingProduct ? 'Savingâ€¦' : 'Save'}</span>
+                      <span>{savingProduct ? 'Saving...' : 'Save'}</span>
                     </button>
                   </div>
 
@@ -5250,9 +5261,9 @@ export default function AdminPage() {
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                       <div style={{ width: '80px', height: '105px', borderRadius: '8px', overflow: 'hidden', border: '1.5px solid #d4af37', flexShrink: 0, background: '#f8fafb' }}>
                         <img
-                          src={productFormData.image || ivorySaree}
+                          src={toImg(productFormData.image) || defaultIvoryUrl}
                           alt="Preview"
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = ivorySaree; }}
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl; }}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                       </div>
@@ -5274,12 +5285,12 @@ export default function AdminPage() {
                           }}
                         >
                           {uploadingImage ? <RefreshCw size={13} className="animate-spin" /> : <UploadCloud size={14} />}
-                          <span>{uploadingImage ? 'Uploadingâ€¦' : 'Upload Saree Photo'}</span>
+                          <span>{uploadingImage ? 'Uploading...' : 'Upload Saree Photo'}</span>
                           <input type="file" accept="image/*" onChange={handleImageFileChange} disabled={uploadingImage} style={{ display: 'none' }} />
                         </label>
                         <input
                           type="text"
-                          placeholder="Or paste online image URLâ€¦"
+                          placeholder="Or paste online image URL..."
                           value={productFormData.image}
                           onChange={(e) => setProductFormData((prev) => ({ ...prev, image: e.target.value }))}
                           style={{
@@ -5415,7 +5426,7 @@ export default function AdminPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
-                          Price (â‚¹) *
+                          Price (₹) *
                         </label>
                         <input
                           type="number"
@@ -5426,7 +5437,7 @@ export default function AdminPage() {
                       </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: '#527482', marginBottom: '0.2rem' }}>
-                          Original Price (â‚¹)
+                          Original Price (₹)
                         </label>
                         <input
                           type="number"
@@ -5452,7 +5463,7 @@ export default function AdminPage() {
                           gap: '0.3rem',
                         }}
                       >
-                        <span>Discount: â‚¹{(productFormData.originalPrice - productFormData.price).toLocaleString('en-IN')} off</span>
+                        <span>Discount: ₹{(productFormData.originalPrice - productFormData.price).toLocaleString('en-IN')} off</span>
                         <span>({Math.round(((productFormData.originalPrice - productFormData.price) / productFormData.originalPrice) * 100)}% savings)</span>
                       </div>
                     )}
@@ -5489,7 +5500,7 @@ export default function AdminPage() {
                             gap: '0.3rem',
                           }}
                         >
-                          <Sparkles size={12} /> {productFormData.isFeatured ? 'â˜… Featured' : '+ Feature'}
+                          <Sparkles size={12} /> {productFormData.isFeatured ? '★ Featured' : '+ Feature'}
                         </button>
                       </div>
                     </div>
@@ -5513,7 +5524,7 @@ export default function AdminPage() {
                     </div>
                     <textarea
                       rows={3}
-                      placeholder="Handcrafted saree description, zari craftsmanship, drape detailsâ€¦"
+                      placeholder="Handcrafted saree description, zari craftsmanship, drape details..."
                       value={productFormData.detail}
                       onChange={(e) => setProductFormData((prev) => ({ ...prev, detail: e.target.value }))}
                       style={{
@@ -5551,7 +5562,7 @@ export default function AdminPage() {
                     }}
                   >
                     {savingProduct ? <RefreshCw size={15} className="animate-spin" /> : <CheckCircle size={15} />}
-                    <span>{savingProduct ? 'Saving to Databaseâ€¦' : (editingProduct ? 'Update Saree Piece' : 'Publish Saree to Collection')}</span>
+                    <span>{savingProduct ? 'Saving to Database...' : (editingProduct ? 'Update Saree Piece' : 'Publish Saree to Collection')}</span>
                   </button>
                 </div>
                 ) : (
@@ -5782,7 +5793,7 @@ export default function AdminPage() {
                                 Saree Title / Piece Name *
                               </label>
                               {productTouched.name && productNameVal.valid && (
-                                <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid Title</span>
+                                <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Title</span>
                               )}
                             </div>
                             <input
@@ -5842,7 +5853,7 @@ export default function AdminPage() {
                                   textDecoration: 'underline',
                                 }}
                               >
-                                {isCreatingNewCategory ? 'â† Choose Existing Category' : '+ Create New Category'}
+                                {isCreatingNewCategory ? '← Choose Existing Category' : '+ Create New Category'}
                               </button>
                             </div>
 
@@ -5901,7 +5912,7 @@ export default function AdminPage() {
                                   </span>
                                 )}
                                 <p style={{ margin: '0.35rem 0 0', fontSize: '0.75rem', color: '#688c99' }}>
-                                  âœ¨ This new category will automatically be saved and will immediately update the Home page, Collection filters, and Admin dashboard.
+                                  ✨ This new category will automatically be saved and will immediately update the Home page, Collection filters, and Admin dashboard.
                                 </p>
                               </div>
                             ) : (
@@ -6017,10 +6028,10 @@ export default function AdminPage() {
                                   color: '#092330',
                                 }}
                               >
-                                Selling Price (â‚¹) *
+                                Selling Price (₹) *
                               </label>
                               {productTouched.price && productPriceVal.valid && (
-                                <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid Price</span>
+                                <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Price</span>
                               )}
                             </div>
                             <input
@@ -6065,7 +6076,7 @@ export default function AdminPage() {
                               }}
                             >
                               <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#092330' }}>
-                                Original / MRP Price (â‚¹)
+                                Original / MRP Price (₹)
                               </label>
                               {productFormData.originalPrice > productFormData.price &&
                                 productFormData.price > 0 && (
@@ -6248,7 +6259,7 @@ export default function AdminPage() {
                                 Fabric Type *
                               </label>
                               {productTouched.fabric && productFabricVal.valid && (
-                                <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid Fabric</span>
+                                <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Fabric</span>
                               )}
                             </div>
                             <input
@@ -6292,7 +6303,7 @@ export default function AdminPage() {
                                 Primary Drape Color *
                               </label>
                               {productTouched.color && productColorVal.valid && (
-                                <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid Color</span>
+                                <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Color</span>
                               )}
                             </div>
                             <input
@@ -6379,13 +6390,13 @@ export default function AdminPage() {
                             Heritage Story & Craftsmanship *
                           </h3>
                           {productTouched.detail && productDetailVal.valid && (
-                            <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Story Verified</span>
+                            <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Story Verified</span>
                           )}
                         </div>
                         <textarea
                           required
                           rows={4}
-                          placeholder="Exquisitely hand-woven pure silk drape adorned with royal antique gold zari detailing. Inspired by timeless temple aesthetics and handcrafted for celebratory grandeurâ€¦"
+                          placeholder="Exquisitely hand-woven pure silk drape adorned with royal antique gold zari detailing. Inspired by timeless temple aesthetics and handcrafted for celebratory grandeur..."
                           value={productFormData.detail}
                           onBlur={() => setProductTouched((p) => ({ ...p, detail: true }))}
                           onChange={(e) => {
@@ -6450,7 +6461,7 @@ export default function AdminPage() {
                               cursor: 'pointer',
                             }}
                           >
-                            â˜… Feature this saree on homepage spotlight & showcase carousels
+                            ★ Feature this saree on homepage spotlight & showcase carousels
                           </label>
                         </div>
                       </div>
@@ -6726,7 +6737,7 @@ export default function AdminPage() {
                               color: '#092330',
                             }}
                           >
-                            PDP Tabs Content (Fabric & Care Â· Delivery & Returns)
+                            PDP Tabs Content (Fabric & Care · Delivery & Returns)
                           </h3>
                           <span style={{ fontSize: '0.72rem', color: '#688c99', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
                             PDP Tabs 2 & 3
@@ -6750,7 +6761,7 @@ export default function AdminPage() {
                           </label>
                           <textarea
                             rows={3}
-                            placeholder="Dry Clean Only to maintain the sheen and longevity of authentic handwoven pure zari silk. Store folded in a breathable cotton or muslin bagâ€¦"
+                            placeholder="Dry Clean Only to maintain the sheen and longevity of authentic handwoven pure zari silk. Store folded in a breathable cotton or muslin bag..."
                             value={productFormData.careInstructions}
                             onChange={(e) =>
                               setProductFormData({ ...productFormData, careInstructions: e.target.value })
@@ -6782,7 +6793,7 @@ export default function AdminPage() {
                           </label>
                           <textarea
                             rows={3}
-                            placeholder="All authentic heirloom sarees are dispatched in tamper-evident luxury keepsake boxes with complimentary insured domestic courier (3-5 business days)â€¦"
+                            placeholder="All authentic heirloom sarees are dispatched in tamper-evident luxury keepsake boxes with complimentary insured domestic courier (3-5 business days)..."
                             value={productFormData.shippingReturns}
                             onChange={(e) =>
                               setProductFormData({ ...productFormData, shippingReturns: e.target.value })
@@ -6922,7 +6933,7 @@ export default function AdminPage() {
                             </label>
                             <input
                               type="text"
-                              placeholder="Silk Mark Certified Â· 100% Pure Silk"
+                              placeholder="Silk Mark Certified · 100% Pure Silk"
                               value={productFormData.certificationNotice}
                               onChange={(e) =>
                                 setProductFormData({ ...productFormData, certificationNotice: e.target.value })
@@ -6952,7 +6963,7 @@ export default function AdminPage() {
                             </label>
                             <input
                               type="text"
-                              placeholder="Taxes Included Â· Free Insured Dispatch"
+                              placeholder="Taxes Included · Free Insured Dispatch"
                               value={productFormData.taxNotice}
                               onChange={(e) =>
                                 setProductFormData({ ...productFormData, taxNotice: e.target.value })
@@ -7016,7 +7027,7 @@ export default function AdminPage() {
                                     padding: '0 2px',
                                   }}
                                 >
-                                  âœ•
+                                  ✕
                                 </button>
                               </span>
                             ))}
@@ -7026,7 +7037,7 @@ export default function AdminPage() {
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <input
                               type="text"
-                              placeholder="New highlight (e.g. Free Delivery in 3â€“5 Days, Tested Gold Zari)"
+                              placeholder="New highlight (e.g. Free Delivery in 3–5 Days, Tested Gold Zari)"
                               value={newHighlightInput}
                               onChange={(e) => setNewHighlightInput(e.target.value)}
                               onKeyDown={(e) => {
@@ -7172,7 +7183,7 @@ export default function AdminPage() {
                                 Or paste direct Primary Cover Image URL:
                               </label>
                               {productFormData.image && (
-                                <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>âœ“ Image Set</span>
+                                <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>✓ Image Set</span>
                               )}
                             </div>
                             <input
@@ -7408,7 +7419,7 @@ export default function AdminPage() {
                                             padding: '2px 0',
                                           }}
                                         >
-                                          â˜… Cover
+                                          ★ Cover
                                         </div>
                                       ) : (
                                         <button
@@ -7454,7 +7465,7 @@ export default function AdminPage() {
                                           cursor: 'pointer',
                                         }}
                                       >
-                                        âœ•
+                                        ✕
                                       </button>
                                     </div>
                                   );
@@ -7495,7 +7506,7 @@ export default function AdminPage() {
                             Live Storefront Preview
                           </span>
                           <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>
-                            â— Real-time render
+                            ● Real-time render
                           </span>
                         </div>
 
@@ -7520,10 +7531,10 @@ export default function AdminPage() {
                             }}
                           >
                             <img
-                              src={productFormData.image || ivorySaree}
+                              src={toImg(productFormData.image) || defaultIvoryUrl}
                               alt={productFormData.name || 'Saree Preview'}
                               onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                                (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl;
                               }}
                               style={{
                                 width: '100%',
@@ -7548,7 +7559,7 @@ export default function AdminPage() {
                                   boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
                                 }}
                               >
-                                â˜… Featured
+                                ★ Featured
                               </span>
                             )}
                             <span
@@ -7606,7 +7617,7 @@ export default function AdminPage() {
                               }}
                             >
                               {productFormData.detail ||
-                                'Handcrafted luxury drape with rich artisanal storytellingâ€¦'}
+                                'Handcrafted luxury drape with rich artisanal storytelling...'}
                             </p>
 
                             <div
@@ -7623,7 +7634,7 @@ export default function AdminPage() {
                                   color: '#092330',
                                 }}
                               >
-                                â‚¹{(productFormData.price || 0).toLocaleString('en-IN')}
+                                ₹{(productFormData.price || 0).toLocaleString('en-IN')}
                               </span>
                               {productFormData.originalPrice > productFormData.price && (
                                 <span
@@ -7633,7 +7644,7 @@ export default function AdminPage() {
                                     textDecoration: 'line-through',
                                   }}
                                 >
-                                  â‚¹{productFormData.originalPrice.toLocaleString('en-IN')}
+                                  ₹{productFormData.originalPrice.toLocaleString('en-IN')}
                                 </span>
                               )}
                             </div>
@@ -7673,7 +7684,7 @@ export default function AdminPage() {
                           }}
                         >
                           {savingProduct
-                            ? 'Publishingâ€¦'
+                            ? 'Publishing...'
                             : editingProduct
                             ? 'Save Saree'
                             : 'Publish Saree'}
@@ -7737,7 +7748,7 @@ export default function AdminPage() {
                       <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#688c99' }} />
                       <input
                         type="text"
-                        placeholder="Search sarees by name or fabricâ€¦"
+                        placeholder="Search sarees by name or fabric..."
                         value={productSearch}
                         onChange={(e) => setProductSearch(e.target.value)}
                         style={{
@@ -7813,11 +7824,11 @@ export default function AdminPage() {
                         >
                           <div style={{ position: 'relative', width: '100%', aspectRatio: '3 / 4', background: '#f0f5f7' }}>
                             <img
-                              src={p.image || ivorySaree}
+                              src={toImg(p.image) || defaultIvoryUrl}
                               alt={p.name}
                               loading="lazy"
                               decoding="async"
-                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = ivorySaree; }}
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl; }}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                             <span style={{ position: 'absolute', top: '5px', left: '5px', background: 'rgba(9, 35, 48, 0.88)', color: '#ffffff', fontSize: '0.58rem', padding: '0.12rem 0.35rem', borderRadius: '4px', fontWeight: 600 }}>
@@ -7840,7 +7851,7 @@ export default function AdminPage() {
                                 cursor: 'pointer',
                               }}
                             >
-                              {p.isFeatured ? 'â˜… Home' : '+ Feature'}
+                              {p.isFeatured ? '★ Home' : '+ Feature'}
                             </button>
                             <span style={{ position: 'absolute', bottom: '5px', left: '5px', background: (p.countInStock || 0) > 0 ? 'rgba(16, 185, 129, 0.92)' : 'rgba(239, 68, 68, 0.92)', color: '#ffffff', fontSize: '0.58rem', fontWeight: 600, padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
                               {(p.countInStock || 0) > 0 ? `Qty: ${p.countInStock}` : 'Out'}
@@ -7870,7 +7881,7 @@ export default function AdminPage() {
                               {p.name}
                             </h4>
                             <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#092330', marginBottom: '0.45rem' }}>
-                              â‚¹{(p.price || 0).toLocaleString('en-IN')}
+                              ₹{(p.price || 0).toLocaleString('en-IN')}
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.3rem', marginTop: 'auto', paddingTop: '0.45rem', borderTop: '1px solid #edf4f7' }}>
@@ -7929,7 +7940,7 @@ export default function AdminPage() {
                       />
                       <input
                         type="text"
-                        placeholder="Search sarees by name, category, fabricâ€¦"
+                        placeholder="Search sarees by name, category, fabric..."
                         value={productSearch}
                         onChange={(e) => setProductSearch(e.target.value)}
                         style={{
@@ -8059,15 +8070,15 @@ export default function AdminPage() {
                         loading="lazy"
                         decoding="async"
                         src={
-                          p.image ||
-                          p.images?.[0] ||
+                          toImg(p.image) ||
+                          toImg(p.images?.[0]) ||
                           fallbackSareeImages[p.slug] ||
-                          ivorySaree
+                          defaultIvoryUrl
                         }
                         alt={p.name}
                         onError={(e) => {
                           const target = e.currentTarget as HTMLImageElement;
-                          const fallback = fallbackSareeImages[p.slug] || ivorySaree;
+                          const fallback = fallbackSareeImages[p.slug] || defaultIvoryUrl;
                           if (target.src !== fallback) {
                             target.src = fallback;
                           }
@@ -8095,7 +8106,7 @@ export default function AdminPage() {
                             boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
                           }}
                         >
-                          â˜… Featured
+                          ★ Featured
                         </span>
                       )}
                       <span
@@ -8164,11 +8175,11 @@ export default function AdminPage() {
 
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.75rem' }}>
                         <span style={{ fontSize: '1.15rem', fontWeight: 700, color: '#092330' }}>
-                          â‚¹{(p.price || 0).toLocaleString('en-IN')}
+                          ₹{(p.price || 0).toLocaleString('en-IN')}
                         </span>
                         {p.originalPrice && p.originalPrice > p.price && (
                           <span style={{ fontSize: '0.85rem', color: '#93b6c2', textDecoration: 'line-through' }}>
-                            â‚¹{p.originalPrice.toLocaleString('en-IN')}
+                            ₹{p.originalPrice.toLocaleString('en-IN')}
                           </span>
                         )}
                       </div>
@@ -8260,7 +8271,7 @@ export default function AdminPage() {
                   />
                   <input
                     type="text"
-                    placeholder="Search customer by name, email, or phoneâ€¦"
+                    placeholder="Search customer by name, email, or phone..."
                     value={customerSearch}
                     onChange={(e) => setCustomerSearch(e.target.value)}
                     style={{
@@ -8785,7 +8796,7 @@ export default function AdminPage() {
                       Average Drape Score
                     </span>
                     <h3 style={{ margin: '0.1rem 0 0', fontSize: '1.45rem', fontWeight: 800, color: '#092330' }}>
-                      {reviews.length > 0 ? `${(reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1)} / 5.0` : 'â€”'}
+                      {reviews.length > 0 ? `${(reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1)} / 5.0` : '—'}
                     </h3>
                   </div>
                 </div>
@@ -8944,7 +8955,7 @@ export default function AdminPage() {
                           <span>All Reviews ({reviews.length})</span>
                         ) : (
                           <>
-                            <span>{flt} â˜…</span>
+                            <span>{flt} ★</span>
                             <span style={{ opacity: 0.7 }}>
                               ({reviews.filter((r) => Math.round(r.rating) === Number(flt)).length})
                             </span>
@@ -9038,7 +9049,7 @@ export default function AdminPage() {
                             {/* Product Info */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: 0 }}>
                               <img
-                                src={rev.productImage || ivorySaree}
+                                src={toImg(rev.productImage) || defaultIvoryUrl}
                                 alt={rev.productName}
                                 loading="lazy"
                                 decoding="async"
@@ -9051,7 +9062,7 @@ export default function AdminPage() {
                                   flexShrink: 0,
                                 }}
                                 onError={(e) => {
-                                  e.currentTarget.src = ivorySaree;
+                                  e.currentTarget.src = defaultIvoryUrl;
                                 }}
                               />
                               <div style={{ minWidth: 0 }}>
@@ -9131,13 +9142,13 @@ export default function AdminPage() {
                             <span style={{ fontWeight: 700, color: '#092330' }}>
                               By {rev.name || 'Valued Patron'}
                             </span>
-                            <span style={{ color: '#cbd5e1' }}>â€¢</span>
+                            <span style={{ color: '#cbd5e1' }}>"¢</span>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#059669', fontWeight: 600 }}>
                               <ShieldCheck size={13} /> Verified Atelier Purchase
                             </span>
                             {rev.order && (
                               <>
-                                <span style={{ color: '#cbd5e1' }}>â€¢</span>
+                                <span style={{ color: '#cbd5e1' }}>"¢</span>
                                 <span style={{ fontFamily: 'monospace', color: '#64748b' }}>
                                   Order #{rev.order.toString().slice(-6).toUpperCase()}
                                 </span>
@@ -9240,7 +9251,7 @@ export default function AdminPage() {
                       <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#688c99' }} />
                       <input
                         type="text"
-                        placeholder="Search by name, email, or drape interestâ€¦"
+                        placeholder="Search by name, email, or drape interest..."
                         value={inquirySearch}
                         onChange={(e) => setInquirySearch(e.target.value)}
                         style={{
@@ -9310,7 +9321,7 @@ export default function AdminPage() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                               <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#092330' }}>{inq.name}</div>
-                              <div style={{ fontSize: '0.7rem', color: '#688c99' }}>{inq.email} {inq.phone ? `Â· ${inq.phone}` : ''}</div>
+                              <div style={{ fontSize: '0.7rem', color: '#688c99' }}>{inq.email} {inq.phone ? `· ${inq.phone}` : ''}</div>
                             </div>
                             <span
                               style={{
@@ -9322,7 +9333,7 @@ export default function AdminPage() {
                                 color: inq.status === 'New' ? '#b91c1c' : inq.status === 'In Progress' ? '#0e7490' : '#047857',
                               }}
                             >
-                              â— {inq.status}
+                              ● {inq.status}
                             </span>
                           </div>
 
@@ -9862,7 +9873,7 @@ export default function AdminPage() {
                                 fontSize: '0.82rem',
                               }}
                             >
-                              <span style={{ color: '#d4af37' }}>â—</span> Subject: {inq.subject}
+                              <span style={{ color: '#d4af37' }}>●</span> Subject: {inq.subject}
                             </span>
                           )}
                         </div>
@@ -10029,7 +10040,7 @@ export default function AdminPage() {
                                   }}
                                 />
                                 <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#092330' }}>
-                                  Live Concierge Direct Message Â· {inq.name}
+                                  Live Concierge Direct Message · {inq.name}
                                 </span>
                               </div>
                               <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
@@ -10463,10 +10474,10 @@ export default function AdminPage() {
                             }}
                           >
                             <img
-                              src={siteConfig.heroBannerUrl}
+                              src={toImg(siteConfig.heroBannerUrl) || defaultHeroUrl}
                               alt="Hero Preview"
                               onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src = sareeHero;
+                                (e.currentTarget as HTMLImageElement).src = defaultHeroUrl;
                               }}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
@@ -10551,10 +10562,10 @@ export default function AdminPage() {
                             }}
                           >
                             <img
-                              src={siteConfig.logoUrl}
+                              src={toImg(siteConfig.logoUrl) || defaultLogoUrl}
                               alt="Logo Preview"
                               onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src = bamasLogo;
+                                (e.currentTarget as HTMLImageElement).src = defaultLogoUrl;
                               }}
                               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                             />
@@ -10583,7 +10594,7 @@ export default function AdminPage() {
                           Customer Support Email
                         </label>
                         {siteTouched.contactEmail && siteEmailVal.valid && (
-                          <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid Email</span>
+                          <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Email</span>
                         )}
                       </div>
                       <input
@@ -10624,7 +10635,7 @@ export default function AdminPage() {
                           Customer Support Phone
                         </label>
                         {siteTouched.contactPhone && sitePhoneVal.valid && (
-                          <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid Phone</span>
+                          <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Phone</span>
                         )}
                       </div>
                       <input
@@ -11179,7 +11190,7 @@ export default function AdminPage() {
                             >
                               <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b' }}>Total Revenue</div>
                               <div style={{ fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 800, color: '#092330', marginTop: '0.2rem' }}>
-                                â‚¹{(stats?.overview?.totalRevenue || 55440).toLocaleString('en-IN')}
+                                ₹{(stats?.overview?.totalRevenue || 55440).toLocaleString('en-IN')}
                               </div>
                               <div style={{ fontSize: '0.66rem', color: '#b59028', fontWeight: 600, marginTop: '0.15rem' }}>Paid collected</div>
                             </div>
@@ -12125,10 +12136,10 @@ export default function AdminPage() {
                 }}
               >
                 <img
-                  src={fullscreenBookingImage}
+                  src={toImg(fullscreenBookingImage) || defaultIvoryUrl}
                   alt="Full resolution drape preview"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = ivorySaree;
+                    (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl;
                   }}
                   style={{
                     maxHeight: '72vh',

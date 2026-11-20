@@ -348,7 +348,7 @@ export default function ProfilePage() {
                     textDecoration: 'none',
                   }}
                 >
-                  View All ({orders.length}) â†’
+                  View All ({orders.length}) →
                 </Link>
               </div>
 
@@ -385,7 +385,7 @@ export default function ProfilePage() {
                       textDecoration: 'none',
                     }}
                   >
-                    Explore Boutique Collection â†’
+                    Explore Boutique Collection →
                   </Link>
                 </div>
               ) : (
@@ -423,7 +423,7 @@ export default function ProfilePage() {
                         >
                           {firstItem?.image && (
                             <img
-                              src={firstItem.image}
+                              src={typeof firstItem.image === 'string' ? firstItem.image : (firstItem.image as any)?.src || ''}
                               alt={firstItem.name}
                               loading="lazy"
                               decoding="async"
@@ -448,7 +448,7 @@ export default function ProfilePage() {
                                 textOverflow: 'ellipsis',
                               }}
                             >
-                              #{num} Â· {firstItem?.name || 'Saree Booking'}
+                              #{num} · {firstItem?.name || 'Saree Booking'}
                             </span>
                             <span
                               style={{
@@ -457,7 +457,7 @@ export default function ProfilePage() {
                                 fontWeight: 600,
                               }}
                             >
-                              âœ“ {status}
+                              ✓ {status}
                             </span>
                           </div>
                         </div>
@@ -470,7 +470,7 @@ export default function ProfilePage() {
                             flexShrink: 0,
                           }}
                         >
-                          â‚¹{(ord.totalPrice || 0).toLocaleString('en-IN')}
+                          ₹{(ord.totalPrice || 0).toLocaleString('en-IN')}
                         </span>
                       </Link>
                     );
@@ -596,7 +596,7 @@ export default function ProfilePage() {
                     fontWeight: 700,
                   }}
                 >
-                  {copiedCoupon ? 'âœ“ Copied!' : 'Click to Copy'}
+                  {copiedCoupon ? '✓ Copied!' : 'Click to Copy'}
                 </span>
               </div>
 

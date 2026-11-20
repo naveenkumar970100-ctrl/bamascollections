@@ -346,7 +346,7 @@ export function ProfileDropdown() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
                             {firstItem?.image && (
                               <img
-                                src={firstItem.image}
+                                src={typeof firstItem.image === 'string' ? firstItem.image : (firstItem.image as any)?.src || ''}
                                 alt={firstItem.name}
                                 style={{ width: '32px', height: '40px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
                               />

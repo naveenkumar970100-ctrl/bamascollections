@@ -74,7 +74,7 @@ function mapProductItem(p: any) {
     price: priceNum,
     countInStock,
     inStock,
-    formattedPrice: priceNum > 0 ? `â‚¹${priceNum.toLocaleString('en-IN')}` : 'Out of Stock',
+    formattedPrice: priceNum > 0 ? `₹${priceNum.toLocaleString('en-IN')}` : 'Out of Stock',
     image: primaryImg,
     images: mappedImages,
     detail: p.detail || p.description,
@@ -168,7 +168,7 @@ export default function ProductsPage() {
       .catch(() => {});
   }, []);
 
-  // âš¡ Real-Time WebSocket Synchronization for catalog & inventory
+  // ⚡ Real-Time WebSocket Synchronization for catalog & inventory
   useEffect(() => {
     const handleProductUpdated = (e: any) => {
       const updated = e.detail;
@@ -535,7 +535,7 @@ export default function ProductsPage() {
           </div>
         )}
         <p className="catalog-note">
-          Bamas Signature Collection Â· Pure handloom silk, authentic gold zari and bespoke drape consultation.
+          Bamas Signature Collection · Pure handloom silk, authentic gold zari and bespoke drape consultation.
         </p>
       </section>
     </main>

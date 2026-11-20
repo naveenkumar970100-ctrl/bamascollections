@@ -182,9 +182,9 @@ export default function NotificationsPage() {
 
   const quickTopics = isAdmin
     ? [
-        'âœ¨ Festive Silk Edit Now Live',
+        '✨ Festive Silk Edit Now Live',
         'ðŸ“¢ Special Handloom Artisan Showcase',
-        'âš¡ Express Delivery Available Across India',
+        '⚡ Express Delivery Available Across India',
       ]
     : [
         'Custom Blouse & Drape Inquiry',
@@ -454,7 +454,7 @@ export default function NotificationsPage() {
                     textAlign: 'center',
                   }}
                 >
-                  âœ“ Notification dispatched successfully!
+                  ✓ Notification dispatched successfully!
                 </div>
               )}
 
@@ -619,7 +619,7 @@ export default function NotificationsPage() {
                 textDecoration: 'none',
               }}
             >
-              Browse Saree Collection â†’
+              Browse Saree Collection →
             </Link>
           </div>
         ) : (

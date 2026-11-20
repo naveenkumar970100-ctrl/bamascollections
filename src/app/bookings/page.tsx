@@ -253,12 +253,12 @@ export default function BookingsPage() {
                       {item.name}
                     </h3>
                     <p style={{ margin: '0.15rem 0 0', fontSize: '0.75rem', color: '#64748b' }}>
-                      {item.fabric || 'Pure Mulberry Silk'} Â· Qty: {item.quantity || 1}
+                      {item.fabric || 'Pure Mulberry Silk'} · Qty: {item.quantity || 1}
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#092330' }}>
-                      â‚¹{((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}
+                      ₹{((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>
@@ -278,7 +278,7 @@ export default function BookingsPage() {
               <div>
                 <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Bag Subtotal:</span>
                 <p style={{ margin: '0.1rem 0 0', fontSize: '1.15rem', fontWeight: 800, color: '#092330' }}>
-                  â‚¹{cartTotal.toLocaleString('en-IN')}
+                  ₹{cartTotal.toLocaleString('en-IN')}
                 </p>
               </div>
 
@@ -445,7 +445,7 @@ export default function BookingsPage() {
                             ðŸ“¸ Proof Attached
                           </span>
                         )}
-                        <span>Â·</span>
+                        <span>·</span>
                         <span>
                           Paid on{' '}
                           {new Date(order.paidAt || order.createdAt).toLocaleDateString('en-IN', {
@@ -470,7 +470,7 @@ export default function BookingsPage() {
                         fontWeight: 700,
                       }}
                     >
-                      â— {currentStatus === 'Placed' ? 'Placed (Awaiting Studio Acceptance)' : currentStatus === 'Accepted' ? 'Accepted by Studio' : currentStatus}
+                      ● {currentStatus === 'Placed' ? 'Placed (Awaiting Studio Acceptance)' : currentStatus === 'Accepted' ? 'Accepted by Studio' : currentStatus}
                     </span>
                   </div>
 
@@ -482,7 +482,7 @@ export default function BookingsPage() {
                           {it.name || 'Pure Silk Saree'} Ã— {it.qty || 1}
                         </span>
                         <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#092330' }}>
-                          â‚¹{((it.price || 0) * (it.qty || 1)).toLocaleString('en-IN')}
+                          ₹{((it.price || 0) * (it.qty || 1)).toLocaleString('en-IN')}
                         </span>
                       </div>
                     ))}
@@ -501,7 +501,7 @@ export default function BookingsPage() {
                       Status: {order.isPaid ? 'Payment Verified' : 'Cash on Delivery'}
                     </span>
                     <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#092330' }}>
-                      Total: â‚¹{(order.totalPrice || 0).toLocaleString('en-IN')}
+                      Total: ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>

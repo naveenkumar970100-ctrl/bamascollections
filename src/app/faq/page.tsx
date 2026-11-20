@@ -100,7 +100,7 @@ export default function FAQPage() {
       <div className="page-title reveal">
         <span className="eyebrow">A little clarity</span>
         <h1>Frequently asked questions</h1>
-        <p>Everything youâ€™d like to know about Bamas.</p>
+        <p>Everything you'd like to know about Bamas.</p>
       </div>
 
       <section className="faq-wrap">
@@ -140,7 +140,7 @@ export default function FAQPage() {
                   Full name *
                 </label>
                 {touched.name && nameVal.valid && (
-                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid</span>
+                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid</span>
                 )}
               </div>
               <input
@@ -178,7 +178,7 @@ export default function FAQPage() {
                   Email address *
                 </label>
                 {touched.email && emailVal.valid && (
-                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid Email</span>
+                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Email</span>
                 )}
               </div>
               <input
@@ -217,7 +217,7 @@ export default function FAQPage() {
                   Phone number
                 </label>
                 {touched.phone && phone && phoneVal.valid && (
-                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid Phone</span>
+                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Phone</span>
                 )}
               </div>
               <input
@@ -273,7 +273,7 @@ export default function FAQPage() {
                   Your message *
                 </label>
                 {touched.message && msgVal.valid && (
-                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid Message</span>
+                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid Message</span>
                 )}
               </div>
               <textarea

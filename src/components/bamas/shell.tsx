@@ -213,12 +213,12 @@ export function SiteFooter() {
         <div className="footer-brand-col">
           <Link to="/" className="footer-brand-heading" aria-label="Bamas Collection home">
             <img
-              src={logoSrc}
+              src={typeof logoSrc === 'string' ? logoSrc : (logoSrc as any)?.src || ''}
               alt={brandName}
               width="44"
               height="44"
               onError={(e) => {
-                e.currentTarget.src = bamasLogo;
+                e.currentTarget.src = typeof bamasLogo === 'string' ? bamasLogo : (bamasLogo as any)?.src || '';
               }}
               className="footer-brand-logo"
             />

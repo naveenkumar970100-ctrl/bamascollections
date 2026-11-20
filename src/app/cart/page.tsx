@@ -375,7 +375,7 @@ export default function CartPage() {
           >
             <AlertTriangle size={18} style={{ color: '#dc2626', flexShrink: 0 }} />
             <div>
-              <strong style={{ display: 'block' }}>One or more sarees in your bag are Out of Stock (â‚¹0 or 0 Inventory)</strong>
+              <strong style={{ display: 'block' }}>One or more sarees in your bag are Out of Stock (₹0 or 0 Inventory)</strong>
               <span>Please remove out-of-stock items using the Remove button below to proceed with checkout.</span>
             </div>
           </div>
@@ -475,7 +475,7 @@ export default function CartPage() {
                             borderRadius: '4px',
                           }}
                         >
-                          â— In Stock
+                          ● In Stock
                         </span>
                       )}
                     </div>
@@ -495,11 +495,11 @@ export default function CartPage() {
                     {/* Price */}
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginBottom: '0.65rem' }}>
                       <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#092330' }}>
-                        â‚¹{(itemPrice * (item.quantity || 1)).toLocaleString('en-IN')}
+                        ₹{(itemPrice * (item.quantity || 1)).toLocaleString('en-IN')}
                       </span>
                       {item.quantity > 1 && (
                         <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                          (â‚¹{itemPrice.toLocaleString('en-IN')} each)
+                          (₹{itemPrice.toLocaleString('en-IN')} each)
                         </span>
                       )}
                     </div>
@@ -535,7 +535,7 @@ export default function CartPage() {
                             justifyContent: 'center',
                           }}
                         >
-                          â€“
+                          –
                         </button>
                         <span
                           style={{
@@ -630,12 +630,12 @@ export default function CartPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem', fontSize: '0.88rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
                 <span>Subtotal ({totalItemCount} sarees)</span>
-                <span style={{ fontWeight: 600, color: '#092330' }}>â‚¹{rawSubtotal.toLocaleString('en-IN')}</span>
+                <span style={{ fontWeight: 600, color: '#092330' }}>₹{rawSubtotal.toLocaleString('en-IN')}</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
                 <span>Handloom Tax (GST 5%)</span>
-                <span style={{ fontWeight: 600, color: '#092330' }}>â‚¹{taxPrice.toLocaleString('en-IN')}</span>
+                <span style={{ fontWeight: 600, color: '#092330' }}>₹{taxPrice.toLocaleString('en-IN')}</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
@@ -648,7 +648,7 @@ export default function CartPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <span style={{ fontSize: '1rem', fontWeight: 700, color: '#092330' }}>Total Amount</span>
                 <span style={{ fontSize: '1.45rem', fontWeight: 800, color: '#d4af37' }}>
-                  â‚¹{grandTotal.toLocaleString('en-IN')}
+                  ₹{grandTotal.toLocaleString('en-IN')}
                 </span>
               </div>
             </div>

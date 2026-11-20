@@ -59,23 +59,25 @@ import maroon from '@/assets/maroon-saree.jpg';
 import tissue from '@/assets/tissue-saree.jpg';
 import lavender from '@/assets/lavender-saree.jpg';
 
+const toSrc = (img: any): string => (typeof img === 'string' ? img : img?.src || '');
+
 const imageMap: Record<string, string> = {
-  '/assets/saree-hero.jpg': hero,
-  '/assets/rose-saree.jpg': rose,
-  '/assets/ivory-saree.jpg': ivory,
-  '/assets/wine-saree.jpg': wine,
-  '/assets/sapphire-saree.jpg': sapphire,
-  '/assets/maroon-saree.jpg': maroon,
-  '/assets/tissue-saree.jpg': tissue,
-  '/assets/lavender-saree.jpg': lavender,
-  emerald: hero,
-  rose: rose,
-  ivory: ivory,
-  wine: wine,
-  sapphire: sapphire,
-  'maroon-bridal': maroon,
-  tissue: tissue,
-  lavender: lavender,
+  '/assets/saree-hero.jpg': toSrc(hero),
+  '/assets/rose-saree.jpg': toSrc(rose),
+  '/assets/ivory-saree.jpg': toSrc(ivory),
+  '/assets/wine-saree.jpg': toSrc(wine),
+  '/assets/sapphire-saree.jpg': toSrc(sapphire),
+  '/assets/maroon-saree.jpg': toSrc(maroon),
+  '/assets/tissue-saree.jpg': toSrc(tissue),
+  '/assets/lavender-saree.jpg': toSrc(lavender),
+  emerald: toSrc(hero),
+  rose: toSrc(rose),
+  ivory: toSrc(ivory),
+  wine: toSrc(wine),
+  sapphire: toSrc(sapphire),
+  'maroon-bridal': toSrc(maroon),
+  tissue: toSrc(tissue),
+  lavender: toSrc(lavender),
 };
 
 function getSareeImage(p: any) {
@@ -83,10 +85,10 @@ function getSareeImage(p: any) {
   if (imgStr && (imgStr.startsWith('http') || imgStr.startsWith('data:') || imgStr.startsWith('/'))) {
     return imgStr;
   }
-  return imageMap[imgStr] || imageMap[p?.slug] || imgStr || ivory;
+  return imageMap[imgStr] || imageMap[p?.slug] || imgStr || toSrc(ivory);
 }
 
-const image = ivory;
+const image = toSrc(ivory);
 
 export function AuthForm({
   mode,
@@ -1483,7 +1485,7 @@ export function AuthForm({
                         border: '1px solid #e2edf0',
                       }}
                     >
-                      <img src={item.image} alt={item.name} style={{ width: '48px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+                      <img src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''} alt={item.name} style={{ width: '48px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h4 style={{ margin: '0 0 2px', fontSize: '0.88rem', fontWeight: 700, color: '#092330', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {item.name}
@@ -1729,11 +1731,11 @@ export function AuthForm({
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <div className="bamas-ref-logo-badge">
             <img
-              src={bamasLogo}
+              src={toSrc(bamasLogo)}
               alt="Bamas Collection"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => {
-                e.currentTarget.src = hero;
+                e.currentTarget.src = toSrc(hero);
               }}
             />
           </div>

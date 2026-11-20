@@ -241,7 +241,7 @@ export function ReviewModal({ open, order, item, onClose, onSuccess }: ReviewMod
         >
           {item.image ? (
             <img
-              src={item.image}
+              src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''}
               alt={item.name}
               style={{
                 width: '46px',

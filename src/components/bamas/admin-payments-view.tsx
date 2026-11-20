@@ -1905,7 +1905,7 @@ export function AdminPaymentsView({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           {item.image && (
                             <img
-                              src={item.image}
+                              src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''}
                               alt={item.name}
                               style={{ width: '28px', height: '34px', objectFit: 'cover', borderRadius: '3px' }}
                             />

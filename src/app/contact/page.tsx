@@ -25,6 +25,8 @@ import { useCustomer } from '@/components/bamas/auth-context';
 import hero from '@/assets/saree-hero.jpg';
 import maroon from '@/assets/maroon-saree.jpg';
 
+const toSrc = (img: any): string => (typeof img === 'string' ? img : img?.src || '');
+
 
 export default function ContactPage() {
   const { user } = useCustomer();
@@ -184,7 +186,7 @@ export default function ContactPage() {
               fontWeight: 400,
             }}
           >
-            Whether you desire bespoke bridal styling, guidance on authentic handloom zari, or wish to schedule a private studio viewing â€” our styling team welcomes your conversation.
+            Whether you desire bespoke bridal styling, guidance on authentic handloom zari, or wish to schedule a private studio viewing — our styling team welcomes your conversation.
           </p>
         </div>
       </section>
@@ -307,7 +309,7 @@ export default function ContactPage() {
               </p>
             </div>
             <div style={{ fontSize: '0.82rem', color: 'var(--muted-foreground)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Clock size={14} style={{ color: 'var(--gold)' }} /> Mon â€“ Sat: 10:30 AM â€“ 8:00 PM
+              <Clock size={14} style={{ color: 'var(--gold)' }} /> Mon – Sat: 10:30 AM – 8:00 PM
             </div>
           </div>
 
@@ -530,7 +532,7 @@ export default function ContactPage() {
                         Your Full Name <span style={{ color: 'var(--gold)' }}>*</span>
                       </label>
                       {touched.name && nameVal.valid && (
-                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid</span>
+                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid</span>
                       )}
                     </div>
                     <input
@@ -573,7 +575,7 @@ export default function ContactPage() {
                         Email Address <span style={{ color: 'var(--gold)' }}>*</span>
                       </label>
                       {touched.email && emailVal.valid && (
-                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Valid</span>
+                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Valid</span>
                       )}
                     </div>
                     <input
@@ -618,7 +620,7 @@ export default function ContactPage() {
                         Phone Number (Optional)
                       </label>
                       {touched.phone && formData.phone && phoneVal.valid && (
-                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ 10 Digits</span>
+                        <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ 10 Digits</span>
                       )}
                     </div>
                     <input
@@ -717,7 +719,7 @@ export default function ContactPage() {
                       Your Message or Saree Requirements <span style={{ color: 'var(--gold)' }}>*</span>
                     </label>
                     {touched.message && messageVal.valid && (
-                      <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>âœ“ Detailed</span>
+                      <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>✓ Detailed</span>
                     )}
                   </div>
                   <textarea
@@ -833,7 +835,7 @@ export default function ContactPage() {
               }}
             >
               <img
-                src={maroon}
+                src={toSrc(maroon)}
                 alt="Bamas Silk Studio"
                 loading="lazy"
                 decoding="async"
@@ -1005,7 +1007,7 @@ export default function ContactPage() {
             },
             {
               q: 'Do you deliver across India and internationally?',
-              a: 'Yes, we offer insured express shipping across all major Indian pincodes (delivery in 2â€“4 business days) and international worldwide delivery (5â€“7 business days).',
+              a: 'Yes, we offer insured express shipping across all major Indian pincodes (delivery in 2–4 business days) and international worldwide delivery (5–7 business days).',
             },
           ].map((item, idx) => (
             <div
