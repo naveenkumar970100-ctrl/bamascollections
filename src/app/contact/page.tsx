@@ -134,7 +134,7 @@ export default function ContactPage() {
             position: 'absolute',
             inset: 0,
             opacity: 0.12,
-            backgroundImage: `url(${hero})`,
+            backgroundImage: `url(${typeof hero === 'string' ? hero : (hero as any)?.src || '/assets/saree-hero.jpg'})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             filter: 'blur(3px)',

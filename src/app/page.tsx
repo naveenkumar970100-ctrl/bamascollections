@@ -26,23 +26,23 @@ function getImgSrc(img: any): string {
   return String(img);
 }
 
-const imageMap: Record<string, any> = {
-  '/assets/saree-hero.jpg': hero,
-  '/assets/rose-saree.jpg': rose,
-  '/assets/ivory-saree.jpg': ivory,
-  '/assets/wine-saree.jpg': wine,
-  '/assets/sapphire-saree.jpg': sapphire,
-  '/assets/maroon-saree.jpg': maroon,
-  '/assets/tissue-saree.jpg': tissue,
-  '/assets/lavender-saree.jpg': lavender,
-  emerald: hero,
-  rose: rose,
-  ivory: ivory,
-  wine: wine,
-  sapphire: sapphire,
-  'maroon-bridal': maroon,
-  tissue: tissue,
-  lavender: lavender,
+const imageMap: Record<string, string> = {
+  '/assets/saree-hero.jpg': getImgSrc(hero),
+  '/assets/rose-saree.jpg': getImgSrc(rose),
+  '/assets/ivory-saree.jpg': getImgSrc(ivory),
+  '/assets/wine-saree.jpg': getImgSrc(wine),
+  '/assets/sapphire-saree.jpg': getImgSrc(sapphire),
+  '/assets/maroon-saree.jpg': getImgSrc(maroon),
+  '/assets/tissue-saree.jpg': getImgSrc(tissue),
+  '/assets/lavender-saree.jpg': getImgSrc(lavender),
+  emerald: getImgSrc(hero),
+  rose: getImgSrc(rose),
+  ivory: getImgSrc(ivory),
+  wine: getImgSrc(wine),
+  sapphire: getImgSrc(sapphire),
+  'maroon-bridal': getImgSrc(maroon),
+  tissue: getImgSrc(tissue),
+  lavender: getImgSrc(lavender),
 };
 
 
