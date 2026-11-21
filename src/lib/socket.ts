@@ -56,8 +56,8 @@ export function getSocket(): Socket {
           (listeners[event] || []).forEach((cb) => cb(...args));
           return mockSocket;
         },
-        disconnect: () => {},
-        connect: () => {},
+        disconnect: () => mockSocket,
+        connect: () => mockSocket,
       };
       socket = mockSocket;
       return socket as Socket;
@@ -196,12 +196,23 @@ export function getSocket(): Socket {
  */
 export function refreshSocketAuth() {
   if (typeof window === 'undefined') return;
-  const token = localStorage.getItem('bamas_token');
-  if (socket) {
-    socket.auth = { token: token || '' };
-    socket.disconnect().connect();
-  } else {
-    getSocket();
+  try {
+    const token = localStorage.getItem('bamas_token');
+    if (socket) {
+      if ('auth' in socket) {
+        socket.auth = { token: token || '' };
+      }
+      if (typeof socket.disconnect === 'function') {
+        socket.disconnect();
+      }
+      if (typeof socket.connect === 'function') {
+        socket.connect();
+      }
+    } else {
+      getSocket();
+    }
+  } catch (err) {
+    console.warn('Socket refresh non-fatal warning:', err);
   }
 }
 

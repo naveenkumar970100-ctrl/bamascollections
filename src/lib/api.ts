@@ -63,7 +63,7 @@ export const api = {
       if (res.data?.token) {
         localStorage.setItem('bamas_token', res.data.token);
         localStorage.setItem('bamas_user', JSON.stringify(res.data));
-        refreshSocketAuth();
+        try { refreshSocketAuth(); } catch {}
       }
       return res;
     },
@@ -76,7 +76,7 @@ export const api = {
       if (res.data?.token) {
         localStorage.setItem('bamas_token', res.data.token);
         localStorage.setItem('bamas_user', JSON.stringify(res.data));
-        refreshSocketAuth();
+        try { refreshSocketAuth(); } catch {}
       }
       return res;
     },
@@ -89,7 +89,7 @@ export const api = {
       if (res.data?.token) {
         localStorage.setItem('bamas_token', res.data.token);
         localStorage.setItem('bamas_user', JSON.stringify(res.data));
-        refreshSocketAuth();
+        try { refreshSocketAuth(); } catch {}
       }
       return res;
     },
@@ -108,7 +108,7 @@ export const api = {
     logout() {
       localStorage.removeItem('bamas_token');
       localStorage.removeItem('bamas_user');
-      refreshSocketAuth();
+      try { refreshSocketAuth(); } catch {}
     },
 
     getCurrentUser() {
