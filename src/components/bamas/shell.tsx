@@ -90,6 +90,8 @@ export function SiteHeader() {
             alt="Bamas Collection"
             width="50"
             height="50"
+            loading="eager"
+            decoding="async"
             onError={(e) => {
               e.currentTarget.src = typeof bamasLogo === 'string' ? bamasLogo : (bamasLogo as any)?.src || '';
             }}
@@ -217,6 +219,8 @@ export function SiteFooter() {
               alt={brandName}
               width="44"
               height="44"
+              loading="lazy"
+              decoding="async"
               onError={(e) => {
                 e.currentTarget.src = typeof bamasLogo === 'string' ? bamasLogo : (bamasLogo as any)?.src || '';
               }}

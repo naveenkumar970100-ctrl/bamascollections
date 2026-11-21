@@ -142,6 +142,8 @@ export function GoogleAccountChooser({
                   alt="Bamas Collection"
                   width="48"
                   height="48"
+                  loading="eager"
+                  decoding="async"
                   style={{
                     width: '100%',
                     height: '100%',

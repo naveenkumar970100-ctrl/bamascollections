@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useNavigate } from '@/lib/router-shim';
 import { useState, useEffect } from 'react';
 import {
@@ -1691,6 +1691,8 @@ export default function AdminPage() {
             <img
               src={defaultLogoUrl}
               alt="Bamas Collection"
+              loading="eager"
+              decoding="async"
               style={{
                 width: '42px',
                 height: '42px',
@@ -2053,6 +2055,8 @@ export default function AdminPage() {
                     <img
                       src={defaultLogoUrl}
                       alt="Bamas Collection"
+                      loading="eager"
+                      decoding="async"
                       style={{
                         width: '38px',
                         height: '38px',
@@ -5263,6 +5267,8 @@ export default function AdminPage() {
                         <img
                           src={toImg(productFormData.image) || defaultIvoryUrl}
                           alt="Preview"
+                          loading="lazy"
+                          decoding="async"
                           onError={(e) => { (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl; }}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -7397,6 +7403,8 @@ export default function AdminPage() {
                                       <img
                                         src={imgUrl}
                                         alt={`Saree angle ${idx + 1}`}
+                                        loading="lazy"
+                                        decoding="async"
                                         style={{
                                           width: '100%',
                                           height: '80px',
@@ -7533,6 +7541,8 @@ export default function AdminPage() {
                             <img
                               src={toImg(productFormData.image) || defaultIvoryUrl}
                               alt={productFormData.name || 'Saree Preview'}
+                              loading="lazy"
+                              decoding="async"
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl;
                               }}
@@ -10476,6 +10486,8 @@ export default function AdminPage() {
                             <img
                               src={toImg(siteConfig.heroBannerUrl) || defaultHeroUrl}
                               alt="Hero Preview"
+                              loading="lazy"
+                              decoding="async"
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src = defaultHeroUrl;
                               }}
@@ -10564,6 +10576,8 @@ export default function AdminPage() {
                             <img
                               src={toImg(siteConfig.logoUrl) || defaultLogoUrl}
                               alt="Logo Preview"
+                              loading="lazy"
+                              decoding="async"
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src = defaultLogoUrl;
                               }}
@@ -12138,6 +12152,8 @@ export default function AdminPage() {
                 <img
                   src={toImg(fullscreenBookingImage) || defaultIvoryUrl}
                   alt="Full resolution drape preview"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src = defaultIvoryUrl;
                   }}
@@ -12165,6 +12181,8 @@ export default function AdminPage() {
               <img
                 src={previewReviewPhoto}
                 alt="Patron Drape Photo"
+                loading="lazy"
+                decoding="async"
                 style={{ maxHeight: '80vh', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px', margin: '0 auto', display: 'block', border: '1px solid #e2e8f0' }}
               />
               <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#092330', fontSize: '0.85rem', fontWeight: 600 }}>

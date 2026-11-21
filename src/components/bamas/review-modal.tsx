@@ -243,6 +243,8 @@ export function ReviewModal({ open, order, item, onClose, onSuccess }: ReviewMod
             <img
               src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''}
               alt={item.name}
+              loading="lazy"
+              decoding="async"
               style={{
                 width: '46px',
                 height: '56px',
@@ -531,6 +533,8 @@ export function ReviewModal({ open, order, item, onClose, onSuccess }: ReviewMod
                         <img
                           src={imgUrl}
                           alt={`Review photo ${idx + 1}`}
+                          loading="lazy"
+                          decoding="async"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         <button

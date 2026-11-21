@@ -465,6 +465,8 @@ export function BookingCheckout({
                 <img
                   src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''}
                   alt={item.name}
+                  loading="lazy"
+                  decoding="async"
                   className="receipt-item-photo"
                 />
                 <div className="receipt-item-info">
@@ -698,6 +700,8 @@ export function BookingCheckout({
               <img
                 src={typeof primaryImage === 'string' ? primaryImage : (primaryImage as any)?.src || ''}
                 alt={primaryName}
+                loading="lazy"
+                decoding="async"
                 style={{
                   width: '38px',
                   height: '46px',
@@ -964,6 +968,8 @@ export function BookingCheckout({
                   <img
                     src={liveQrCodeUrl}
                     alt="UPI QR Code"
+                    loading="lazy"
+                    decoding="async"
                     style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }}
                   />
                   <div
@@ -1393,6 +1399,8 @@ export function BookingCheckout({
               <img
                 src={liveQrCodeUrl}
                 alt="Active UPI QR Code"
+                loading="lazy"
+                decoding="async"
                 style={{
                   width: '210px',
                   height: '210px',
@@ -1726,6 +1734,8 @@ export function BookingCheckout({
                     <img
                       src={screenshotPreview}
                       alt="Payment Screenshot Preview"
+                      loading="lazy"
+                      decoding="async"
                       style={{
                         width: '56px',
                         height: '56px',

@@ -1352,6 +1352,8 @@ export function AdminPaymentsView({
                             `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=6&data=${encodeURIComponent(`upi://pay?pa=${encodeURIComponent(method.upiId)}&pn=${encodeURIComponent(method.payeeName || 'Bamas Collections Atelier')}&cu=INR`)}`
                           }
                           alt="UPI QR Code"
+                          loading="lazy"
+                          decoding="async"
                           style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '4px' }}
                         />
                       ) : (
@@ -1665,6 +1667,8 @@ export function AdminPaymentsView({
                   <img
                     src={upiForm.qrCodeUrl}
                     alt="Uploaded QR Code"
+                    loading="lazy"
+                    decoding="async"
                     style={{
                       width: '60px',
                       height: '60px',
@@ -1700,6 +1704,8 @@ export function AdminPaymentsView({
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=4&data=${encodeURIComponent(`upi://pay?pa=${encodeURIComponent(upiForm.upiId)}&pn=${encodeURIComponent(upiForm.payeeName || 'Bamas Collections Atelier')}&cu=INR`)}`}
                     alt="Auto-Generated UPI QR Code"
+                    loading="lazy"
+                    decoding="async"
                     style={{
                       width: '48px',
                       height: '48px',
@@ -1907,6 +1913,8 @@ export function AdminPaymentsView({
                             <img
                               src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''}
                               alt={item.name}
+                              loading="lazy"
+                              decoding="async"
                               style={{ width: '28px', height: '34px', objectFit: 'cover', borderRadius: '3px' }}
                             />
                           )}
@@ -1957,6 +1965,8 @@ export function AdminPaymentsView({
                     <img
                       src={selectedReceipt.paymentProofUrl || selectedReceipt.order?.paymentProofUrl || selectedReceipt.order?.paymentResult?.screenshotUrl}
                       alt="Payment Proof"
+                      loading="lazy"
+                      decoding="async"
                       style={{ maxHeight: '180px', maxWidth: '100%', objectFit: 'contain', margin: '0 auto', display: 'block' }}
                     />
                   </div>

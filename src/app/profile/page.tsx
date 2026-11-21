@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { Link, useNavigate } from '@/lib/router-shim';
 import { useState, useEffect } from 'react';
 import {
@@ -31,9 +31,35 @@ import { AuthForm } from '@/components/bamas/auth-form';
 
 
 export default function ProfilePage() {
-  const { user } = useCustomer();
+  const { user: contextUser } = useCustomer();
+  const [localUser, setLocalUser] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('bamas_user');
+        return stored ? JSON.parse(stored) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const user = contextUser || localUser;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const syncAuth = () => {
+      try {
+        const stored = localStorage.getItem('bamas_user');
+        setLocalUser(stored ? JSON.parse(stored) : null);
+      } catch {
+        setLocalUser(null);
+      }
+    };
+    window.addEventListener('bamas_auth_changed', syncAuth);
+    return () => window.removeEventListener('bamas_auth_changed', syncAuth);
+  }, []);
 
   // State
   const [cartCount, setCartCount] = useState(() =>
@@ -698,7 +724,11 @@ export default function ProfilePage() {
           </div>
         ) : (
           /* Redesigned Login & Register Card when logged out */
-          <AuthForm mode="login" inProfileCard={true} />
+          <AuthForm
+            mode="login"
+            inProfileCard={true}
+            onAuthSuccess={(u) => setLocalUser(u)}
+          />
         )}
       </div>
 

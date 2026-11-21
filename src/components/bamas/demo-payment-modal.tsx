@@ -261,6 +261,8 @@ export function DemoPaymentModal({
               <img
                 src={typeof saree.image === 'string' ? saree.image : (saree.image as any)?.src || ''}
                 alt={saree.name}
+                loading="lazy"
+                decoding="async"
                 style={{
                   width: '38px',
                   height: '46px',
@@ -526,6 +528,8 @@ export function DemoPaymentModal({
                       <img
                         src={activeGateway.qrCodeUrl}
                         alt="Atelier QR"
+                        loading="lazy"
+                        decoding="async"
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       />
                     ) : (

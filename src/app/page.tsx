@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { Link } from '@/lib/router-shim';
 import { useQuery } from '@tanstack/react-query';
@@ -209,6 +209,7 @@ export default function Home() {
           height="1024"
           alt="Emerald saree with a golden border in a heritage courtyard"
           className="hero-photo"
+          loading="eager"
           fetchPriority="high"
           decoding="async"
         />

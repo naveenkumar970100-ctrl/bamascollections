@@ -93,9 +93,11 @@ const image = toSrc(ivory);
 export function AuthForm({
   mode,
   inProfileCard = false,
+  onAuthSuccess,
 }: {
   mode: 'login' | 'register' | 'reset';
   inProfileCard?: boolean;
+  onAuthSuccess?: (user: any) => void;
 }) {
   const { user, ready } = useCustomer();
   const navigate = useNavigate();
@@ -132,7 +134,17 @@ export function AuthForm({
   });
 
   const handlePostAuthSuccess = (userData: any) => {
+    if (typeof window !== 'undefined' && userData) {
+      try {
+        localStorage.setItem('bamas_user', JSON.stringify(userData));
+        if (userData.token) {
+          localStorage.setItem('bamas_token', userData.token);
+        }
+      } catch {}
+    }
+
     window.dispatchEvent(new Event('bamas_auth_changed'));
+    onAuthSuccess?.(userData);
 
     if (userData?.role === 'admin') {
       setMessage('Welcome, Administrator! Redirecting to Admin Dashboard...');
@@ -335,12 +347,18 @@ export function AuthForm({
           // Fallback to Supabase if identifier is email
           if (cleanIdentifier.includes('@')) {
             try {
-              const { error } = await supabase.auth.signInWithPassword({
+              const { data: sbData, error } = await supabase.auth.signInWithPassword({
                 email: cleanIdentifier,
                 password,
               });
               if (error) throw error;
-              handlePostAuthSuccess({ email: cleanIdentifier, role: 'customer' });
+              const fallbackUser = {
+                id: sbData?.user?.id || 'sb_' + Date.now(),
+                email: cleanIdentifier,
+                name: sbData?.user?.user_metadata?.display_name || cleanIdentifier.split('@')[0],
+                role: 'customer',
+              };
+              handlePostAuthSuccess(fallbackUser);
             } catch {
               throw apiErr;
             }
@@ -968,6 +986,8 @@ export function AuthForm({
                                 <img
                                   src={itemImg}
                                   alt={item.name}
+                                  loading="lazy"
+                                  decoding="async"
                                   style={{
                                     width: '54px',
                                     height: '68px',
@@ -1485,7 +1505,7 @@ export function AuthForm({
                         border: '1px solid #e2edf0',
                       }}
                     >
-                      <img src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''} alt={item.name} style={{ width: '48px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+                      <img src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''} alt={item.name} loading="lazy" decoding="async" style={{ width: '48px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <h4 style={{ margin: '0 0 2px', fontSize: '0.88rem', fontWeight: 700, color: '#092330', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {item.name}
@@ -1733,6 +1753,8 @@ export function AuthForm({
             <img
               src={toSrc(bamasLogo)}
               alt="Bamas Collection"
+              loading="eager"
+              decoding="async"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => {
                 e.currentTarget.src = toSrc(hero);

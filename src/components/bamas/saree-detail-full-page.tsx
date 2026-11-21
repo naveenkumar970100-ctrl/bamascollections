@@ -309,6 +309,7 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
               src={typeof (selectedImage || saree.image) === 'string' ? (selectedImage || saree.image) : (selectedImage || saree.image as any)?.src || ''}
               alt={saree.name}
               className={`pdp-main-image ${saree.position || ''}`}
+              loading="eager"
               fetchPriority="high"
               decoding="async"
             />
@@ -1140,6 +1141,8 @@ export function SareeDetailFullPage({ saree, onBack }: SareeDetailFullPageProps)
             <img
               src={activeImg}
               alt={`${saree.name} - ${viewLabels[currentImageIndex] || 'Drape View'}`}
+              loading="eager"
+              decoding="async"
               style={{
                 width: '100%',
                 height: '100%',

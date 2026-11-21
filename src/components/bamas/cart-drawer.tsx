@@ -71,6 +71,8 @@ export function CartDrawer({ open, onClose, onProceedToCheckout }: CartDrawerPro
                   <img
                     src={typeof item.image === 'string' ? item.image : (item.image as any)?.src || ''}
                     alt={item.name}
+                    loading="lazy"
+                    decoding="async"
                     className="cart-item-photo"
                   />
                   <div className="cart-item-details">

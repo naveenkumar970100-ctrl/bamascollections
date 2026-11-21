@@ -10,8 +10,10 @@ export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60 * 1000,
+        staleTime: 5 * 60 * 1000,
+        gcTime: 15 * 60 * 1000,
         refetchOnWindowFocus: false,
+        retry: 1,
       },
     },
   }));
@@ -87,6 +89,26 @@ export function Providers({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshUser();
+
+    const handleAuthChange = () => {
+      const stored = localStorage.getItem('bamas_user');
+      if (stored) {
+        try {
+          setUser(JSON.parse(stored));
+        } catch {}
+      } else {
+        setUser(null);
+      }
+      refreshUser();
+    };
+
+    window.addEventListener('bamas_auth_changed', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('bamas_auth_changed', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
   }, []);
 
   return (
