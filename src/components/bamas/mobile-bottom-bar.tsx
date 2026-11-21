@@ -10,7 +10,28 @@ import { useCustomer } from './auth-context';
 import { api } from '@/lib/api';
 
 export function MobileBottomBar() {
-  const { user } = useCustomer();
+  const { user: contextUser } = useCustomer();
+  const [localUser, setLocalUser] = useState<any>(null);
+
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        const stored = localStorage.getItem('bamas_user');
+        setLocalUser(stored ? JSON.parse(stored) : null);
+      } catch {
+        setLocalUser(null);
+      }
+    };
+    syncUser();
+    window.addEventListener('bamas_auth_changed', syncUser);
+    window.addEventListener('storage', syncUser);
+    return () => {
+      window.removeEventListener('bamas_auth_changed', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, []);
+
+  const user = contextUser || localUser;
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
 

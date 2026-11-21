@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from '@/lib/router-shim';
+import { Link, useNavigate, useRouterState } from '@/lib/router-shim';
 import {
   User,
   Package,
@@ -24,9 +24,33 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
 export function ProfileDropdown() {
-  const { user } = useCustomer();
+  const { user: contextUser } = useCustomer();
+  const [localUser, setLocalUser] = useState<any>(null);
+
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        const stored = localStorage.getItem('bamas_user');
+        setLocalUser(stored ? JSON.parse(stored) : null);
+      } catch {
+        setLocalUser(null);
+      }
+    };
+    syncUser();
+    window.addEventListener('bamas_auth_changed', syncUser);
+    window.addEventListener('storage', syncUser);
+    return () => {
+      window.removeEventListener('bamas_auth_changed', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, []);
+
+  const user = contextUser || localUser;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const routerState = useRouterState();
+  const currentPath = routerState?.location?.pathname?.replace(/\/+$/, '') || '';
+  const isProfilePage = currentPath === '/profile';
 
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -40,6 +64,11 @@ export function ProfileDropdown() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Close dropdown whenever route/path changes
+  useEffect(() => {
+    setOpen(false);
+  }, [currentPath]);
 
   // Fetch orders when dropdown opens or user changes
   const fetchOrders = async () => {
@@ -129,7 +158,13 @@ export function ProfileDropdown() {
       {/* Profile Trigger Button */}
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (isProfilePage) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
+          setOpen(!open);
+        }}
         aria-expanded={open}
         aria-label={activeUser ? `Profile for ${activeUser.name || activeUser.email}` : 'Log in to account'}
         title={activeUser ? `${activeUser.name || 'Patron'} • View Bookings & Profile` : 'Sign In'}

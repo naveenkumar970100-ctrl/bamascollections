@@ -37,8 +37,19 @@ export function Providers({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     if (typeof window === 'undefined') return;
     const token = localStorage.getItem('bamas_token');
+    const stored = localStorage.getItem('bamas_user');
+
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed) setUser((prev) => prev || parsed);
+      } catch {}
+    }
+
     if (!token) {
-      setUser(null);
+      if (!stored) {
+        setUser(null);
+      }
       setReady(true);
       return;
     }
@@ -49,7 +60,12 @@ export function Providers({ children }: { children: ReactNode }) {
         localStorage.setItem('bamas_user', JSON.stringify(res.data));
       }
     } catch {
-      // Keep cached user if network fails
+      // Keep cached user if network fails or mock backend
+      if (stored) {
+        try {
+          setUser(JSON.parse(stored));
+        } catch {}
+      }
     } finally {
       setReady(true);
     }
@@ -88,6 +104,14 @@ export function Providers({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // 1. Synchronously hydrate user from localStorage on mount
+    try {
+      const stored = localStorage.getItem('bamas_user');
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
+    } catch {}
+
     refreshUser();
 
     const handleAuthChange = () => {

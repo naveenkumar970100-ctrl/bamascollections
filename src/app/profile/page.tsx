@@ -31,24 +31,21 @@ import { AuthForm } from '@/components/bamas/auth-form';
 
 
 export default function ProfilePage() {
+  const [mounted, setMounted] = useState(false);
   const { user: contextUser } = useCustomer();
-  const [localUser, setLocalUser] = useState<any>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('bamas_user');
-        return stored ? JSON.parse(stored) : null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-
-  const user = contextUser || localUser;
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const [localUser, setLocalUser] = useState<any>(null);
 
   useEffect(() => {
+    setMounted(true);
+    try {
+      const stored = localStorage.getItem('bamas_user');
+      if (stored) {
+        setLocalUser(JSON.parse(stored));
+      }
+    } catch {
+      setLocalUser(null);
+    }
+
     const syncAuth = () => {
       try {
         const stored = localStorage.getItem('bamas_user');
@@ -58,8 +55,14 @@ export default function ProfilePage() {
       }
     };
     window.addEventListener('bamas_auth_changed', syncAuth);
-    return () => window.removeEventListener('bamas_auth_changed', syncAuth);
+    window.addEventListener('storage', syncAuth);
+    return () => {
+      window.removeEventListener('bamas_auth_changed', syncAuth);
+      window.removeEventListener('storage', syncAuth);
+    };
   }, []);
+
+  const user = mounted ? (contextUser || localUser) : null;
 
   // State
   const [cartCount, setCartCount] = useState(() =>
@@ -134,6 +137,64 @@ export default function ProfilePage() {
 
   const initial = ((user?.name || user?.email || 'U').charAt(0) || 'U').toUpperCase();
   const isAdmin = user?.role === 'admin';
+
+  if (!mounted) {
+    return (
+      <div
+        className="profile-page-container"
+        style={{
+          minHeight: '100vh',
+          background: '#f8fafb',
+          padding: '1.5rem 1rem calc(80px + env(safe-area-inset-bottom, 16px))',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: 'Manrope, sans-serif',
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            maxWidth: '460px',
+            background: '#ffffff',
+            borderRadius: '18px',
+            boxShadow: '0 12px 40px rgba(9, 35, 48, 0.08)',
+            border: '1px solid rgba(212, 175, 55, 0.25)',
+            padding: '2.5rem 1.5rem',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              border: '3px solid rgba(212, 175, 55, 0.25)',
+              borderTopColor: '#d4af37',
+              borderRadius: '50%',
+              margin: '0 auto 1rem',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          <h3
+            style={{
+              fontSize: '1.15rem',
+              fontWeight: 700,
+              color: '#092330',
+              fontFamily: 'Cormorant Garamond, serif',
+              margin: '0 0 0.35rem',
+              letterSpacing: '0.05em',
+            }}
+          >
+            BAMAS ATELIER
+          </h3>
+          <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
+            Loading your patron sanctuary...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

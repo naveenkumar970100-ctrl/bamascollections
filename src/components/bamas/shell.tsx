@@ -40,7 +40,28 @@ const nav = [
 export function SiteHeader() {
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [cartCount, setCartCount] = useState(() => cart.getCount());
-  const { user } = useCustomer();
+  const { user: contextUser } = useCustomer();
+  const [localUser, setLocalUser] = useState<any>(null);
+
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        const stored = localStorage.getItem('bamas_user');
+        setLocalUser(stored ? JSON.parse(stored) : null);
+      } catch {
+        setLocalUser(null);
+      }
+    };
+    syncUser();
+    window.addEventListener('bamas_auth_changed', syncUser);
+    window.addEventListener('storage', syncUser);
+    return () => {
+      window.removeEventListener('bamas_auth_changed', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, []);
+
+  const user = contextUser || localUser;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 

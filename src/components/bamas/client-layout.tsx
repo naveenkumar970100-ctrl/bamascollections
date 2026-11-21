@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { SiteHeader, SiteFooter } from '@/components/bamas/shell';
 import { MobileBottomBar } from '@/components/bamas/mobile-bottom-bar';
@@ -8,7 +8,28 @@ import { useCustomer } from '@/components/bamas/auth-context';
 
 export function ClientLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { user } = useCustomer();
+  const { user: contextUser } = useCustomer();
+  const [localUser, setLocalUser] = useState<any>(null);
+
+  useEffect(() => {
+    const syncUser = () => {
+      try {
+        const stored = localStorage.getItem('bamas_user');
+        setLocalUser(stored ? JSON.parse(stored) : null);
+      } catch {
+        setLocalUser(null);
+      }
+    };
+    syncUser();
+    window.addEventListener('bamas_auth_changed', syncUser);
+    window.addEventListener('storage', syncUser);
+    return () => {
+      window.removeEventListener('bamas_auth_changed', syncUser);
+      window.removeEventListener('storage', syncUser);
+    };
+  }, []);
+
+  const user = contextUser || localUser;
 
   const isAdminRoute = pathname?.startsWith('/admin');
   const isAdminUser = user?.role === 'admin';
